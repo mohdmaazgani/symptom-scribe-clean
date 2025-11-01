@@ -2,7 +2,7 @@
 
 **Symptom Scribe** is a one-stop health tracking and wellness platform that helps users monitor their health goals, analyze symptoms, and receive intelligent insights — all in one place. It integrates **AI-driven recommendations**, **brain-enhancing games**, and **doctor consultation suggestions**, making healthcare more interactive and personalized.
 
-**Website link** - https://symptom-scribe-clean.netlify.app/
+**Website link** - https://69061e64193d9200087e868a--symptom-scribe-clean.netlify.app/
 
 ---
 
