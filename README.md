@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# 🩺 Symptom Scribe — Smart Health & MedTech Platform
 
-## Project info
+**Symptom Scribe** is a one-stop health tracking and wellness platform that helps users monitor their health goals, analyze symptoms, and receive intelligent insights — all in one place. It integrates **AI-driven recommendations**, **brain-enhancing games**, and **doctor consultation suggestions**, making healthcare more interactive and personalized.
 
-**URL**: https://lovable.dev/projects/bf094ae7-ee78-4056-b341-e99a062f9452
+**Website link** - https://symptom-scribe-clean.netlify.app/
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🌟 Features
 
-**Use Lovable**
+### 🧠 Health & Wellness
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bf094ae7-ee78-4056-b341-e99a062f9452) and start prompting.
+* Track vital health metrics like steps, hydration, and nutrition.
+* Get personalized tips and activities to boost daily health.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🩻 Symptom Analysis
 
-**Use your preferred IDE**
+* Log your symptoms and get AI-assisted health insights.
+* Receive doctor recommendations based on your reported symptoms.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🎮 Brain Games
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+* Fun, scientifically designed games to improve focus and memory.
 
-Follow these steps:
+### 💡 Health Facts
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* “Did You Know?” pop-ups with fascinating human body facts and medical trivia.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 👨‍⚕️ Doctor Consultation
 
-# Step 3: Install the necessary dependencies.
-npm i
+* Smart system to suggest professional medical consultations based on patterns.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+---
+
+## ⚙️ Tech Stack
+
+| Category            | Technologies                             |
+| ------------------- | ---------------------------------------- |
+| **Frontend**        | React + Vite + TypeScript                |
+| **Styling**         | Tailwind CSS + ShadCN UI                 |
+| **Backend / API**   | Supabase (for database & authentication) |
+| **Deployment**      | Netlify                                  |
+| **Version Control** | GitHub                                   |
+
+---
+
+## 🚀 How to Run Locally
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/mohdmaazgani/symptom-scribe-clean.git
+   ```
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+3. **Start the development server**
+
+   ```bash
+   npm run dev
+   ```
+4. Open in your browser → [http://localhost:8080](http://localhost:8080)
+
+---
+
+## 🧩 Folder Structure
+
+```
+symptom-scribe/
+├── public/              # Static files
+├── src/
+│   ├── components/       # UI and reusable components
+│   ├── pages/            # App pages (Dashboard, Metrics, Chat, etc.)
+│   ├── integrations/     # Supabase & other service integrations
+│   ├── hooks/            # Custom React hooks
+│   └── main.tsx          # App entry point
+├── package.json
+└── vite.config.ts
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 💡 Future Enhancements
 
-**Use GitHub Codespaces**
+* Integration with wearable devices (Fitbit, Apple Watch)
+* AI-powered chat diagnosis
+* Prescription reminders and progress dashboards
+* Multi-user (doctor-patient) collaboration system
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🤝 Contributing
 
-This project is built with:
+Contributions, issues, and feature requests are welcome!
+Feel free to open a PR or issue in this repository.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🧑‍💻 Author
 
-Simply open [Lovable](https://lovable.dev/projects/bf094ae7-ee78-4056-b341-e99a062f9452) and click on Share -> Publish.
+**Developed by:** [@mohdmaazgani](https://github.com/mohdmaazgani)
+✨ Passionate about building smart, user-centric healthcare solutions.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 📄 License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is licensed under the **MIT License** — free for use, modification, and distribution.
