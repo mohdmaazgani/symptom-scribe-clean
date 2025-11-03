@@ -101,7 +101,7 @@ Feel free to open a PR or issue in this repository.
 ## 🧑‍💻 Author
 
 **Developed by:** [@mohdmaazgani](https://github.com/mohdmaazgani)
-✨ Passionate about building smart, user-centric healthcare solutions.
+✨ Passionate about building smart, user-centric solutions.
 
 ---
 
