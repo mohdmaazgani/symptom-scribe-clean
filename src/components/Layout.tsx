@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackToTop } from "@/components/BackToTop";
 import { ReducedMotionToggle } from "@/components/ReducedMotionToggle";
+import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 
 
 interface LayoutProps {
