@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Hero from "@/components/Hero";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield } from "lucide-react";
 
 const Index = () => {
@@ -51,13 +52,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
 
-      <header className="border-b border-border px-6 py-4">
+      <header className="border-b border-border px-6 py-4 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">
             Symptom Scribe🩺
           </h1>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/auth")}>
               Sign In
             </Button>

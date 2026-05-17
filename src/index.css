@@ -81,27 +81,44 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 40% 20%;
+    --border: 210 40% 22%;
     --input: 210 40% 20%;
     --ring: 187 85% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(187 85% 45%), hsl(187 85% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(187 75% 35%), hsl(158 54% 42%));
+    --shadow-soft: 0 4px 20px hsl(187 85% 45% / 0.15);
+    --shadow-glow: 0 0 40px hsl(187 85% 65% / 0.25);
+
+    --sidebar-background: 210 40% 10%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 187 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 40% 16%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 210 40% 18%;
+    --sidebar-ring: 187 85% 55%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    /* Smooth theme transitions for all color-related properties */
+    transition: background-color 0.2s ease, color 0.2s ease,
+      border-color 0.2s ease, box-shadow 0.2s ease,
+      fill 0.2s ease, stroke 0.2s ease;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Disable transitions on elements that shouldn't animate (e.g. spinners) */
+  .no-transition,
+  .no-transition * {
+    transition: none !important;
   }
 }
 

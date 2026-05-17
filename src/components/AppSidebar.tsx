@@ -2,9 +2,11 @@ import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut,
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -81,6 +83,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="flex items-center justify-between px-2 py-2">
+          {!isCollapsed && (
+            <span className="text-xs text-sidebar-foreground/60 font-medium">
+              Appearance
+            </span>
+          )}
+          <ThemeToggle />
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
