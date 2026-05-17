@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackToTop } from "@/components/BackToTop";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,7 +9,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background relative">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <header className="h-14 border-b border-border flex items-center px-4 bg-card">
@@ -24,6 +25,7 @@ const Layout = ({ children }: LayoutProps) => {
             {children}
           </main>
         </div>
+        <BackToTop />
       </div>
     </SidebarProvider>
   );

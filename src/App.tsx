@@ -16,6 +16,7 @@ import HealthFacts from "./pages/HealthFacts";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import { BackToTop } from "./components/BackToTop";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<><Index /><BackToTop /></>} />
           <Route path="/auth" element={<Auth />} />
           <Route
             path="/dashboard"
