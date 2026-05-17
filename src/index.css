@@ -123,7 +123,40 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Legacy scale utility (kept for backward compat) */
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  /* Metric card lift — use on cards that need prominent hover feedback */
+  .card-lift {
+    @apply transition-all duration-300 ease-out
+           hover:-translate-y-1.5
+           hover:shadow-lg hover:shadow-primary/10
+           hover:border-primary/30;
+  }
+
+  /* Ensures animation stays at its final frame after completing */
+  .animate-fill-both {
+    animation-fill-mode: both;
+  }
+
+  /* Staggered animation delay helpers */
+  .delay-75  { animation-delay:  75ms; }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-225 { animation-delay: 225ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  /* Reduce motion — respect user OS preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
