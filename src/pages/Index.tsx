@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Hero from "@/components/Hero";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield } from "lucide-react";
+import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ const Index = () => {
           </h1>
 
           <div className="flex items-center gap-4">
+            <AnimatedThemeToggler />
             <Button variant="ghost" onClick={() => navigate("/auth")}>
               Sign In
             </Button>

@@ -1,0 +1,58 @@
+.animated-theme-toggler {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  color: hsl(var(--foreground));
+  transition: background-color 0.3s ease;
+}
+
+.animated-theme-toggler:hover {
+  background-color: hsl(var(--muted));
+}
+
+.att-icons {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.att-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5) rotate(-45deg);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.att-icon.att-show {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
