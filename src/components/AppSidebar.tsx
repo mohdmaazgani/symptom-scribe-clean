@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -51,7 +50,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+      <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
         <NavLink to="/" className="flex items-center">
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
@@ -59,7 +58,6 @@ export function AppSidebar() {
             </h2>
           )}
         </NavLink>
-        <SidebarTrigger />
       </div>
 
       <SidebarContent>
