@@ -456,7 +456,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t border-border pt-6 text-center text-sm text-muted-foreground">
-            <p>© 2025 Smart Health Tracker. Built for hackathon demonstration. Not a substitute for professional medical advice.</p>
+            <p>© {new Date().getFullYear()} Symptom Scribe. Empowering smarter health decisions through AI.</p>
           </div>
         </div>
       </footer>
