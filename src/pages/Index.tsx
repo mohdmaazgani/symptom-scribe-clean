@@ -325,6 +325,9 @@ const Index = () => {
                 {testimonials.map((_, i) => (
                   <button
                     key={i}
+                    type="button"
+                    title={`Show testimonial ${i + 1}`}
+                    aria-label={`Show testimonial ${i + 1}`}
                     onClick={() => setActiveTestimonial(i)}
                     className={`w-2 h-2 rounded-full transition-all ${
                       i === activeTestimonial ? "bg-white w-8" : "bg-white/50"
