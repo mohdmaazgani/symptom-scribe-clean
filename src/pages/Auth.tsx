@@ -10,9 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Activity, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { showSuccess, showError } from "@/lib/toast-helpers";
+import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
+import {
+  evaluatePasswordStrength,
+  DEFAULT_PASSWORD_POLICY,
+} from "@/lib/password-strength";
 
 const emailSchema = z.string().email("Invalid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const signinPasswordSchema = z.string().min(1, "Password is required");
+const signupPasswordSchema = z.string().min(12, "Password must be at least 12 characters");
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -39,10 +45,22 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const validateInputs = (includeFullName: boolean = false) => {
+  const validateInputs = (includeFullName: boolean = false, checkPasswordStrength: boolean = false) => {
     try {
       emailSchema.parse(email);
-      passwordSchema.parse(password);
+      
+      // Use appropriate password schema based on context
+      const passwordSchemaToUse = checkPasswordStrength ? signupPasswordSchema : signinPasswordSchema;
+      passwordSchemaToUse.parse(password);
+      
+      // Check password strength for signup
+      if (checkPasswordStrength) {
+        const strength = evaluatePasswordStrength(password, DEFAULT_PASSWORD_POLICY);
+        if (!strength.isStrong) {
+          throw new Error("Password does not meet strength requirements. Please check all requirements.");
+        }
+      }
+      
       if (includeFullName && !fullName.trim()) {
         throw new Error("Full name is required");
       }
@@ -83,7 +101,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateInputs(true)) return;
+    if (!validateInputs(true, true)) return;
 
     setLoading(true);
     const redirectUrl = `${window.location.origin}/dashboard`;
@@ -195,17 +213,15 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Minimum 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                <PasswordStrengthMeter
+                  value={password}
+                  onChange={setPassword}
+                  label="Password"
+                  placeholder="Create a strong password"
+                  policy={DEFAULT_PASSWORD_POLICY}
+                  showGenerator={true}
+                  id="signup-password"
+                />
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
