@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Hero from "@/components/Hero";
-import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X } from "lucide-react";
+import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/BackToTop";
 import { 
@@ -61,6 +61,27 @@ const Index = () => {
       content: "An excellent tool for preliminary health awareness. It empowers patients to make informed decisions about their health.",
       rating: 5
     }
+  ];
+
+  const howItWorksSteps = [
+    {
+      num: "01",
+      icon: UserRound,
+      title: "Sign Up & Set Profile",
+      desc: "Create your account and set up your health profile with basic information and health goals.",
+    },
+    {
+      num: "02",
+      icon: LineChart,
+      title: "Track & Analyze",
+      desc: "Input your symptoms, track your metrics, and let our AI analyze your health data for insights.",
+    },
+    {
+      num: "03",
+      icon: ClipboardCheck,
+      title: "Get Recommendations",
+      desc: "Receive personalized health recommendations and know when to seek professional care.",
+    },
   ];
 
   return (
@@ -168,8 +189,8 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-muted py-20 px-4">
-        <motion.div 
+      <section className="bg-muted py-20 px-3 overflow-hidden">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -178,39 +199,69 @@ const Index = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-muted-foreground text-lg">Three simple steps to better health management</p>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-0.5 rounded-full bg-primary" />
+              <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+              <div className="w-10 h-0.5 rounded-full bg-primary" />
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Three simple steps to better health management
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                1
-              </div>
-              <h3 className="text-xl font-bold mb-2">Sign Up & Set Profile</h3>
-              <p className="text-muted-foreground">
-                Create your account and set up your health profile with basic information and health goals
-              </p>
-            </div>
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+            {howItWorksSteps.map((step, index) => {
+              const Icon = step.icon;
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                2
-              </div>
-              <h3 className="text-xl font-bold mb-2">Track & Analyze</h3>
-              <p className="text-muted-foreground">
-                Input your symptoms, track vitals, and let our AI analyze your health data for insights
-              </p>
-            </div>
+              return (
+                <motion.div
+                  key={step.num}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-30px" }}
+                  transition={{ duration: 0.45, delay: index * 0.1 }}
+                  className="relative"
+                >
+                  {index !== howItWorksSteps.length - 1 && (
+                    <div className="hidden md:block absolute top-[148px] left-[calc(100%-10px)] w-20 lg:w-24 h-12 z-20 pointer-events-none">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" fill="none" aria-hidden="true">
+                        <path
+                          d="M8 35 C28 6, 72 6, 92 35"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeDasharray="5 7"
+                        />
+                        <circle cx="8" cy="35" r="5.5" fill="hsl(var(--primary))" />
+                        <circle cx="92" cy="35" r="5.5" fill="hsl(var(--primary))" />
+                      </svg>
+                    </div>
+                  )}
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                3
-              </div>
-              <h3 className="text-xl font-bold mb-2">Get Recommendations</h3>
-              <p className="text-muted-foreground">
-                Receive personalized health recommendations and know when to seek professional care
-              </p>
-            </div>
+                  <div className="relative bg-card rounded-xl border border-border shadow-sm px-4 pt-16 pb-10 min-h-[360px] text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex items-center justify-center shadow-lg">
+                      {step.num}
+                    </div>
+
+                    <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                      <Icon className="w-10 h-10 text-primary" strokeWidth={2.2} />
+                    </div>
+
+                    <h3 className="text-xl font-bold leading-tight mb-4 min-h-[56px] flex items-center justify-center">
+                      {step.title}
+                    </h3>
+
+                    <div className="w-12 h-0.5 rounded-full bg-primary mx-auto mb-5" />
+
+                    <p className="text-muted-foreground leading-7 max-w-[280px] mx-auto">
+                      {step.desc}
+                    </p>
+
+                    <div className="absolute bottom-0 left-0 w-full h-1.5 rounded-b-xl bg-primary" />
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </section>
@@ -293,55 +344,75 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="bg-gradient-to-br from-primary via-primary-glow to-secondary py-20 px-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">What Our Users Say</h2>
-            <p className="text-white/90 text-lg">Join thousands of satisfied users taking control of their health</p>
+{/* Testimonials Section */}
+<section className="bg-gradient-to-br from-primary via-primary-glow to-secondary py-20 px-4">
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.5 }}
+    className="max-w-4xl mx-auto"
+  >
+    <div className="text-center mb-12">
+      <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+        What Our Users Say
+      </h2>
+
+      <p className="text-white/90 text-lg max-w-2xl mx-auto">
+        Join thousands of satisfied users taking control of their health
+      </p>
+    </div>
+
+    <Card className="bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl">
+      <CardContent className="pt-6">
+        <div className="text-center min-h-[200px] flex flex-col justify-center">
+          <div className="flex justify-center mb-4">
+            {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
+              <Star
+                key={i}
+                className="w-5 h-5 fill-yellow-400 text-yellow-400"
+              />
+            ))}
           </div>
 
-          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-            <CardContent className="pt-6">
-              <div className="text-center min-h-[200px] flex flex-col justify-center">
-                <div className="flex justify-center mb-4">
-                  {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-white text-lg mb-6 italic">"{testimonials[activeTestimonial].content}"</p>
-                <div>
-                  <p className="text-white font-bold">{testimonials[activeTestimonial].name}</p>
-                  <p className="text-white/80 text-sm">{testimonials[activeTestimonial].role}</p>
-                </div>
-              </div>
-              <div className="flex justify-center gap-2 mt-6">
-                {testimonials.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    title={`Show testimonial ${i + 1}`}
-                    aria-label={`Show testimonial ${i + 1}`}
-                    onClick={() => setActiveTestimonial(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      i === activeTestimonial ? "bg-white w-8" : "bg-white/50"
-                    }`}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </section>
+          <p className="text-white text-lg md:text-xl leading-relaxed mb-6 italic">
+            "{testimonials[activeTestimonial].content}"
+          </p>
+
+          <div>
+            <p className="text-white font-bold text-lg">
+              {testimonials[activeTestimonial].name}
+            </p>
+
+            <p className="text-white/80 text-sm">
+              {testimonials[activeTestimonial].role}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-2 mt-6">
+          {testimonials.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              title={`Show testimonial ${i + 1}`}
+              aria-label={`Show testimonial ${i + 1}`}
+              onClick={() => setActiveTestimonial(i)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === activeTestimonial
+                  ? "bg-white w-8"
+                  : "bg-white/50 w-2 hover:bg-white/80"
+              }`}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+</section>
 
       {/* FAQ Section */}
-      <section id="faq" className="container mx-auto py-20 px-4">
+       <section id="faq" className="container mx-auto py-20 px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
