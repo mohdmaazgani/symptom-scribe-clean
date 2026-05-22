@@ -410,6 +410,65 @@ const Index = () => {
         </motion.div>
       </section>
 
+      {/* FAQ Section */}
+       <section id="faq" className="container mx-auto py-20 px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          className="max-w-3xl mx-auto"
+        >
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
+              <AccordionContent>
+                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-2">
+              <AccordionTrigger className="text-left">How accurate is the AI health analysis?</AccordionTrigger>
+              <AccordionContent>
+                Our AI is trained on medical knowledge bases and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-3">
+              <AccordionTrigger className="text-left">Is my health data secure and private?</AccordionTrigger>
+              <AccordionContent>
+                Yes, we take data security seriously. All health data is encrypted both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-4">
+              <AccordionTrigger className="text-left">What features are included in the platform?</AccordionTrigger>
+              <AccordionContent>
+                The platform includes AI-powered symptom analysis, health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-5">
+              <AccordionTrigger className="text-left">Can I use this for tracking chronic conditions?</AccordionTrigger>
+              <AccordionContent>
+                Yes, the platform is excellent for tracking chronic conditions over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-6">
+              <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
+              <AccordionContent>
+                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </motion.div>
+      </section>
 
       {/* Final CTA Section */}
       <section className="bg-muted py-20 px-4">
