@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, Heart, Thermometer, Weight, Droplet, Wind } from "lucide-react";
+import { Activity, Heart, Thermometer, Weight, Droplet, Wind, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 
 const metricTypes = [
@@ -18,6 +18,14 @@ const metricTypes = [
   { value: "oxygen_saturation", label: "Oxygen Saturation", icon: Wind, unit: "%" },
 ];
 
+interface MetricEntry {
+  id: string;
+  metric_type: string;
+  value: any;
+  notes: string | null;
+  recorded_at: string;
+}
+
 const Metrics = () => {
   const [metricType, setMetricType] = useState("");
   const [value, setValue] = useState("");
@@ -25,11 +33,68 @@ const Metrics = () => {
   const [diastolic, setDiastolic] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<MetricEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const { toast } = useToast();
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("health_metrics")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("recorded_at", { ascending: false })
+        .limit(30);
+
+      if (!error && data) setHistory(data);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const getDisplayValue = (entry: MetricEntry) => {
+    if (entry.metric_type === "blood_pressure") {
+      return `${entry.value.systolic}/${entry.value.diastolic} mmHg`;
+    }
+    const unit = metricTypes.find((m) => m.value === entry.metric_type)?.unit ?? "";
+    return `${entry.value.value} ${unit}`;
+  };
+
+  const getTrend = (currentEntry: MetricEntry, allEntries: MetricEntry[]) => {
+    const sameType = allEntries.filter((e) => e.metric_type === currentEntry.metric_type);
+    const currentIndex = sameType.findIndex((e) => e.id === currentEntry.id);
+    const prevEntry = sameType[currentIndex + 1]; // sorted desc, so next index = older reading
+
+    if (!prevEntry) return null; // first ever entry for this metric type
+
+    const curr =
+      currentEntry.metric_type === "blood_pressure"
+        ? currentEntry.value.systolic
+        : currentEntry.value.value;
+    const prev =
+      prevEntry.metric_type === "blood_pressure"
+        ? prevEntry.value.systolic
+        : prevEntry.value.value;
+
+    if (curr > prev) return "up";
+    if (curr < prev) return "down";
+    return "same";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!metricType || (!value && metricType !== "blood_pressure")) return;
+
+    if (!metricType) return;
+    if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
+    if (metricType !== "blood_pressure" && !value) return;
 
     setLoading(true);
     try {
@@ -52,7 +117,7 @@ const Metrics = () => {
 
       if (error) throw error;
 
-      const metricLabel = metricTypes.find(m => m.value === metricType)?.label;
+      const metricLabel = metricTypes.find((m) => m.value === metricType)?.label;
       showSuccess(`${metricLabel} Recorded`, "Your health metric has been saved successfully.");
 
       // Reset form
@@ -60,6 +125,9 @@ const Metrics = () => {
       setSystolic("");
       setDiastolic("");
       setNotes("");
+
+      // Refresh history to show the new entry with trend
+      fetchHistory();
     } catch (error) {
       console.error("Error saving metric:", error);
       showError("Failed to Save", "Could not record your health metric");
@@ -179,6 +247,71 @@ const Metrics = () => {
               </>
             )}
           </form>
+        </CardContent>
+      </Card>
+
+      {/* History Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Readings</CardTitle>
+          <CardDescription>
+            Your last 30 recorded metrics 
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <p className="text-muted-foreground text-sm">Loading history...</p>
+          ) : history.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No readings recorded yet. Record your first metric above.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {history.map((entry) => {
+                const trend = getTrend(entry, history);
+                const metricMeta = metricTypes.find((m) => m.value === entry.metric_type);
+                const Icon = metricMeta?.icon ?? Activity;
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{metricMeta?.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(entry.recorded_at).toLocaleString()}
+                        </p>
+                        {entry.notes && (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">
+                            {entry.notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{getDisplayValue(entry)}</span>
+                      {trend === "up" && (
+                        <TrendingUp className="w-4 h-4 text-red-400" title="Higher than previous reading" />
+                      )}
+                      {trend === "down" && (
+                        <TrendingDown className="w-4 h-4 text-green-400" title="Lower than previous reading" />
+                      )}
+                      {trend === "same" && (
+                        <Minus className="w-4 h-4 text-muted-foreground" title="Same as previous reading" />
+                      )}
+                      {trend === null && (
+                        <span className="text-xs text-muted-foreground">first entry</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
