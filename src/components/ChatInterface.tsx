@@ -59,17 +59,22 @@ const ChatInterface = () => {
     const { dismiss: dismissLoading } = showLoading("Analyzing symptoms...", "AI is processing your request");
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/symptom-analyzer`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ messages: [...messages, userMessage] }),
-        }
+      const conversationHistory = messages.filter(
+        (_, i) => i !== 0  // remove initial greeting at index 0
       );
+      const recentContext = conversationHistory.slice(-6);
+
+      const response = await fetch(
+       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/symptom-analyzer`,
+      {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages: [...recentContext, userMessage] }),
+    }
+  );
 
       if (!response.ok || !response.body) {
         throw new Error('Failed to start stream');
