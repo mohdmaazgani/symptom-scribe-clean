@@ -21,29 +21,23 @@ const signinPasswordSchema = z.string().min(1, "Password is required");
 const signupPasswordSchema = z.string().min(12, "Password must be at least 12 characters");
 
 const Auth = () => {
-  // Separate state per tab — prevents field bleed when switching between Sign In and Sign Up
+  // Separate state per tab — prevents field bleed when switching tabs
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
-
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [fullName, setFullName] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false); // true after successful sign-in, until navigation fires
+  const [redirecting, setRedirecting] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // onAuthStateChange fires immediately with the current session on mount (INITIAL_SESSION event).
+    // No separate getSession() call needed — that caused double setState → auth page flutter.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         navigate("/dashboard");
       }
@@ -103,10 +97,10 @@ const Auth = () => {
 
     if (error) {
       showError("Sign In Failed", error.message);
-      setLoading(false); // reset only on failure
+      setLoading(false); // only reset on failure
     } else {
       setLoading(false);
-      setRedirecting(true); // hold UI in redirecting state — onAuthStateChange will navigate
+      setRedirecting(true); // hold UI — onAuthStateChange will navigate
     }
   };
 
@@ -122,16 +116,14 @@ const Auth = () => {
       password: signUpPassword,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+        data: { full_name: fullName },
       },
     });
 
     if (error) {
       showError("Sign Up Failed", error.message);
     } else {
-      // Use user from signUp response directly — avoids race condition when
+      // Use data.user from signUp response — avoids race condition when
       // email confirmation is enabled (getUser() returns null before confirmation)
       if (data.user) {
         await supabase.from("profiles").insert({
@@ -139,7 +131,6 @@ const Auth = () => {
           full_name: fullName,
         });
       }
-
       showSuccess("Account Created!", "You can now sign in with your credentials.");
     }
     setLoading(false);
