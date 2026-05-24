@@ -698,8 +698,13 @@ const wordTimeoutRef = useRef<number | null>(null);
 
           {/* Feedback */}
           {showPatternFeedback && (
+ HEAD
             <div className={`p-4 rounded-lg text-center animate-in fade-in slide-in-from-bottom-2 ${isPatternCorrect ? "bg-green-500/10 border border-green-500" : "bg-red-500/10 border border-red-500"}`}>
               <p className={isPatternCorrect ? "text-green-600" : "text-red-600"}>
+
+            <div className={`p-4 rounded-lg text-center ${isPatternCorrect ? "bg-green-500/10 border border-green-500/60 dark:border-green-400/40" : "bg-red-500/10 border border-red-500/60 dark:border-red-400/40"}`}>
+              <p className={isPatternCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
+ 120a67e (fix : dark mode issue in brain games)
                 {isPatternCorrect 
                   ? `✅ Correct! Day 4 should be ${currentQuestion.correctAnswer} ${getMetricUnit(currentQuestion.metricType)}` 
                   : `❌ Incorrect! The pattern was: ${currentQuestion.patternDescription}`}
@@ -714,276 +719,11 @@ const wordTimeoutRef = useRef<number | null>(null);
     );
   };
 
-//   return (
-//     <div className="space-y-6">
-//       <div>
-//         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-//           <Brain className="w-8 h-8 text-primary" />
-//           Brain Fitness Center
-//         </h1>
-//         <p className="text-muted-foreground mt-2">
-//           Exercise your mind with fun, health-themed cognitive games
-//         </p>
-//       </div>
-
-//       {!activeGame ? (
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//           {games.map((game) => {
-//             const Icon = game.icon;
-//             return (
-//               <Card
-//                 key={game.id}
-//                 className="group hover:shadow-glow transition-all duration-300 cursor-pointer border-2"
-//                 onClick={() => {
-//                   if (game.id === "memory") startMemoryGame();
-//                   else if (game.id === "math") startMathGame();
-//                   else if (game.id === "word") startWordGame();
-//                   else if (game.id === "pattern") startPatternGame();
-//                 }}
-//               >
-//                 <CardHeader>
-//                   <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-//                     <Icon className="w-8 h-8 text-white" />
-//                   </div>
-//                   <CardTitle className="text-xl">{game.name}</CardTitle>
-//                   <CardDescription>{game.description}</CardDescription>
-//                 </CardHeader>
-//                 <CardContent>
-//                   <Button className="w-full">
-//                     Play Now
-//                   </Button>
-//                 </CardContent>
-//               </Card>
-//             );
-//           })}
-//         </div>
-//       ) : activeGame === "memory" ? (
-//         // Memory Game UI (unchanged)
-//         <Card>
-//           <CardHeader>
-//             <CardTitle className="flex items-center justify-between">
-//               <span>Memory Match Game</span>
-//               <div className="flex gap-2">
-//                 <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg">
-//                   <Trophy className="w-5 h-5 text-primary" />
-//                   <span className="font-bold">{matchedCards.length / 2} / {memoryCards.length / 2} pairs</span>
-//                 </div>
-//                 <Button variant="outline" onClick={() => {
-//                   setActiveGame(null);
-//                   showInfo("Game Exited", "Come back anytime to play again!");
-//                 }}>
-//                   Exit Game
-//                 </Button>
-//               </div>
-//             </CardTitle>
-//             <CardDescription>
-//               Matched: {matchedCards.length / 2} / {memoryCards.length / 2} pairs
-//             </CardDescription>
-//           </CardHeader>
-//           <CardContent>
-//             <div className="grid grid-cols-4 gap-4">
-//               {memoryCards.map((card, index) => (
-//                 <div
-//                   key={index}
-//                   onClick={() => handleCardClick(index)}
-//                   className={`aspect-square rounded-xl flex items-center justify-center text-4xl font-bold cursor-pointer transition-all ${flippedCards.includes(index) || matchedCards.includes(index)
-//                     ? "bg-gradient-to-br from-primary to-primary-glow text-white rotate-0"
-//                     : "bg-muted hover:bg-accent rotate-180"
-//                     }`}
-//                 >
-//                   {(flippedCards.includes(index) || matchedCards.includes(index)) && (
-//                     <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
-//                   )}
-//                 </div>
-//               ))}
-//             </div>
-//           </CardContent>
-//         </Card>
-//       ) : activeGame === "math" ? (
-//         // Math Game UI (unchanged)
-//         <Card>
-//           <CardHeader>
-//             <CardTitle className="flex items-center justify-between">
-//               <span>Quick Math Challenge</span>
-//               <div className="flex gap-2 items-center">
-//                 <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg">
-//                   <Trophy className="w-5 h-5 text-primary" />
-//                   <span className="font-bold">{mathScore}</span>
-//                 </div>
-//                 <Button variant="outline" onClick={() => {
-//                   setActiveGame(null);
-//                   showInfo("Math Challenge Exited", `Your final score: ${mathScore}`);
-//                 }}>
-//                   Exit Game
-//                 </Button>
-//               </div>
-//             </CardTitle>
-//             <CardDescription>Solve as many problems as you can!</CardDescription>
-//           </CardHeader>
-//           <CardContent className="space-y-6">
-//             <div className="text-center space-y-4">
-//               <div className="text-5xl font-bold text-foreground">
-//                 {mathQuestion.num1} + {mathQuestion.num2} = ?
-//               </div>
-//               <div className="flex gap-4 items-center justify-center max-w-md mx-auto">
-//                 <input
-//                   type="number"
-//                   value={mathQuestion.answer ?? ""}
-//                   onChange={(e) => setMathQuestion({ ...mathQuestion, answer: e.target.value})}
-//                   onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()}
-//                   className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary"
-//                   placeholder="?"
-//                   autoFocus
-//                 />
-//                 <Button onClick={checkMathAnswer} size="lg" className="px-8">
-//                   Check
-//                 </Button>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
-//       ) : activeGame === "word" ? (
-//         // Word Game UI (unchanged)
-//         <Card>
-//           <CardHeader>
-//             <CardTitle className="flex items-center justify-between">
-//               <span>Word Recall Challenge</span>
-//               <Button variant="outline" onClick={() => {
-//                 setActiveGame(null);
-//                 showInfo("Word Game Exited", "Keep practicing your memory!");
-//               }}>
-//                 Exit Game
-//               </Button>
-//             </CardTitle>
-//             <CardDescription>Memorize the words, then recall them in order</CardDescription>
-//           </CardHeader>
-//           <CardContent className="space-y-6">
-//             <div className="space-y-4">
-//               <div className="p-6 bg-accent rounded-xl">
-//                 <div className="flex items-center justify-between mb-4">
-//                   <h3 className="text-lg font-semibold">Words to memorize:</h3>
-//                   {wordPhase === "memorize" && (
-//                     <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold">
-//                       <Clock className="w-4 h-4" />
-//                       <span>{timeLeft}s</span>
-//                     </div>
-//                   )}
-//                 </div>
-//                 <div className="flex flex-wrap gap-3">
-//                   {wordPhase === "memorize" && wordSequence.map((word, idx) => (
-//                     <div key={idx} className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-lg">
-//                       {word}
-//                     </div>
-//                   ))}
-//                 </div>
-//                 {wordPhase === "recall" && (
-//                   <div className="text-center text-muted-foreground">
-//                     The words have been hidden. Recall them in the correct order!
-//                   </div>
-//                 )}
-//               </div>
-//               <div className="p-6 bg-muted rounded-xl">
-//                 <h3 className="text-lg font-semibold mb-4">Available words:</h3>
-//                 <div className="flex flex-wrap gap-2">
-//                   {healthWords.map((word, idx) => (
-//                     <Button
-//                       key={idx}
-//                       variant="outline"
-//                       onClick={() => {
-//                         if (wordPhase !== "recall") {
-//                           showWarning("Wait!", "Memorize phase is still active");
-//                           return;
-//                         }
-//                         setUserSequence([...userSequence, { word, index: userSequence.length }]);
-//                         showInfo("Word Added", `Added "${word}" to your sequence`);
-//                       }}
-//                     >
-//                       {word}
-//                     </Button>
-//                   ))}
-//                 </div>
-//               </div>
-//               {userSequence.length > 0 && (
-//                 <div className="p-6 bg-accent rounded-xl">
-//                   <h3 className="text-lg font-semibold mb-4">Your sequence:</h3>
-//                   <div className="flex flex-wrap gap-3">
-//                     {userSequence.map((word, idx) => (
-//                       <div key={idx} className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-semibold">
-//                         {word.word}
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               )}
-//               <div className="flex gap-4">
-//                 <Button
-//                   onClick={() => {
-//                     const correct = wordSequence.length === userSequence.length && wordSequence.every((word, i) => word === userSequence[i].word);
-//                     if (correct) {
-//                       showSuccess("🎉 Perfect Memory! 🎉", "You recalled all words correctly!");
-//                     } else {
-//                       const correctWords = userSequence.filter((word, i) => word.word === wordSequence[i]).length;
-//                       showError("❌ Not quite right", `You got ${correctWords} out of ${wordSequence.length} correct`);
-//                     }
-//                   }}
-//                   disabled={userSequence.length !== wordSequence.length}
-//                   className="flex-1"
-//                 >
-//                   Check Answer
-//                 </Button>
-//                 <Button variant="outline" onClick={() => {
-//                   setUserSequence([]);
-//                   showInfo("Reset", "Your sequence has been cleared");
-//                 }}>
-//                   Reset Selections
-//                 </Button>
-//                 <Button variant="secondary" onClick={startWordGame}>
-//                   Restart Game
-//                 </Button>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
-//       ) : activeGame === "pattern" ? (
-//         renderPatternGame()
-//       ) : null}
-
-//       <Card className="bg-gradient-to-br from-primary/5 to-primary-glow/5 border-primary/20">
-//         <CardHeader>
-//           <CardTitle className="flex items-center gap-2">
-//             <Award className="w-6 h-6 text-primary" />
-//             Benefits of Brain Training
-//           </CardTitle>
-//         </CardHeader>
-//         <CardContent>
-//           <ul className="space-y-2 text-muted-foreground">
-//             <li className="flex items-start gap-2">
-//               <span className="text-primary">✓</span>
-//               <span>Improves memory and cognitive function</span>
-//             </li>
-//             <li className="flex items-start gap-2">
-//               <span className="text-primary">✓</span>
-//               <span>Enhances problem-solving abilities</span>
-//             </li>
-//             <li className="flex items-start gap-2">
-//               <span className="text-primary">✓</span>
-//               <span>Boosts concentration and focus</span>
-//             </li>
-//             <li className="flex items-start gap-2">
-//               <span className="text-primary">✓</span>
-//               <span>May help prevent cognitive decline</span>
-//             </li>
-//           </ul>
-//         </CardContent>
-//       </Card>
-//     </div>
-//   );
-
   return (
-  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100  overflow-hidden">
+  <div className="min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/40 dark:to-muted/20">
     
     {/* HEADER */}
-    <div className="relative mb-10">
+    <div className="relative mb-10 text-center">
       <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 blur-3xl rounded-full" />
 
       <div className="relative z-10">
@@ -994,14 +734,14 @@ const wordTimeoutRef = useRef<number | null>(null);
           </span>
         </div>
 
-        <h1 className="text-5xl md:text-6xl font-black tracking-tight text-foreground leading-tight">
+        <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground leading-tight">
           Train Your{" "}
           <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
             Brain
           </span>{" "}
           Daily
         </h1>
-        <p className="text-muted-foreground text-lg md:text-xl mt-5 max-w-2xl leading-relaxed">
+        <p className="text-muted-foreground text-sm md:text-sm mt-5  leading-relaxed">
           Exercise your mind with fun, health-themed cognitive games designed
           to improve memory, focus, and cognitive performance.
         </p>
@@ -1024,7 +764,7 @@ const wordTimeoutRef = useRef<number | null>(null);
                 rounded-3xl
                 border
                 border-border/50
-                bg-white/90
+                bg-card/90 dark:bg-card/80
                 backdrop-blur-xl
                 shadow-sm
                 hover:shadow-3xl
@@ -1053,16 +793,16 @@ const wordTimeoutRef = useRef<number | null>(null);
 
               <CardHeader className="relative z-10 pb-4">
                <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4}`}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
             >
               <Icon className={`w-7 h-7 ${game.color}`} />
             </div>
 
-                <CardTitle className="text-2xl font-bold tracking-tight mb-2">
+                <CardTitle className="text-xl font-bold tracking-tight mb-2">
                   {game.name}
                 </CardTitle>
 
-                <CardDescription className="text-base leading-relaxed min-h-[72px]">
+                <CardDescription className="text-sm leading-relaxed min-h-[72px]">
                   {game.description}
                 </CardDescription>
               </CardHeader>
@@ -1070,7 +810,7 @@ const wordTimeoutRef = useRef<number | null>(null);
               <CardContent className="relative z-10 pt-0">
                 <Button
                   className={`
-                    w-full
+                    w-15
                     h-12
                     rounded-2xl
                     text-base
@@ -1246,7 +986,7 @@ const wordTimeoutRef = useRef<number | null>(null);
         return (
           <div
             key={index}
-            className="group rounded-3xl border border-border/50 bg-white/80 backdrop-blur-xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            className="group flex items-center gap-3 rounded-3xl border border-border/50 bg-card/80 dark:bg-card/70 backdrop-blur-xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
             <div
               className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${benefit.bg}`}
