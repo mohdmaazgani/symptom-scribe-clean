@@ -106,7 +106,7 @@ const wordTimeoutRef = useRef<number | null>(null);
     // Reset fire streak animation after 2 seconds
     const timer = setTimeout(() => setShowFireStreak(false), 2000);
     return () => clearTimeout(timer);
-  }, [patternStreak]);
+  }, [patternStreak, toast]);
 
   // Timer for timed mode
   useEffect(() => {
@@ -214,7 +214,7 @@ const wordTimeoutRef = useRef<number | null>(null);
       triggerConfetti();
     }
     setLevel(newLevel);
-  }, [xp]);
+  }, [xp, level]);
 
   const startPatternGame = () => {
     setPatternScore(0);
@@ -524,11 +524,6 @@ const wordTimeoutRef = useRef<number | null>(null);
       color: "from-orange-500 to-red-500",
     },
 
-    { id: "memory", name: "Memory Match", icon: Brain, description: "Match pairs of health-themed cards", color: "from-blue-500 to-cyan-500" },
-    { id: "math", name: "Quick Math", icon: Target, description: "Solve mental math problems", color: "from-purple-500 to-pink-500" },
-    { id: "word", name: "Word Recall", icon: Lightbulb, description: "Memorize and recall word sequences", color: "from-green-500 to-emerald-500" },
-    { id: "pattern", name: "Pattern Recognition", icon: Puzzle, description: "Complete the health trend", color: "from-orange-500 to-red-500" },
-
   ];
 
   const renderPatternGame = () => {
@@ -698,13 +693,8 @@ const wordTimeoutRef = useRef<number | null>(null);
 
           {/* Feedback */}
           {showPatternFeedback && (
- HEAD
-            <div className={`p-4 rounded-lg text-center animate-in fade-in slide-in-from-bottom-2 ${isPatternCorrect ? "bg-green-500/10 border border-green-500" : "bg-red-500/10 border border-red-500"}`}>
-              <p className={isPatternCorrect ? "text-green-600" : "text-red-600"}>
-
-            <div className={`p-4 rounded-lg text-center ${isPatternCorrect ? "bg-green-500/10 border border-green-500/60 dark:border-green-400/40" : "bg-red-500/10 border border-red-500/60 dark:border-red-400/40"}`}>
+            <div className={`p-4 rounded-lg text-center animate-in fade-in slide-in-from-bottom-2 ${isPatternCorrect ? "bg-green-500/10 border border-green-500/60 dark:border-green-400/40" : "bg-red-500/10 border border-red-500/60 dark:border-red-400/40"}`}>
               <p className={isPatternCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
- 120a67e (fix : dark mode issue in brain games)
                 {isPatternCorrect 
                   ? `✅ Correct! Day 4 should be ${currentQuestion.correctAnswer} ${getMetricUnit(currentQuestion.metricType)}` 
                   : `❌ Incorrect! The pattern was: ${currentQuestion.patternDescription}`}
@@ -810,7 +800,7 @@ const wordTimeoutRef = useRef<number | null>(null);
               <CardContent className="relative z-10 pt-0">
                 <Button
                   className={`
-                    w-15
+                    w-25
                     h-12
                     rounded-2xl
                     text-base
@@ -832,37 +822,6 @@ const wordTimeoutRef = useRef<number | null>(null);
         })}
       </div>
     ) : activeGame === "memory" ? (
-
-      {!activeGame ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {games.map((game) => {
-            const Icon = game.icon;
-            return (
-              <Card
-                key={game.id}
-                className="group hover:shadow-glow transition-all duration-300 cursor-pointer border-2"
-                onClick={() => {
-                  if (game.id === "memory") startMemoryGame();
-                  else if (game.id === "math") startMathGame();
-                  else if (game.id === "word") startWordGame();
-                  else if (game.id === "pattern") startPatternGame();
-                }}
-              >
-                <CardHeader>
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-                  <CardTitle className="text-xl">{game.name}</CardTitle>
-                  <CardDescription>{game.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full">Play Now</Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : activeGame === "memory" ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -903,7 +862,7 @@ const wordTimeoutRef = useRef<number | null>(null);
             <div className="text-center space-y-4">
               <div className="text-5xl font-bold text-foreground">{mathQuestion.num1} + {mathQuestion.num2} = ?</div>
               <div className="flex gap-4 items-center justify-center max-w-md mx-auto">
-                <input type="number" value={mathQuestion.answer || ""} onChange={(e) => setMathQuestion({ ...mathQuestion, answer: parseInt(e.target.value) || 0 })} onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()} className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary" placeholder="?" autoFocus />
+                <input type="number" value={mathQuestion.answer || ""} onChange={(e) => setMathQuestion({ ...mathQuestion, answer: e.target.value })} onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()} className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary" placeholder="?" autoFocus />
                 <Button onClick={checkMathAnswer} size="lg" className="px-8">Check</Button>
               </div>
             </div>
