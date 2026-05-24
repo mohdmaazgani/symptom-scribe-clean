@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Brain, Award, Trophy, Target, Lightbulb, Puzzle, Clock, Activity, Heart, Moon, Droplet, TrendingUp, RefreshCw } from "lucide-react";
+import {
+  Brain, Award, Trophy, Target, Lightbulb, Puzzle, Clock,
+  Activity, Heart, Moon, Droplet, TrendingUp, Zap,
+  Shield, Flame, Sparkles, Timer, SkipForward, RefreshCw
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
+import confetti from "canvas-confetti";
+import { shuffleArray } from "@/lib/utils";
 
 interface TrendQuestion {
   id: number;
@@ -20,13 +26,15 @@ const BrainGames = () => {
   const [memoryCards, setMemoryCards] = useState<number[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedCards, setMatchedCards] = useState<number[]>([]);
-  const [memoryGameWon, setMemoryGameWon] = useState(false); // ← new: tracks win state
+  const [memoryGameWon, setMemoryGameWon] = useState(false);
   const [mathQuestion, setMathQuestion] = useState({ num1: 0, num2: 0, answer: "" });
   const [mathScore, setMathScore] = useState(0);
   const [wordSequence, setWordSequence] = useState<string[]>([]);
   const [userSequence, setUserSequence] = useState<{ word: string; index: number }[]>([]);
   const [wordPhase, setWordPhase] = useState<"memorize" | "recall">("memorize");
   const [timeLeft, setTimeLeft] = useState(10);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Pattern Recognition Game States
   const [patternScore, setPatternScore] = useState(0);
@@ -36,7 +44,21 @@ const BrainGames = () => {
   const [isPatternCorrect, setIsPatternCorrect] = useState(false);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [gameCompleted, setGameCompleted] = useState(false);
+  const [xp, setXp] = useState(0);
+  const [lifelineUsed, setLifelineUsed] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState<number[]>([]);
+  const [timedMode, setTimedMode] = useState(false);
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(15);
+  const [showFireStreak, setShowFireStreak] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const wordTimeoutRef = useRef<number | null>(null);
   const TOTAL_QUESTIONS = 10;
+  const XP_PER_QUESTION = 10;
+  const XP_PER_LEVEL = 100;
+
+  // Calculate level dynamically from XP
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const prevLevelRef = useRef(level);
 
   const { toast } = useToast();
 
@@ -45,11 +67,94 @@ const BrainGames = () => {
     "Wellness", "Fitness", "Immune", "Cardio", "Protein", "Hydration"
   ];
 
+  // Trigger confetti animation
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7']
+    });
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        spread: 50,
+        origin: { y: 0.5, x: 0.3 },
+        colors: ['#ff6b6b', '#4ecdc4']
+      });
+      confetti({
+        particleCount: 100,
+        spread: 50,
+        origin: { y: 0.5, x: 0.7 },
+        colors: ['#45b7d1', '#96ceb4']
+      });
+    }, 200);
+  };
+
+  // Level Up check
+  useEffect(() => {
+    if (level > prevLevelRef.current) {
+      showSuccess("🎉 LEVEL UP! 🎉", `You reached Level ${level}!`);
+      triggerConfetti();
+    }
+    prevLevelRef.current = level;
+  }, [level]);
+
+  // Check streak and trigger effects
+  useEffect(() => {
+    if (patternStreak >= 3 && patternStreak < 5) {
+      setShowFireStreak(true);
+      toast({
+        title: "🔥 On Fire!",
+        description: `${patternStreak} correct answers in a row!`,
+      });
+    } else if (patternStreak >= 5 && patternStreak < 10) {
+      setShowFireStreak(true);
+      showSuccess("🔥 BLAZING!", `${patternStreak} streak! Keep going!`);
+      triggerConfetti();
+    } else if (patternStreak >= 10) {
+      setShowFireStreak(true);
+      showSuccess("💎 LEGENDARY!", `${patternStreak} streak! You're a master!`);
+      triggerConfetti();
+    }
+
+    // Reset fire streak animation after 2 seconds
+    const timer = setTimeout(() => setShowFireStreak(false), 2000);
+    return () => clearTimeout(timer);
+  }, [patternStreak, toast]);
+
+  // Timer for timed mode
+  useEffect(() => {
+    if (activeGame === "pattern" && timedMode && !showPatternFeedback && !gameCompleted && currentQuestion) {
+      if (timerRef.current) clearInterval(timerRef.current);
+
+      setQuestionTimeLeft(15);
+      timerRef.current = window.setInterval(() => {
+        setQuestionTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            if (!showPatternFeedback && currentQuestion) {
+              handlePatternAnswer(-1); // -1 indicates timeout
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000) as unknown as number;
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timedMode, activeGame, currentQuestion, showPatternFeedback, gameCompleted]);
+
   // ─── Memory Game ───────────────────────────────────────────────────────────
 
   const startMemoryGame = () => {
     const cards = [...Array(8)].map((_, i) => i % 4);
-    setMemoryCards(cards.sort(() => Math.random() - 0.5));
+    setMemoryCards(shuffleArray(cards));
     setFlippedCards([]);
     setMatchedCards([]);
     setMemoryGameWon(false);
@@ -58,14 +163,12 @@ const BrainGames = () => {
   };
 
   const resetMemoryGame = () => {
-    // Fully wipe all memory game state before reshuffling
     setFlippedCards([]);
     setMatchedCards([]);
     setMemoryGameWon(false);
-    // Defer card set so React clears old state before new cards render
     setTimeout(() => {
       const cards = [...Array(8)].map((_, i) => i % 4);
-      setMemoryCards(cards.sort(() => Math.random() - 0.5));
+      setMemoryCards(shuffleArray(cards));
     }, 0);
     showSuccess("New Game!", "Cards reshuffled — good luck!");
   };
@@ -94,7 +197,6 @@ const BrainGames = () => {
         const totalPairs = memoryCards.length / 2;
 
         if (newMatched.length === memoryCards.length) {
-          // All pairs matched — show win screen
           setMemoryGameWon(true);
           showSuccess("🎉 Congratulations! 🎉", "You've matched all pairs! Great memory!");
           toast({ title: "🎉 You Won!", description: "All pairs matched!" });
@@ -148,25 +250,37 @@ const BrainGames = () => {
     for (let i = 0; i < 5; i++) {
       sequence.push(healthWords[Math.floor(Math.random() * healthWords.length)]);
     }
+
     setWordSequence(sequence);
     setUserSequence([]);
     setWordPhase("memorize");
     setTimeLeft(10);
     setActiveGame("word");
-    showInfo("Memorize these words!", "You have 10 seconds...");
-    setTimeout(() => {
+    wordTimeoutRef.current = window.setTimeout(() => {
       setWordPhase("recall");
       showWarning("Time's up!", "Now recall the words in order");
     }, 10000);
+
+    showInfo("Memorize these words!", "You have 10 seconds...");
   };
 
   useEffect(() => {
     if (wordPhase !== "memorize" || timeLeft <= 0) return;
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
+
     return () => clearInterval(timer);
   }, [wordPhase, timeLeft]);
+
+  // Cleanup timeout when leaving Word game or unmounting
+  useEffect(() => {
+    if (activeGame !== "word" && wordTimeoutRef.current) {
+      clearTimeout(wordTimeoutRef.current);
+      wordTimeoutRef.current = null;
+    }
+  }, [activeGame]);
 
   // ─── Pattern Recognition Game ──────────────────────────────────────────────
 
@@ -221,10 +335,16 @@ const BrainGames = () => {
       }
     }
 
-// Reset fire streak animation after 2 seconds
-const timer = setTimeout(() => setShowFireStreak(false), 2000);
-return () => clearTimeout(timer);
-}, [patternStreak, toast]);
+    return {
+      id: Date.now(),
+      metricType,
+      values,
+      pattern: pattern.name,
+      patternDescription: pattern.description,
+      correctAnswer,
+      options: shuffleArray(options)
+    };
+  };
 
   const startPatternGame = () => {
     setPatternScore(0);
@@ -237,50 +357,114 @@ return () => clearTimeout(timer);
     showSuccess("Pattern Recognition Started!", "Complete the health trend by finding Day 4 value");
   };
 
-  const resetPatternGame = () => {
-    setPatternScore(0);
-    setPatternStreak(0);
-    setQuestionsAnswered(0);
-    setGameCompleted(false);
-    setCurrentQuestion(generateTrendQuestion());
-    setShowPatternFeedback(false);
-    showInfo("Game Restarted", "Try to beat your previous score!");
+  const useFiftyFifty = () => {
+    if (lifelineUsed || !currentQuestion || showPatternFeedback) return;
+
+    const wrongOptions = currentQuestion.options.filter(opt => opt !== currentQuestion.correctAnswer);
+    const randomWrong = shuffleArray(wrongOptions).slice(0, 1);
+    const newOptions = shuffleArray([currentQuestion.correctAnswer, ...randomWrong]);
+
+    setFilteredOptions(newOptions);
+    setLifelineUsed(true);
+    showInfo("50-50 Used!", "Two wrong options removed!");
   };
 
   const handlePatternAnswer = (answer: number) => {
     if (showPatternFeedback || !currentQuestion || gameCompleted) return;
 
-    const isCorrect = answer === currentQuestion.correctAnswer;
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const isTimeout = answer === -1;
+    const isCorrect = !isTimeout && answer === currentQuestion.correctAnswer;
     setIsPatternCorrect(isCorrect);
     setShowPatternFeedback(true);
     const newQuestionsCount = questionsAnswered + 1;
     setQuestionsAnswered(newQuestionsCount);
 
+    let pointsEarned = 0;
+    let xpEarned = 0;
+
     if (isCorrect) {
-      const points = 10;
-      const newScore = patternScore + points;
+      let timeBonus = 0;
+      if (timedMode && questionTimeLeft > 0) {
+        timeBonus = Math.floor(questionTimeLeft / 3);
+        pointsEarned = 10 + timeBonus;
+        xpEarned = XP_PER_QUESTION + Math.floor(timeBonus / 2);
+      } else {
+        pointsEarned = 10;
+        xpEarned = XP_PER_QUESTION;
+      }
+
+      const newScore = patternScore + pointsEarned;
       const newStreak = patternStreak + 1;
+      const newXp = xp + xpEarned;
+
       setPatternScore(newScore);
       setPatternStreak(newStreak);
-      showSuccess("✓ Correct Trend!", `+${points} points! Streak: ${newStreak}`);
-      toast({ title: "✓ Correct!", description: `Day 4 value is ${currentQuestion.correctAnswer}` });
+      setXp(newXp);
+
+      if (timeBonus > 0) {
+        showSuccess(`✓ Correct! ⚡`, `+${pointsEarned} points! (${timeBonus} time bonus) Streak: ${newStreak}`);
+      } else {
+        showSuccess(`✓ Correct!`, `+${pointsEarned} points! Streak: ${newStreak}`);
+      }
+
+      toast({
+        title: "✓ Correct!",
+        description: `Day 4 value is ${currentQuestion.correctAnswer}`,
+      });
     } else {
       setPatternStreak(0);
-      showError("✗ Incorrect", `The correct trend was: ${currentQuestion.patternDescription}`);
-      toast({ title: "✗ Incorrect", description: `Day 4 should be ${currentQuestion.correctAnswer}. ${currentQuestion.patternDescription}`, variant: "destructive" });
+      const msg = isTimeout ? "Time's up!" : `The correct trend was: ${currentQuestion.patternDescription}`;
+      showError("✗ Incorrect", msg);
+
+      toast({
+        title: "✗ Incorrect",
+        description: `Day 4 should be ${currentQuestion.correctAnswer}. ${currentQuestion.patternDescription}`,
+        variant: "destructive",
+      });
     }
 
     if (newQuestionsCount >= TOTAL_QUESTIONS) {
       setGameCompleted(true);
-      showSuccess("🎉 Game Complete! 🎉", `Final Score: ${patternScore + (isCorrect ? 10 : 0)}/${TOTAL_QUESTIONS * 10}`);
+      const percentage = (patternScore + pointsEarned) / (TOTAL_QUESTIONS * 10) * 100;
+
+      if (percentage >= 100) {
+        triggerConfetti();
+        showSuccess("🎉 PERFECT GAME! 🎉", "You scored 100/100! Amazing!");
+      } else if (percentage >= 80) {
+        triggerConfetti();
+        showSuccess("🌟 EXCELLENT!", "Great job! Keep practicing!");
+      }
+
+      // Bonus XP for completing
+      const completionBonus = 50;
+      setXp(prev => prev + completionBonus);
+      showSuccess("Game Complete!", `+${completionBonus} XP bonus!`);
       return;
     }
 
     setTimeout(() => {
-      setCurrentQuestion(generateTrendQuestion());
+      const nextQuestion = generateTrendQuestion();
+      setCurrentQuestion(nextQuestion);
+      setFilteredOptions([]);
       setShowPatternFeedback(false);
-      setLifelineUsed(false);
     }, 2000);
+  };
+
+  const resetPatternGame = () => {
+    setPatternScore(0);
+    setPatternStreak(0);
+    setQuestionsAnswered(0);
+    setGameCompleted(false);
+    setLifelineUsed(false);
+    setFilteredOptions([]);
+    setTimedMode(false);
+    setQuestionTimeLeft(15);
+    setXp(0);
+    setCurrentQuestion(generateTrendQuestion());
+    setShowPatternFeedback(false);
+    showInfo("Game Restarted", "Try to beat your previous score!");
   };
 
   const getMetricIcon = (type: string) => {
@@ -313,8 +497,6 @@ return () => clearTimeout(timer);
     }
   };
 
-  // ─── Game definitions ──────────────────────────────────────────────────────
-
   const games = [
 {
   id: "memory",
@@ -344,6 +526,7 @@ return () => clearTimeout(timer);
   description: "Complete the health trend by finding the next day's value",
   color: "from-orange-500 to-red-500",
 },
+  ];
   // ─── Pattern game renderer ─────────────────────────────────────────────────
 
   const renderPatternGame = () => {
@@ -365,8 +548,21 @@ return () => clearTimeout(timer);
                 <div className="h-full bg-primary transition-all duration-500 rounded-full" style={{ width: `${percentage}%` }} />
               </div>
               <p className="mt-4 text-sm">
-                {percentage >= 80 ? "🌟 Outstanding! Health trend expert!" : percentage >= 60 ? "👍 Good job! Keep practicing!" : "💪 Keep learning! Try again to improve!"}
+                {percentage >= 100 ? "🌟 PERFECT! Health trend master!" :
+                  percentage >= 80 ? "👍 Excellent! Keep going!" :
+                    percentage >= 60 ? "💪 Good job! Try for perfect next time!" :
+                      "📚 Keep practicing! You'll get better!"}
               </p>
+              <div className="mt-4 flex items-center justify-center gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary">{level}</p>
+                  <p className="text-xs text-muted-foreground">Level</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary">{xp}</p>
+                  <p className="text-xs text-muted-foreground">Total XP</p>
+                </div>
+              </div>
             </div>
             <div className="flex gap-4">
               <Button onClick={resetPatternGame} className="flex-1">Play Again</Button>
@@ -379,12 +575,14 @@ return () => clearTimeout(timer);
 
     if (!currentQuestion) return null;
 
+    const displayOptions = filteredOptions.length > 0 ? filteredOptions : currentQuestion.options;
+
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between flex-wrap gap-2">
             <span className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
+              {showFireStreak ? <Flame className="w-5 h-5 text-orange-500 animate-pulse" /> : <TrendingUp className="w-5 h-5 text-primary" />}
               Complete the Health Trend
             </span>
             <div className="flex gap-2 items-center flex-wrap">
@@ -392,9 +590,13 @@ return () => clearTimeout(timer);
                 <Trophy className="w-4 h-4 text-primary" />
                 <span className="font-bold">{patternScore}</span>
               </div>
-              <div className="flex items-center gap-2 bg-secondary/10 px-3 py-1 rounded-lg">
-                <Target className="w-4 h-4 text-secondary" />
-                <span className="font-bold">Streak: {patternStreak}</span>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${patternStreak >= 3 ? 'bg-orange-500/20 text-orange-500' : 'bg-secondary/10'}`}>
+                <Flame className="w-4 h-4" />
+                <span className="font-bold">{patternStreak}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-purple-500/10 px-3 py-1 rounded-lg">
+                <Sparkles className="w-4 h-4 text-purple-500" />
+                <span className="font-bold">Lv.{level}</span>
               </div>
               <div className="flex items-center gap-2 bg-accent/10 px-3 py-1 rounded-lg">
                 <Brain className="w-4 h-4 text-accent" />
@@ -406,14 +608,47 @@ return () => clearTimeout(timer);
               <Button variant="outline" size="sm" onClick={() => setActiveGame(null)}>Exit Game</Button>
             </div>
           </CardTitle>
-          <CardDescription>Identify the pattern and find Day 4 value</CardDescription>
+          <CardDescription className="flex items-center justify-between">
+            <span>Identify the pattern and find Day 4 value</span>
+            <div className="flex gap-2">
+              <Button
+                variant={timedMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTimedMode(!timedMode)}
+                className="gap-1"
+              >
+                <Timer className="w-3 h-3" />
+                {timedMode ? "Timed" : "Casual"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={useFiftyFifty}
+                disabled={lifelineUsed || showPatternFeedback}
+                className="gap-1"
+              >
+                <Shield className="w-3 h-3" />
+                50-50 {lifelineUsed && "✓"}
+              </Button>
+            </div>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Timer Display */}
+          {timedMode && !showPatternFeedback && (
+            <div className={`flex items-center justify-center gap-2 p-3 rounded-lg ${questionTimeLeft <= 5 ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-primary/10'}`}>
+              <Timer className="w-5 h-5" />
+              <span className="text-2xl font-bold">{questionTimeLeft}s</span>
+              <span className="text-sm text-muted-foreground">remaining</span>
+            </div>
+          )}
+
           <div className="p-6 bg-accent/30 rounded-xl">
             <div className="flex items-center justify-center gap-2 mb-6">
               {getMetricIcon(currentQuestion.metricType)}
               <h3 className="text-lg font-semibold">{getMetricTitle(currentQuestion.metricType)}</h3>
             </div>
+
             <div className="flex items-end justify-center gap-6 h-48 mb-6">
               {currentQuestion.values.map((value, index) => {
                 let maxValue = 0;
@@ -440,11 +675,14 @@ return () => clearTimeout(timer);
                 <span className="text-xs text-muted-foreground">Day 4</span>
               </div>
             </div>
-            <p className="text-center text-sm text-muted-foreground">Look at the pattern from Day 1 → Day 2 → Day 3</p>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Look at the pattern from Day 1 → Day 2 → Day 3
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {currentQuestion.options.map((option, idx) => (
+            {displayOptions.map((option, idx) => (
               <Button
                 key={idx}
                 variant={showPatternFeedback && option === currentQuestion.correctAnswer ? "default" : "outline"}
@@ -655,11 +893,10 @@ return () => clearTimeout(timer);
                   <div
                     key={index}
                     onClick={() => handleCardClick(index)}
-                    className={`aspect-square rounded-xl flex items-center justify-center text-4xl font-bold cursor-pointer transition-all ${
-                      flippedCards.includes(index) || matchedCards.includes(index)
+                    className={`aspect-square rounded-xl flex items-center justify-center text-4xl font-bold cursor-pointer transition-all ${flippedCards.includes(index) || matchedCards.includes(index)
                         ? "bg-gradient-to-br from-primary to-primary-glow text-white rotate-0"
                         : "bg-muted hover:bg-accent rotate-180"
-                    }`}
+                      }`}
                   >
                     {(flippedCards.includes(index) || matchedCards.includes(index)) && (
                       <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
@@ -731,6 +968,10 @@ return () => clearTimeout(timer);
                   <RefreshCw className="w-4 h-4" /> Reset
                 </Button>
                 <Button variant="outline" onClick={() => {
+                  if (wordTimeoutRef.current) {
+                    clearTimeout(wordTimeoutRef.current);
+                    wordTimeoutRef.current = null;
+                  }
                   setActiveGame(null);
                   showInfo("Word Game Exited", "Keep practicing your memory!");
                 }}>
@@ -764,27 +1005,98 @@ return () => clearTimeout(timer);
               <div className="p-6 bg-muted rounded-xl">
                 <h3 className="text-lg font-semibold mb-4">Available words:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {healthWords.map((word, idx) => (
-                    <Button key={idx} variant="outline" onClick={() => {
-                      if (wordPhase !== "recall") { showWarning("Wait!", "Memorize phase is still active"); return; }
-                      setUserSequence([...userSequence, { word, index: userSequence.length }]);
-                      showInfo("Word Added", `Added "${word}" to your sequence`);
-                    }}>
-                      {word}
-                    </Button>
-                  ))}
+                  {healthWords.map((word, idx) => {
+                    const alreadySelected = userSequence.some((w) => w.word === word);
+                    return (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        disabled={alreadySelected}
+                        className={alreadySelected ? "opacity-30 cursor-not-allowed line-through" : ""}
+                        onClick={() => {
+                          if (wordPhase !== "recall") { showWarning("Wait!", "Memorize phase is still active"); return; }
+                          setUserSequence([...userSequence, { word, index: userSequence.length }]);
+                        }}
+                      >
+                        {word}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
-              {userSequence.length > 0 && (
-                <div className="p-6 bg-accent rounded-xl">
-                  <h3 className="text-lg font-semibold mb-4">Your sequence:</h3>
+              {/* Your sequence — drag to reorder, ❌ to remove and restore word */}
+              <div className="p-6 bg-accent rounded-xl min-h-[80px]">
+                <h3 className="text-lg font-semibold mb-1">
+                  Your sequence:
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    ({userSequence.length} / {wordSequence.length} words)
+                  </span>
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">Drag to reorder • ✕ to remove</p>
+                {userSequence.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Click words above to build your sequence</p>
+                ) : (
                   <div className="flex flex-wrap gap-3">
-                    {userSequence.map((word, idx) => (
-                      <div key={idx} className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-semibold">{word.word}</div>
+                    {userSequence.map((item, idx) => (
+                      <div
+                        key={`${item.word}-${idx}`}
+                        draggable
+                        onDragStart={() => {
+                          setDragIndex(idx);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault(); // required to allow drop
+                          setDragOverIndex(idx);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (dragIndex === null || dragIndex === idx) {
+                            setDragIndex(null);
+                            setDragOverIndex(null);
+                            return;
+                          }
+                          // Reorder: remove from dragIndex, insert at idx
+                          const updated = [...userSequence];
+                          const [moved] = updated.splice(dragIndex, 1);
+                          updated.splice(idx, 0, moved);
+                          setUserSequence(updated.map((w, i) => ({ ...w, index: i })));
+                          setDragIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        onDragEnd={() => {
+                          setDragIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        className={`flex items-center gap-1 pl-3 pr-2 py-2 rounded-lg font-semibold cursor-grab active:cursor-grabbing select-none transition-all duration-150
+                          ${dragIndex === idx ? "opacity-40 scale-95 ring-2 ring-primary" : ""}
+                          ${dragOverIndex === idx && dragIndex !== idx ? "ring-2 ring-primary scale-105 bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}
+                        `}
+                      >
+                        {/* Drag handle */}
+                        <span className="text-muted-foreground mr-1 text-xs select-none">⠿</span>
+                        {/* Position number */}
+                        <span className="text-xs opacity-60 mr-1">{idx + 1}.</span>
+                        {/* Word */}
+                        <span>{item.word}</span>
+                        {/* ❌ cross — removes word, restores it to Available */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updated = userSequence
+                              .filter((_, i) => i !== idx)
+                              .map((w, i) => ({ ...w, index: i }));
+                            setUserSequence(updated);
+                          }}
+                          className="ml-2 w-5 h-5 rounded-full bg-destructive/20 hover:bg-destructive hover:text-white text-destructive flex items-center justify-center transition-colors duration-150 text-xs font-bold leading-none"
+                          title={`Remove "${item.word}"`}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               <div className="flex gap-4">
                 <Button
                   onClick={() => {

@@ -133,24 +133,27 @@ const ChatInterface = () => {
           
           for (const line of lines) {
             const trimmedLine = line.trim();
-            if (trimmedLine.includes('**Possible Causes:**')) {
+            if (/possible\s+causes/i.test(trimmedLine)) {
               currentSection = 'causes';
-            } else if (trimmedLine.includes('**Severity Level:**')) {
+            } else if (/severity\s+level/i.test(trimmedLine)) {
               currentSection = 'severity';
-              const severityMatch = trimmedLine.match(/\*\*Severity Level:\*\*\s*\[?(Low|Moderate|High)\]?/i);
+              const severityMatch = trimmedLine.match(/severity\s+level\s*:\s*[*_#`\[]*\s*(low|moderate|high)/i);
               if (severityMatch) {
                 severityLevel = severityMatch[1].toLowerCase();
                 // Show severity info toast
                 showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
               }
-            } else if (trimmedLine.includes('**Self-Care Recommendations:**')) {
+            } else if (/recommendations/i.test(trimmedLine)) {
               currentSection = 'recommendations';
-            } else if (trimmedLine.startsWith('- ')) {
-              const item = trimmedLine.substring(2).trim();
-              if (currentSection === 'causes') {
-                possibleCauses.push(item);
-              } else if (currentSection === 'recommendations') {
-                recommendations.push(item);
+            } else {
+              const listMatch = trimmedLine.match(/^[-*•]\s+(.+)/) || trimmedLine.match(/^\d+\.\s+(.+)/);
+              if (listMatch) {
+                const item = listMatch[1].trim();
+                if (currentSection === 'causes') {
+                  possibleCauses.push(item);
+                } else if (currentSection === 'recommendations') {
+                  recommendations.push(item);
+                }
               }
             }
           }

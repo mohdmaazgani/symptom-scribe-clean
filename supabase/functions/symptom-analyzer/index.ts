@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { RequestSchema } from "./validation.ts";
@@ -11,7 +12,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: corsHeaders,
@@ -24,7 +25,7 @@ serve(async (req) => {
       req.headers.get("cf-connecting-ip") ||
       "unknown";
 
-    const rateLimitResult = rateLimit(ip);
+    const rateLimitResult = await rateLimit(ip);
 
     if (!rateLimitResult.success) {
       return jsonResponse(
@@ -36,7 +37,19 @@ serve(async (req) => {
       );
     }
 
-    const body = await req.json();
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse(
+        {
+          error: "Invalid JSON body",
+        },
+        400,
+        corsHeaders
+      );
+    }
 
     const parsed = RequestSchema.safeParse(body);
 
@@ -70,16 +83,17 @@ serve(async (req) => {
     const systemPrompt = `
 You are a professional medical assistant helping users understand their symptoms.
 
-Your responses must follow this exact structure:
+Respond ONLY with valid JSON matching this schema:
 
-**Possible Causes:**
-- List 2-3 possible conditions
+{
+  "summary": "string",
+  "possible_causes": ["string"],
+  "recommendations": ["string"],
+  "severity": "Low | Moderate | High"
+}
 
-**Severity Level:** Low/Moderate/High
-
-**Self-Care Recommendations:**
-- Provide actionable advice
-- Include when to seek professional help
+Do not return markdown.
+Do not wrap JSON in code blocks.
 
 ${safetyCheck.isEmergency
         ? `
@@ -118,7 +132,11 @@ Strongly encourage immediate professional medical attention.
     if (!response.ok) {
       const errorText = await response.text();
 
-      console.error("AI gateway error:", response.status, errorText);
+      console.error(
+        "AI gateway error:",
+        response.status,
+        errorText
+      );
 
       return jsonResponse(
         {
@@ -130,7 +148,18 @@ Strongly encourage immediate professional medical attention.
       );
     }
 
+    if (!response.body) {
+      return jsonResponse(
+        {
+          error: "Empty AI response body",
+        },
+        500,
+        corsHeaders
+      );
+    }
+
     return new Response(response.body, {
+      status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
@@ -142,7 +171,9 @@ Strongly encourage immediate professional medical attention.
     return jsonResponse(
       {
         error:
-          error instanceof Error ? error.message : "Unknown server error",
+          error instanceof Error
+            ? error.message
+            : "Unknown server error",
       },
       500,
       corsHeaders

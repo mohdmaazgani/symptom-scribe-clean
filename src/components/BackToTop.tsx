@@ -35,7 +35,7 @@ export const BackToTop = () => {
       isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-50 pointer-events-none"
     )}>
       <Button
-        variant="primary"
+        variant="default"
         size="icon"
         className="h-12 w-12 rounded-full shadow-lg border border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-110 active:scale-95 transition-all duration-300"
         onClick={scrollToTop}

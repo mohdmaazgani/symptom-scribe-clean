@@ -127,8 +127,10 @@ export function PasswordStrengthMeter({
                     className={`w-4 h-4 rounded-full flex items-center justify-center ${
                       isMet ? "bg-green-600" : "bg-gray-300"
                     }`}
+                    aria-label={isMet ? "Requirement met" : "Requirement unmet"}
+                    role="img"
                   >
-                    {isMet && <Check size={12} className="text-white" />}
+                    {isMet && <Check size={12} className="text-white" aria-hidden="true" />}
                   </span>
                   <span>{req.label}</span>
                 </li>

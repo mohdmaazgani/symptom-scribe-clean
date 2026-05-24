@@ -142,7 +142,16 @@ const MultiStepSignUp = () => {
         password: data.password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: { full_name: data.full_name },
+          data: {
+            full_name: data.full_name || null,
+            date_of_birth: data.date_of_birth || null,
+            gender: data.gender || null,
+            blood_type: data.blood_type || null,
+            allergies: toArray(data.allergies),
+            chronic_conditions: toArray(data.chronic_conditions),
+            emergency_contact_name: data.emergency_contact_name || null,
+            emergency_contact_phone: data.emergency_contact_phone || null,
+          },
         },
       });
 
@@ -151,29 +160,6 @@ const MultiStepSignUp = () => {
         // Send the user back to the credentials step with their data intact.
         setStep(0);
         return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { error: profileError } = await supabase.from("profiles").insert({
-          user_id: user.id,
-          full_name: data.full_name || null,
-          date_of_birth: data.date_of_birth || null,
-          gender: data.gender || null,
-          blood_type: data.blood_type || null,
-          allergies: toArray(data.allergies),
-          chronic_conditions: toArray(data.chronic_conditions),
-          emergency_contact_name: data.emergency_contact_name || null,
-          emergency_contact_phone: data.emergency_contact_phone || null,
-        });
-
-        if (profileError) {
-          showError("Profile Save Failed", profileError.message);
-          return;
-        }
       }
 
       showSuccess(
