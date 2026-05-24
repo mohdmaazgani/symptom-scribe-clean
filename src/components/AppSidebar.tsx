@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Settings } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ const menuItems = [
   { title: "Emergency", url: "/emergency", icon: Phone },
   { title: "Brain Games", url: "/brain-games", icon: Brain },
   { title: "Health Facts", url: "/health-facts", icon: Sparkles },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {

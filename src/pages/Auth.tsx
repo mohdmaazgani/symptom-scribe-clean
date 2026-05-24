@@ -21,22 +21,23 @@ const signinPasswordSchema = z.string().min(1, "Password is required");
 const signupPasswordSchema = z.string().min(12, "Password must be at least 12 characters");
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Separate state per tab — prevents field bleed when switching tabs
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // onAuthStateChange fires immediately with the current session on mount (INITIAL_SESSION event).
+    // No separate getSession() call needed — that caused double setState → auth page flutter.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         navigate("/dashboard");
       }
@@ -45,39 +46,40 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const validateInputs = (includeFullName: boolean = false, checkPasswordStrength: boolean = false) => {
+  const validateSignIn = () => {
     try {
-      emailSchema.parse(email);
-      
-      // Use appropriate password schema based on context
-      const passwordSchemaToUse = checkPasswordStrength ? signupPasswordSchema : signinPasswordSchema;
-      passwordSchemaToUse.parse(password);
-      
-      // Check password strength for signup
-      if (checkPasswordStrength) {
-        const strength = evaluatePasswordStrength(password, DEFAULT_PASSWORD_POLICY);
-        if (!strength.isStrong) {
-          throw new Error("Password does not meet strength requirements. Please check all requirements.");
-        }
+      emailSchema.parse(signInEmail);
+      signinPasswordSchema.parse(signInPassword);
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: "Validation Error", description: error.errors[0].message, variant: "destructive" });
+      } else if (error instanceof Error) {
+        toast({ title: "Validation Error", description: error.message, variant: "destructive" });
       }
-      
-      if (includeFullName && !fullName.trim()) {
+      return false;
+    }
+  };
+
+  const validateSignUp = () => {
+    try {
+      emailSchema.parse(signUpEmail);
+      signupPasswordSchema.parse(signUpPassword);
+
+      const strength = evaluatePasswordStrength(signUpPassword, DEFAULT_PASSWORD_POLICY);
+      if (!strength.isStrong) {
+        throw new Error("Password does not meet strength requirements. Please check all requirements.");
+      }
+
+      if (!fullName.trim()) {
         throw new Error("Full name is required");
       }
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
+        toast({ title: "Validation Error", description: error.errors[0].message, variant: "destructive" });
       } else if (error instanceof Error) {
-        toast({
-          title: "Validation Error",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast({ title: "Validation Error", description: error.message, variant: "destructive" });
       }
       return false;
     }
@@ -85,50 +87,50 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateInputs()) return;
+    if (!validateSignIn()) return;
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: signInEmail,
+      password: signInPassword,
     });
 
     if (error) {
       showError("Sign In Failed", error.message);
+      setLoading(false); // only reset on failure
+    } else {
+      setLoading(false);
+      setRedirecting(true); // hold UI — onAuthStateChange will navigate
     }
-    setLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateInputs(true, true)) return;
+    if (!validateSignUp()) return;
 
     setLoading(true);
     const redirectUrl = `${window.location.origin}/dashboard`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
+
+    const { data, error } = await supabase.auth.signUp({
+      email: signUpEmail,
+      password: signUpPassword,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+        data: { full_name: fullName },
       },
     });
 
     if (error) {
       showError("Sign Up Failed", error.message);
     } else {
-      // Create profile entry
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      // Use data.user from signUp response — avoids race condition when
+      // email confirmation is enabled (getUser() returns null before confirmation)
+      if (data.user) {
         await supabase.from("profiles").insert({
-          user_id: user.id,
+          user_id: data.user.id,
           full_name: fullName,
         });
       }
-      
       showSuccess("Account Created!", "You can now sign in with your credentials.");
     }
     setLoading(false);
@@ -152,7 +154,7 @@ const Auth = () => {
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -161,8 +163,8 @@ const Auth = () => {
                     id="signin-email"
                     type="email"
                     placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -171,13 +173,18 @@ const Auth = () => {
                   <Input
                     id="signin-password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
+                <Button type="submit" className="w-full" disabled={loading || redirecting}>
+                  {redirecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Redirecting to Dashboard...
+                    </>
+                  ) : loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing In...
@@ -188,7 +195,7 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
@@ -208,14 +215,14 @@ const Auth = () => {
                     id="signup-email"
                     type="email"
                     placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
                     required
                   />
                 </div>
                 <PasswordStrengthMeter
-                  value={password}
-                  onChange={setPassword}
+                  value={signUpPassword}
+                  onChange={setSignUpPassword}
                   label="Password"
                   placeholder="Create a strong password"
                   policy={DEFAULT_PASSWORD_POLICY}

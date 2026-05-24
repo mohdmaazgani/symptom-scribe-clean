@@ -13,19 +13,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // onAuthStateChange fires immediately with the current session on mount.
+    // No need for a separate getSession() call — that second call is what
+    // causes the double setState → flicker between Auth and Dashboard.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
         setLoading(false);
       }
     );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
