@@ -1,7 +1,4 @@
-/**
- * Password strength validation and generation utility
- * Provides validation rules, strength scoring, and secure password generation
- */
+import { secureRandomIndex, secureShuffleArray } from "@/lib/utils";
 
 export interface PasswordRequirement {
   id: keyof PasswordStrengthResult;
@@ -141,18 +138,18 @@ export function generateStrongPassword(
 
   let password = "";
 
-  // Add one of each required character type
+  // Add one of each required character type, using cryptographically secure indices
   if (policy.requireUppercase) {
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += uppercase[secureRandomIndex(uppercase.length)];
   }
   if (policy.requireLowercase) {
-    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += lowercase[secureRandomIndex(lowercase.length)];
   }
   if (policy.requireDigit) {
-    password += digits[Math.floor(Math.random() * digits.length)];
+    password += digits[secureRandomIndex(digits.length)];
   }
   if (policy.requireSpecialChar) {
-    password += specials[Math.floor(Math.random() * specials.length)];
+    password += specials[secureRandomIndex(specials.length)];
   }
 
   // Fill remaining length with random characters from all character sets
@@ -162,14 +159,11 @@ export function generateStrongPassword(
   if (policy.requireSpecialChar) allChars += specials;
 
   while (password.length < policy.minLength) {
-    password += allChars[Math.floor(Math.random() * allChars.length)];
+    password += allChars[secureRandomIndex(allChars.length)];
   }
 
-  // Shuffle password
-  return password
-    .split("")
-    .sort(() => Math.random() - 0.5)
-    .join("");
+  // Shuffle password characters securely using a Fisher-Yates shuffle with secure randomness
+  return secureShuffleArray(password.split("")).join("");
 }
 
 /**
