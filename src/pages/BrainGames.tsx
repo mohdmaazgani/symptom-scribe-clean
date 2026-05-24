@@ -9,6 +9,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 import confetti from 'canvas-confetti';
+import { shuffleArray } from "@/lib/utils";
 
 interface TrendQuestion {
   id: number;
@@ -48,6 +49,7 @@ const BrainGames = () => {
   const [questionTimeLeft, setQuestionTimeLeft] = useState(15);
   const [showFireStreak, setShowFireStreak] = useState(false);
   const timerRef = useRef<number | null>(null);
+  const wordTimeoutRef = useRef<number | null>(null);  
   const TOTAL_QUESTIONS = 10;
   const XP_PER_QUESTION = 10;
   const XP_PER_LEVEL = 100;
@@ -125,8 +127,8 @@ const BrainGames = () => {
           }
           return prev - 1;
         });
-      }, 1000);
-
+      }, 1000) as unknown as number;
+      
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
@@ -200,7 +202,7 @@ const BrainGames = () => {
       pattern: pattern.name,
       patternDescription: pattern.description,
       correctAnswer,
-      options: options.sort(() => Math.random() - 0.5)
+      options: shuffleArray(options)
     };
   };
 
@@ -237,9 +239,9 @@ const BrainGames = () => {
     if (lifelineUsed || !currentQuestion || showPatternFeedback) return;
 
     const wrongOptions = currentQuestion.options.filter(opt => opt !== currentQuestion.correctAnswer);
-    const randomWrong = wrongOptions.sort(() => Math.random() - 0.5).slice(0, 2);
-    const newOptions = [currentQuestion.correctAnswer, ...randomWrong].sort(() => Math.random() - 0.5);
-
+    const randomWrong = shuffleArray(wrongOptions).slice(0, 1);
+    const newOptions = shuffleArray([currentQuestion.correctAnswer, ...randomWrong]);
+    
     setFilteredOptions(newOptions);
     setLifelineUsed(true);
     showInfo("50-50 Used!", "Two wrong options removed!");
@@ -326,6 +328,7 @@ const BrainGames = () => {
       setCurrentQuestion(nextQuestion);
       setFilteredOptions([]);
       setShowPatternFeedback(false);
+      setLifelineUsed(false);
     }, 2000);
   };
 
@@ -378,7 +381,7 @@ const BrainGames = () => {
 
   const startMemoryGame = () => {
     const cards = [...Array(8)].map((_, i) => i % 4);
-    setMemoryCards(cards.sort(() => Math.random() - 0.5));
+    setMemoryCards(shuffleArray(cards));
     setFlippedCards([]);
     setMatchedCards([]);
     setActiveGame("memory");
@@ -403,13 +406,14 @@ const BrainGames = () => {
     setWordPhase("memorize");
     setTimeLeft(10);
     setActiveGame("word");
-
-    showInfo("Memorize these words!", "You have 10 seconds...");
-
-    setTimeout(() => {
+    wordTimeoutRef.current = window.setTimeout(() => {
       setWordPhase("recall");
       showWarning("Time's up!", "Now recall the words in order");
     }, 10000);
+
+    showInfo("Memorize these words!", "You have 10 seconds...");
+
+
   };
 
   useEffect(() => {
@@ -421,6 +425,14 @@ const BrainGames = () => {
 
     return () => clearInterval(timer);
   }, [wordPhase, timeLeft]);
+
+  // Cleanup timeout when leaving Word game or unmounting
+  useEffect(() => {
+    if (activeGame !== "word" && wordTimeoutRef.current) {
+      clearTimeout(wordTimeoutRef.current);
+      wordTimeoutRef.current = null;
+    }
+  }, [activeGame]);
 
   const generateMathQuestion = () => {
     const num1 = Math.floor(Math.random() * 50) + 10;
@@ -766,7 +778,14 @@ const BrainGames = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Word Recall Challenge</span>
-              <Button variant="outline" onClick={() => { setActiveGame(null); showInfo("Word Game Exited", "Keep practicing your memory!"); }}>Exit Game</Button>
+              <Button variant="outline" onClick={() => {
+          if (wordTimeoutRef.current) {
+            clearTimeout(wordTimeoutRef.current);
+            wordTimeoutRef.current = null;
+          }
+          setActiveGame(null);
+          showInfo("Word Game Exited", "Keep practicing your memory!");
+        }}>Exit Game</Button>
             </CardTitle>
             <CardDescription>Memorize the words, then recall them in order</CardDescription>
           </CardHeader>
