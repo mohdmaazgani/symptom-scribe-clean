@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { Sun, Moon } from 'lucide-react';
 import './animated-theme-toggler.css';
 
-export function AnimatedThemeToggler({ className = '' }) {
+export function AnimatedThemeToggler({ className = '', showLabel = false, label = 'Theme' }) {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') || 'light';
   });
@@ -12,7 +12,6 @@ export function AnimatedThemeToggler({ className = '' }) {
   const duration = 400;
 
   useEffect(() => {
-    // Initial theme setup on mount without animation
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.dataset.theme = 'dark';
@@ -20,7 +19,7 @@ export function AnimatedThemeToggler({ className = '' }) {
       document.documentElement.classList.remove('dark');
       document.documentElement.dataset.theme = 'light';
     }
-  }, []); // Run only once to apply existing theme on mount
+  }, []);
 
   const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const button = e.currentTarget;
@@ -54,7 +53,6 @@ export function AnimatedThemeToggler({ className = '' }) {
       Math.max(y, viewportHeight - y)
     );
 
-    // Fallback for browsers that don't support View Transitions API
     if (typeof document.startViewTransition !== 'function') {
       applyTheme();
       return;
@@ -84,18 +82,19 @@ export function AnimatedThemeToggler({ className = '' }) {
   return (
     <button
       type="button"
-      className={`animated-theme-toggler ${className}`.trim()}
+      className={`animated-theme-toggler w-full flex items-center justify-start gap-2 ${className}`.trim()}
       onClick={handleToggle}
       aria-label="Toggle color theme"
     >
-      <span className="att-icons" aria-hidden="true">
-        <span className={`att-icon att-sun ${isDark ? 'att-show' : ''}`.trim()}>
+      <span className="att-icons relative">
+        <span className={`att-icon att-sun absolute inset-0 transition-opacity duration-200 ${isDark ? 'opacity-100' : 'opacity-0'}`}>
           <Sun className="h-5 w-5" />
         </span>
-        <span className={`att-icon att-moon ${!isDark ? 'att-show' : ''}`.trim()}>
+        <span className={`att-icon att-moon absolute inset-0 transition-opacity duration-200 ${!isDark ? 'opacity-100' : 'opacity-0'}`}>
           <Moon className="h-5 w-5" />
         </span>
       </span>
+      {showLabel && <span>{label}</span>}
     </button>
   );
 }
