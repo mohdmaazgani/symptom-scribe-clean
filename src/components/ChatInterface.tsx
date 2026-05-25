@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Sparkles } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,9 @@ interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const INITIAL_ASSISTANT_MESSAGE =
+  "Hello! I'm your AI health assistant. Please describe your symptoms, and I'll help you understand possible causes and recommend self-care steps.\n\nNote: I provide general information only. For medical diagnosis or treatment, always consult a healthcare professional.";
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -23,6 +26,13 @@ const ChatInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setMessages((prev) => [
+      { role: "assistant", content: INITIAL_ASSISTANT_MESSAGE },
+      ...prev.slice(1),
+    ]);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -195,8 +205,8 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      <div className="flex-1 overflow-y-auto space-y-4 p-4">
+    <div className="mx-auto flex w-full max-w-4xl flex-col">
+      <div className="max-h-[42vh] min-h-[240px] space-y-4 overflow-y-auto bg-gradient-to-b from-background/40 to-card p-4 sm:max-h-[46vh] sm:min-h-[280px] sm:p-6 lg:max-h-[520px]">
         {messages.map((message, index) => (
           <ChatMessage key={index} role={message.role} content={message.content} />
         ))}
@@ -217,28 +227,38 @@ const ChatInterface = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-border bg-card p-4">
-        <div className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Describe your symptoms... (e.g., 'I have a sore throat and headache')"
-            className="min-h-[60px] max-h-[120px] resize-none"
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            className="h-[60px] w-[60px] flex-shrink-0"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
+      <div className="border-t border-border bg-card/95 p-3 backdrop-blur sm:p-4">
+        <div className="rounded-2xl border border-border bg-background p-2 shadow-soft transition-all duration-300 focus-within:border-primary/40 focus-within:shadow-glow">
+          <div className="flex items-start gap-2">
+            <div className="hidden h-12 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Describe your symptoms, timing, severity, medicines, and anything that changed..."
+              className="max-h-[120px] min-h-12 resize-none border-0 bg-transparent px-2 py-3 shadow-none focus-visible:ring-0"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className="h-12 w-12 flex-shrink-0 rounded-xl shadow-soft"
+              aria-label="Send symptoms"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 px-2 pb-1 pt-2 text-xs text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-1">Enter to send</span>
+            <span className="rounded-full bg-muted px-2 py-1">Shift + Enter for a new line</span>
+          </div>
         </div>
       </div>
     </div>
