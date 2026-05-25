@@ -56,7 +56,7 @@ export function AppSidebar() {
         <NavLink to="/dashboard" className="flex items-center">
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
-              Health Tracker 
+              Health Tracker
             </h2>
           )}
         </NavLink>
