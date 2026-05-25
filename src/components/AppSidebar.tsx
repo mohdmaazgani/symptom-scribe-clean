@@ -28,7 +28,8 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+
+  const { state, setOpenMobile, isMobile } = useSidebar(); 
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -47,13 +48,23 @@ export function AppSidebar() {
     }
   };
 
+  const handleMobileNavClick = () => {
+    if (isMobile && setOpenMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
 
   return (
     <Sidebar collapsible="icon">
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        <NavLink to="/dashboard" className="flex items-center">
+        <NavLink
+          to="/dashboard" 
+          className="flex items-center" 
+          onClick={handleMobileNavClick} 
+        >
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
               Health Tracker
@@ -75,7 +86,8 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
+
+                    <NavLink to={item.url} end className={getNavCls} onClick={handleMobileNavClick}>
                       <item.icon className="h-5 w-5" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
