@@ -1,5 +1,4 @@
-import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Sun, Moon } from "lucide-react";
-import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Settings } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Settings, Sun, Moon } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -75,7 +74,6 @@ export function AppSidebar() {
       return;
     }
 
-    // Get button position for the circle animation
     const { top, left, width, height } = button.getBoundingClientRect();
     const x = left + width / 2;
     const y = top + height / 2;
@@ -86,7 +84,6 @@ export function AppSidebar() {
       Math.max(y, viewportHeight - y)
     );
 
-    // Fallback for browsers that don't support View Transitions API
     if (typeof document.startViewTransition !== 'function') {
       applyTheme();
       return;

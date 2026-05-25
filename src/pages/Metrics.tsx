@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, Heart, Thermometer, Weight, Droplet, Wind, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Activity, Heart, Thermometer, Weight, Droplet, Wind, TrendingUp, TrendingDown, Minus, Trash2 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
 import {
@@ -37,14 +37,6 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { Trash2 } from "lucide-react";
-
-<Button
-  variant="destructive"
-  size="icon"
->
-  <Trash2 className="h-4 w-4" />
-</Button>
 
 const metricTypes = [
   { value: "blood_pressure", label: "Blood Pressure", icon: Activity, unit: "mmHg" },
@@ -72,18 +64,26 @@ const Metrics = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [historyUserId, setHistoryUserId] = useState("");
+  const [historyMetricFilter, setHistoryMetricFilter] = useState("all");
+  const [timeframeFilter, setTimeframeFilter] = useState("all");
+  const [historyView, setHistoryView] = useState("table");
 
   const {
-  records,
-  loading: historyLoading,
-  refresh,
-  deleteRecord,
-} = useMetricsHistory(historyUserId);
+    records,
+    loading: historyLoading,
+    refresh: fetchHistory,
+    deleteRecord,
+  } = useMetricsHistory(historyUserId);
+
   useEffect(() => {
-      const fetchUser = async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setHistoryUserId(user.id);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const getDisplayValue = (entry: MetricEntry) => {
     if (entry.metric_type === "blood_pressure") {
@@ -100,28 +100,18 @@ const Metrics = () => {
 
     if (!prevEntry) return null;
 
-    const curr =
-      currentEntry.metric_type === "blood_pressure"
-        ? currentEntry.value.systolic
-        : currentEntry.value.value;
-    const prev =
-      prevEntry.metric_type === "blood_pressure"
-        ? prevEntry.value.systolic
-        : prevEntry.value.value;
+    const curr = currentEntry.metric_type === "blood_pressure"
+      ? currentEntry.value.systolic
+      : currentEntry.value.value;
+    const prev = prevEntry.metric_type === "blood_pressure"
+      ? prevEntry.value.systolic
+      : prevEntry.value.value;
 
     if (curr > prev) return "up";
     if (curr < prev) return "down";
     return "same";
   };
 
-      fetchUser();
-    }, []);
-    const [historyMetricFilter, setHistoryMetricFilter] =
-      useState("all");
-    const [timeframeFilter, setTimeframeFilter] =
-  useState("all");
-    const [historyView, setHistoryView] =
-  useState("table");
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -133,7 +123,7 @@ const Metrics = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      setHistoryUserId(user.id);
+
       let metricValue: any = {};
       if (metricType === "blood_pressure") {
         metricValue = { systolic: parseInt(systolic), diastolic: parseInt(diastolic) };
@@ -158,7 +148,7 @@ const Metrics = () => {
       setDiastolic("");
       setNotes("");
 
-      fetchHistory();
+      await fetchHistory();
     } catch (error) {
       console.error("Error saving metric:", error);
       showError("Failed to Save", "Could not record your health metric");
@@ -166,52 +156,58 @@ const Metrics = () => {
       setLoading(false);
     }
   };
-      const formatMetricValue = (record: any) => {
-        if (record.metric_type === "blood_pressure") {
-          return `${record.value?.systolic}/${record.value?.diastolic} mmHg`;
-        }
 
-        const metric = metricTypes.find(
-          (m) => m.value === record.metric_type
-        );
+  const formatMetricValue = (record: any) => {
+    if (record.metric_type === "blood_pressure") {
+      return `${record.value?.systolic}/${record.value?.diastolic} mmHg`;
+    }
+    const metric = metricTypes.find((m) => m.value === record.metric_type);
+    return `${record.value?.value} ${metric?.unit || ""}`;
+  };
 
-        return `${record.value?.value} ${metric?.unit || ""}`;
-      };
-      const formatDate = (date: string) => {
-        return new Date(date).toLocaleString([], {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-      });
-      };
-     const filteredRecords = records.filter((record: any) => {
-  const metricMatch =
-    historyMetricFilter === "all" ||
-    record.metric_type === historyMetricFilter;
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleString([], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  if (timeframeFilter === "all") {
-    return metricMatch;
-  }
+  const filteredRecords = records.filter((record: any) => {
+    const metricMatch = historyMetricFilter === "all" || record.metric_type === historyMetricFilter;
 
-  const days = parseInt(timeframeFilter);
+    if (timeframeFilter === "all") {
+      return metricMatch;
+    }
 
-  const recordDate = new Date(record.recorded_at);
-  const now = new Date();
+    const days = parseInt(timeframeFilter);
+    const recordDate = new Date(record.recorded_at);
+    const now = new Date();
+    const diffTime = now.getTime() - recordDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-  const diffTime =
-    now.getTime() - recordDate.getTime();
+    return metricMatch && diffDays <= days;
+  });
 
-  const diffDays =
-    diffTime / (1000 * 60 * 60 * 24);
+  // Prepare chart data
+  const chartData = filteredRecords
+    .filter(r => r.metric_type !== "blood_pressure")
+    .slice(0, 10)
+    .reverse()
+    .map(r => ({
+      date: formatDate(r.recorded_at),
+      value: r.value?.value,
+      metric: r.metric_type
+    }));
 
-  return metricMatch && diffDays <= days;
-}
-      );
-      const isBloodPressure =
-  historyMetricFilter === "blood_pressure";
-      
+  const handleDelete = async (id: string) => {
+    await deleteRecord(id);
+    await fetchHistory();
+    showSuccess("Deleted", "Metric record removed successfully");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -239,7 +235,7 @@ const Metrics = () => {
         })}
       </div>
 
-      <Card className="mt-8">
+      <Card>
         <CardHeader>
           <CardTitle>Record New Measurement</CardTitle>
           <CardDescription>Enter your latest health metrics</CardDescription>
@@ -325,111 +321,175 @@ const Metrics = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* History Section */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Readings</CardTitle>
-          <CardDescription>
-            Your last 30 recorded metrics
-          </CardDescription>
+          <CardDescription>Your last 30 recorded metrics</CardDescription>
         </CardHeader>
         <CardContent>
           {historyLoading ? (
-           <div className="py-10 text-center text-muted-foreground">
+            <div className="py-10 text-center text-muted-foreground">
               Loading health metrics...
             </div>
           ) : records.length === 0 ? (
-           <div className="flex flex-col items-center justify-center py-12 text-center">
-  <p className="text-lg font-medium">
-    No health metrics yet
-  </p>
-
-  <p className="text-sm text-muted-foreground mt-1">
-    Record your first measurement above to start tracking trends.
-  </p>
-</div>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-lg font-medium">No health metrics yet</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Record your first measurement above to start tracking trends.
+              </p>
+            </div>
           ) : (
             <>
-            <div className="mb-4">
-              <Select
-                value={historyMetricFilter}
-                onValueChange={setHistoryMetricFilter}
-              >
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Filter metric" />
-                </SelectTrigger>
-
-                <SelectContent>
-                  <SelectItem value="all">
-                    All Metrics
-                  </SelectItem>
-
-                  {metricTypes.map((metric) => (
-                    <SelectItem
-                      key={metric.value}
-                      value={metric.value}
-                    >
-                      {metric.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                  value={timeframeFilter}
-                  onValueChange={setTimeframeFilter}
-                >
-                  <SelectTrigger className="w-[220px] mt-3">
-                    <SelectValue placeholder="Select timeframe" />
+              <div className="flex flex-wrap gap-3 mb-4">
+                <Select value={historyMetricFilter} onValueChange={setHistoryMetricFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter metric" />
                   </SelectTrigger>
-
                   <SelectContent>
-                    <SelectItem value="7">
-                      Last 7 Days
-                    </SelectItem>
-
-                    <SelectItem value="30">
-                      Last 30 Days
-                    </SelectItem>
-
-                    <SelectItem value="all">
-                      All Time
-                    </SelectItem>
+                    <SelectItem value="all">All Metrics</SelectItem>
+                    {metricTypes.map((metric) => (
+                      <SelectItem key={metric.value} value={metric.value}>
+                        {metric.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                            </div>
-                            <div className="flex gap-2 mb-4">
+
+                <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">Last 7 Days</SelectItem>
+                    <SelectItem value="30">Last 30 Days</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex gap-2">
                   <Button
-                    variant={
-                      historyView === "table"
-                        ? "default"
-                        : "outline"
-                    }
+                    variant={historyView === "table" ? "default" : "outline"}
                     onClick={() => setHistoryView("table")}
+                    size="sm"
                   >
                     Table
                   </Button>
+                  <Button
+                    variant={historyView === "chart" ? "default" : "outline"}
+                    onClick={() => setHistoryView("chart")}
+                    size="sm"
+                  >
+                    Chart
+                  </Button>
+                </div>
+              </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{getDisplayValue(entry)}</span>
-                      {trend === "up" && (
-                        <TrendingUp className="w-4 h-4 text-red-400" aria-label="Higher than previous reading" />
-                      )}
-                      {trend === "down" && (
-                        <TrendingDown className="w-4 h-4 text-green-400" aria-label="Lower than previous reading" />
-                      )}
-                      {trend === "same" && (
-                        <Minus className="w-4 h-4 text-muted-foreground" aria-label="Same as previous reading" />
-                      )}
-                      {trend === null && (
-                        <span className="text-xs text-muted-foreground">first entry</span>
-                      )}
+              {historyView === "table" ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Metric</TableHead>
+                        <TableHead>Value</TableHead>
+                        <TableHead>Notes</TableHead>
+                        <TableHead>Trend</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRecords.map((entry: MetricEntry) => {
+                        const trend = getTrend(entry, records);
+                        const metricMeta = metricTypes.find((m) => m.value === entry.metric_type);
+                        const Icon = metricMeta?.icon ?? Activity;
+
+                        return (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">
+                              {formatDate(entry.recorded_at)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4 text-primary" />
+                                {metricMeta?.label}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              {getDisplayValue(entry)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {entry.notes || "-"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {trend === "up" && (
+                                  <TrendingUp className="w-4 h-4 text-red-400" />
+                                )}
+                                {trend === "down" && (
+                                  <TrendingDown className="w-4 h-4 text-green-400" />
+                                )}
+                                {trend === "same" && (
+                                  <Minus className="w-4 h-4 text-muted-foreground" />
+                                )}
+                                {trend === null && (
+                                  <span className="text-xs text-muted-foreground">first</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Record</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(entry.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="h-[400px] w-full">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      Not enough data for chart
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
-    </Card>
+      </Card>
     </div>
   );
 };
