@@ -173,13 +173,28 @@ const navItems = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+const EmergencyClock = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const tick = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+      <Clock className="w-4 h-4" />
+      <span className="font-mono">{currentTime.toLocaleTimeString()}</span>
+    </div>
+  );
+};
+
 const Emergency = () => {
   const [expandedGuide, setExpandedGuide]         = useState<string | null>(null);
   // tracks which LIFE THREATENING guides have confirmed the call step
   const [calledFor, setCalledFor]                 = useState<string[]>([]);
   const [searchCountry, setSearchCountry]         = useState("");
   const [copiedNumber, setCopiedNumber]           = useState<string | null>(null);
-  const [currentTime, setCurrentTime]             = useState(new Date());
   const [muted, setMuted]                         = useState(false);
 
   const [activeSection, setActiveSection]         = useState("numbers");
@@ -189,11 +204,7 @@ const Emergency = () => {
   // ── Refs for each section ──────────────────────────────────────────────────
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // ── Clock ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const tick = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(tick);
-  }, []);
+
 
 
 
@@ -304,10 +315,7 @@ const Emergency = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-3 py-2 rounded-lg">
-            <Clock className="w-4 h-4" />
-            <span className="font-mono">{currentTime.toLocaleTimeString()}</span>
-          </div>
+          <EmergencyClock />
           <button
             onClick={() => setMuted((m) => !m)}
             className="p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Sun, Moon } from 'lucide-react';
+import { getSafeLocalStorage, setSafeLocalStorage } from '@/lib/storage';
 import './animated-theme-toggler.css';
 
 export function AnimatedThemeToggler({ className = '' }) {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light';
+    return getSafeLocalStorage('theme', 'light');
   });
 
   const isDark = theme === 'dark';
@@ -28,7 +29,7 @@ export function AnimatedThemeToggler({ className = '' }) {
 
     const applyTheme = () => {
       setTheme(nextTheme);
-      localStorage.setItem('theme', nextTheme);
+      setSafeLocalStorage('theme', nextTheme);
 
       if (nextTheme === 'dark') {
         document.documentElement.classList.add('dark');

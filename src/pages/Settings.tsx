@@ -12,6 +12,7 @@ import { Lock, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
+import { clearSafeStorage } from "@/lib/storage";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -144,8 +145,7 @@ const Settings = () => {
         showSuccess("Account Deleted", "Your account has been deleted successfully");
         
         // Clear storage and redirect
-        localStorage.clear();
-        sessionStorage.clear();
+        clearSafeStorage();
         navigate("/auth");
       }
     } catch (error) {
