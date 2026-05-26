@@ -507,6 +507,7 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
@@ -907,4 +908,4 @@ All colors MUST be HSL.
   background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);
 }
 .dark .auth-back-btn:hover { background: rgba(255,255,255,0.1); color: #ffffff; }
->>>>>>> 0adff63 (feat: Premium medical-grade Auth page redesign with 50/50 partition & light/dark mode)
+
