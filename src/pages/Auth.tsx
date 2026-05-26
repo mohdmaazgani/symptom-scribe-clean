@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// Scoped .auth-root CSS ensures homepage styles remain unaffected
 import { Label } from "@/components/ui/label";
 
 import {
@@ -352,7 +353,7 @@ const Auth = () => {
                   label="Password"
                   placeholder="Create a strong password"
                   policy={DEFAULT_PASSWORD_POLICY}
-                  showGenerator={true}
+                  showGenerator={false}
                   id="signup-password"
                   containerClassName="auth-field"
                   labelClassName="auth-label"

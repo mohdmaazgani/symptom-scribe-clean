@@ -177,23 +177,7 @@ All colors MUST be HSL.
 }
 .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
 
-/* Auth page premium split layout */
-.auth-root {
-  min-height: 100vh;
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
-  /* Light mode defaults */
-  background: #f8fafc;
-  color: #0f172a;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-.dark .auth-root {
-  background: #050d1a;
-  color: #ffffff;
-}
+
 
 /* Animated gradient blobs */
 .blob {
@@ -522,7 +506,7 @@ All colors MUST be HSL.
     background-size: 32px 32px;
   }
 }
-@keyframes fadeIn {
+
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
@@ -550,57 +534,7 @@ All colors MUST be HSL.
   color: #ffffff;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out forwards;
-}
-=======
-
-/* ═══════════════════════════════════════════════
-   AUTH PAGE — PREMIUM SPLIT LAYOUT (LIGHT & DARK)
-   ═══════════════════════════════════════════════ */
-
-.auth-root {
-  min-height: 100vh;
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
-  /* Light mode defaults */
-  background: #f8fafc;
-  color: #0f172a;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-.dark .auth-root {
-  background: #050d1a;
-  color: #ffffff;
-}
 
 /* ── Animated gradient blobs ── */
 .blob {
