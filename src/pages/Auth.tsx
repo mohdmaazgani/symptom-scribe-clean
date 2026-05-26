@@ -355,10 +355,6 @@ const Auth = () => {
                   policy={DEFAULT_PASSWORD_POLICY}
                   showGenerator={false}
                   id="signup-password"
-                  containerClassName="auth-field"
-                  labelClassName="auth-label"
-                  inputClassName="auth-input"
-                  iconClassName="auth-input-icon"
                 />
                 <Button
                   type="submit"
