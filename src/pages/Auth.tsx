@@ -79,7 +79,6 @@ const Auth = () => {
         navigate("/dashboard");
       }
     });
-    // Auth page only – scoped styles, no homepage impact
     return () => subscription.unsubscribe();
   }, [navigate]);
 
@@ -354,7 +353,6 @@ const Auth = () => {
                   label="Password"
                   placeholder="Create a strong password"
                   policy={DEFAULT_PASSWORD_POLICY}
-                  // Password field with generator disabled
                   showGenerator={false}
                   id="signup-password"
                   containerClassName="auth-field"

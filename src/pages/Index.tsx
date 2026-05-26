@@ -85,7 +85,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="homepage-root min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
 
       <header 
         className={`px-6 py-4 sticky top-0 z-50 transition-all duration-300 ${
