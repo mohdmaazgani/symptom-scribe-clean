@@ -79,7 +79,6 @@ const Auth = () => {
         navigate("/dashboard");
       }
     });
-    // Auth page only – scoped styles, no homepage impact
     return () => subscription.unsubscribe();
   }, [navigate]);
 
