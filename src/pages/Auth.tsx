@@ -1,49 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Scoped .auth-root CSS ensures homepage styles remain unaffected
 import { Label } from "@/components/ui/label";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-
 import { useToast } from "@/hooks/use-toast";
-
 import {
   Activity,
   Loader2,
   Mail,
   Lock,
-  User,
-  Eye,
-  EyeOff,
   Shield,
   Heart,
   Check,
   ArrowRight,
   ArrowLeft,
+  User,
 } from "lucide-react";
-
 import { z } from "zod";
-
 import { showSuccess, showError } from "@/lib/toast-helpers";
-
 import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
+import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 import {
   evaluatePasswordStrength,
   DEFAULT_PASSWORD_POLICY,
@@ -55,18 +32,21 @@ const signupPasswordSchema = z
   .string()
   .min(12, "Password must be at least 12 characters");
 
+const FEATURES = [
+  "AI-powered symptom analysis & tracking",
+  "Secure HIPAA-compliant patient records",
+  "Real-time clinical insights & reporting",
+];
+
 const Auth = () => {
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
-
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
-
   const [fullName, setFullName] = useState("");
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -75,9 +55,7 @@ const Auth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
+      if (session) navigate("/dashboard");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -188,106 +166,166 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 flex items-center justify-center px-4 py-10">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl" />
+    <div className="auth-root">
+      <div className="auth-floating-controls">
+        <Link to="/" className="auth-back-btn">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </Link>
+        <AnimatedThemeToggler />
+      </div>
 
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl" />
+      {/* Animated ambient blobs */}
+      <div className="auth-blob auth-blob-1" />
+      <div className="auth-blob auth-blob-2" />
+      <div className="auth-blob auth-blob-3" />
 
-      {/* Grid Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* Dot-grid texture */}
+      <div className="auth-dot-grid" />
 
-      <Card className="relative z-10 w-full max-w-md border border-white/10 bg-white/10 backdrop-blur-2xl shadow-2xl rounded-3xl">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="p-3 rounded-2xl bg-cyan-500/20 border border-cyan-400/20">
-              <Activity className="w-7 h-7 text-cyan-400" />
+      <div className="auth-container">
+        {/* ══════════════ LEFT PANEL ══════════════ */}
+        <div className="auth-left">
+          <div className="auth-left-inner">
+            {/* Brand */}
+            <div className="auth-brand">
+              <div className="auth-brand-icon">
+                <Activity className="w-5 h-5 text-teal-400" />
+              </div>
+              <span className="auth-brand-name">Symptom Scribe</span>
             </div>
-            <div>
-              <CardTitle className="text-3xl font-bold text-white tracking-wide">
-                Symptom Scribe
-              </CardTitle>
+
+            {/* Headline */}
+            <h1 className="auth-headline">
+              Your intelligent
+              <br />
+              <span className="auth-headline-accent">clinical companion</span>
+            </h1>
+
+            <p className="auth-subtext">
+              Trusted by healthcare professionals worldwide to capture, analyze,
+              and manage patient records with precision AI.
+            </p>
+
+            {/* Feature list */}
+            <div className="auth-features">
+              {FEATURES.map((feat, i) => (
+                <div className="auth-feature-item" key={i}>
+                  <div className="auth-feature-dot">
+                    <Check className="w-4 h-4 text-teal-400" strokeWidth={3} />
+                  </div>
+                  <span>{feat}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Trust badges */}
+            <div className="auth-trust">
+              <div className="auth-trust-badge">
+                <Shield className="w-3.5 h-3.5 text-teal-400" />
+                <span>HIPAA Compliant</span>
+              </div>
+              <div className="auth-trust-badge">
+                <Heart className="w-3.5 h-3.5 text-rose-400" />
+                <span>10k+ Clinicians</span>
+              </div>
             </div>
           </div>
-          <CardDescription className="text-slate-300 text-sm">
-            Manage your health with AI-powered insights
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid grid-cols-2 w-full bg-slate-800/60 p-1 rounded-xl mb-6">
-              <TabsTrigger
-                value="signin"
-                className="rounded-lg data-[state=active]:bg-cyan-500 data-[state=active]:text-white"
+        </div>
+
+        {/* ══════════════ RIGHT PANEL ══════════════ */}
+        <div className="auth-right">
+          <div className="auth-card">
+            {/* Mobile brand header (visible only on small screens) */}
+            <div className="flex items-center justify-center gap-2.5 mb-6 lg:hidden">
+              <div className="auth-brand-icon">
+                <Activity className="w-4 h-4 text-teal-400" />
+              </div>
+              <span className="auth-brand-name">Symptom Scribe</span>
+            </div>
+
+            {/* Tab switcher */}
+            <div className="auth-tabs">
+              <button
+                className={`auth-tab${activeTab === "signin" ? " auth-tab-active" : ""}`}
+                onClick={() => setActiveTab("signin")}
+                type="button"
               >
                 Sign In
-              </TabsTrigger>
-              <TabsTrigger
-                value="signup"
-                className="rounded-lg data-[state=active]:bg-cyan-500 data-[state=active]:text-white"
+              </button>
+              <button
+                className={`auth-tab${activeTab === "signup" ? " auth-tab-active" : ""}`}
+                onClick={() => setActiveTab("signup")}
+                type="button"
               >
                 Sign Up
-              </TabsTrigger>
-            </TabsList>
+              </button>
+            </div>
 
-            {/* SIGN IN */}
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-slate-200">
-                    Email
+            {/* Dynamic heading */}
+            <div className="auth-card-heading">
+              <h2>
+                {activeTab === "signin" ? "Welcome back" : "Create account"}
+              </h2>
+              <p>
+                {activeTab === "signin"
+                  ? "Sign in to access your clinical dashboard."
+                  : "Join thousands of healthcare professionals today."}
+              </p>
+            </div>
+
+            {/* ── SIGN IN FORM ── */}
+            {activeTab === "signin" && (
+              <form onSubmit={handleSignIn} className="auth-form">
+                <div className="auth-field">
+                  <Label htmlFor="si-email" className="auth-label">
+                    Email address
                   </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <div className="auth-input-wrap">
+                    <Mail className="auth-input-icon" />
                     <Input
-                      id="signin-email"
+                      id="si-email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="doctor@clinic.com"
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
+                      className="auth-input"
                       required
-                      className="pl-12 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-400 focus:ring-cyan-400 rounded-xl"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-slate-200">
+                <div className="auth-field">
+                  <Label htmlFor="si-password" className="auth-label">
                     Password
                   </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <div className="auth-input-wrap">
+                    <Lock className="auth-input-icon" />
                     <Input
-                      id="signin-password"
-                      type={showPassword ? "text" : "password"}
+                      id="si-password"
+                      type="password"
+                      placeholder="••••••••••••"
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
+                      className="auth-input"
                       required
-                      className="pl-12 pr-12 h-12 bg-slate-900/50 border-slate-700 text-white focus:border-cyan-400 focus:ring-cyan-400 rounded-xl"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-3 text-slate-400 hover:text-cyan-400 transition-colors duration-200"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
                   </div>
                 </div>
 
                 <Button
                   type="submit"
+                  className="auth-submit-btn"
                   disabled={loading || redirecting}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold shadow-lg transition-all duration-300"
                 >
                   {redirecting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Redirecting...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Accessing portal...
                     </>
                   ) : loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Verifying...
                     </>
                   ) : (
@@ -297,8 +335,9 @@ const Auth = () => {
                     </>
                   )}
                 </Button>
+
                 <p className="auth-switch-text">
-                  Don't have an account?
+                  Don&apos;t have an account?
                   <button
                     type="button"
                     onClick={() => setActiveTab("signup")}
@@ -308,45 +347,47 @@ const Auth = () => {
                   </button>
                 </p>
               </form>
-            </TabsContent>
+            )}
 
-            {/* SIGN UP */}
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name" className="text-slate-200">
-                    Full Name
+            {/* ── SIGN UP FORM ── */}
+            {activeTab === "signup" && (
+              <form onSubmit={handleSignUp} className="auth-form">
+                <div className="auth-field">
+                  <Label htmlFor="su-name" className="auth-label">
+                    Full name
                   </Label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <div className="auth-input-wrap">
+                    <User className="auth-input-icon" />
                     <Input
-                      id="signup-name"
+                      id="su-name"
                       type="text"
-                      placeholder="John Doe"
+                      placeholder="Dr. Jane Smith"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      className="auth-input"
                       required
-                      className="pl-12 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-400 focus:ring-cyan-400 rounded-xl"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-slate-200">
-                    Email
+
+                <div className="auth-field">
+                  <Label htmlFor="su-email" className="auth-label">
+                    Email address
                   </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <div className="auth-input-wrap">
+                    <Mail className="auth-input-icon" />
                     <Input
-                      id="signup-email"
+                      id="su-email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="doctor@clinic.com"
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
+                      className="auth-input"
                       required
-                      className="pl-12 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-400 focus:ring-cyan-400 rounded-xl"
                     />
                   </div>
                 </div>
+
                 <PasswordStrengthMeter
                   value={signUpPassword}
                   onChange={setSignUpPassword}
@@ -354,16 +395,21 @@ const Auth = () => {
                   placeholder="Create a strong password"
                   policy={DEFAULT_PASSWORD_POLICY}
                   showGenerator={false}
-                  id="signup-password"
+                  id="su-password"
+                  containerClassName="auth-field"
+                  labelClassName="auth-label"
+                  inputClassName="auth-input"
+                  iconClassName="auth-input-icon"
                 />
+
                 <Button
                   type="submit"
+                  className="auth-submit-btn"
                   disabled={loading}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold shadow-lg transition-all duration-300"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Creating account...
                     </>
                   ) : (
@@ -373,6 +419,7 @@ const Auth = () => {
                     </>
                   )}
                 </Button>
+
                 <p className="auth-switch-text">
                   Already registered?
                   <button
@@ -384,10 +431,16 @@ const Auth = () => {
                   </button>
                 </p>
               </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            )}
+
+            {/* Security footer */}
+            <div className="auth-security">
+              <Lock className="w-3 h-3" />
+              <span>End-to-end encrypted · Clinical grade security</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
