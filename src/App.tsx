@@ -22,6 +22,14 @@ import Terms from "./pages/Terms";
 import Disclaimer from "./pages/Disclaimer";
 import Accessibility from "./pages/Accessibility";
 import ScrollToTop from "@/components/ScrollToTop";
+import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
+import EmergencyGuide from "./pages/EmergencyGuide";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import HealthLibrary from "./pages/HealthLibrary";
+
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -149,6 +157,17 @@ const App = () => (
               <Accessibility />
             }
           />
+          <Route 
+            path="/contact" 
+            element={
+              <Contact />
+            }
+          />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/emergency-guide" element={<EmergencyGuide />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/health-library" element={<HealthLibrary />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
