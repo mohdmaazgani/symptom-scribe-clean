@@ -18,7 +18,6 @@ interface SymptomEntry {
   created_at: string;
 }
 
-// localStorage key — scoped so multiple users on same browser don't share hidden lists
 const getStorageKey = (userId: string) => `hidden_symptom_entries_${userId}`;
 
 const loadHiddenIds = (userId: string): Set<string> => {
@@ -33,9 +32,7 @@ const loadHiddenIds = (userId: string): Set<string> => {
 const saveHiddenIds = (userId: string, ids: Set<string>) => {
   try {
     localStorage.setItem(getStorageKey(userId), JSON.stringify([...ids]));
-  } catch {
-    // localStorage full or blocked — silently fail
-  }
+  } catch {}
 };
 
 const History = () => {
@@ -43,7 +40,7 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
-  const [showHidden, setShowHidden] = useState(false); // toggle to reveal hidden entries
+  const [showHidden, setShowHidden] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,8 +53,6 @@ const History = () => {
       if (!user) return;
 
       setUserId(user.id);
-
-      // Load this user's hidden IDs from localStorage
       const stored = loadHiddenIds(user.id);
       setHiddenIds(stored);
 
@@ -101,7 +96,6 @@ const History = () => {
     }
   };
 
-  // Soft hide — no DB change, just stores the ID in localStorage
   const hideEntry = (id: string, symptoms: string) => {
     if (!userId) return;
     const updated = new Set(hiddenIds);
@@ -112,7 +106,6 @@ const History = () => {
     showSuccess("Record hidden", `"${label}" removed from your view`);
   };
 
-  // Restore a hidden entry
   const restoreEntry = (id: string) => {
     if (!userId) return;
     const updated = new Set(hiddenIds);
@@ -138,12 +131,9 @@ const History = () => {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Symptom History</h1>
-          <p className="text-muted-foreground">
-            Review your past health consultations
-          </p>
+          <p className="text-muted-foreground">Review your past health consultations</p>
         </div>
 
-        {/* Show hidden toggle — only visible if there are hidden entries */}
         {hiddenHistory.length > 0 && (
           <Button
             variant="outline"
@@ -177,22 +167,20 @@ const History = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Visible entries */}
           {visibleHistory.map((entry) => (
             <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
               <CardHeader>
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg">{entry.symptoms}</CardTitle>
+                    <CardTitle className="text-lg break-words">{entry.symptoms}</CardTitle>
                     <CardDescription>
                       {new Date(entry.created_at).toLocaleString()}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Badge variant={getSeverityColor(entry.severity_level)}>
                       {entry.severity_level}
                     </Badge>
-
                     <Button
                       variant={entry.resolved ? "outline" : "default"}
                       size="sm"
@@ -204,8 +192,6 @@ const History = () => {
                         <><CheckCircle className="w-4 h-4 mr-1" />Resolve</>
                       )}
                     </Button>
-
-                    {/* Remove from view — no DB change, stored in localStorage */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -251,7 +237,6 @@ const History = () => {
             </Card>
           ))}
 
-          {/* Hidden entries section — only shown when toggle is on */}
           {showHidden && hiddenHistory.length > 0 && (
             <>
               <div className="flex items-center gap-3 pt-2">
