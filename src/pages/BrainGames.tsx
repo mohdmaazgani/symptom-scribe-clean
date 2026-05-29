@@ -37,8 +37,10 @@ const BrainGames = () => {
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedCards, setMatchedCards] = useState<number[]>([]);
   const [memoryGameWon, setMemoryGameWon] = useState(false);
-  const [mathQuestion, setMathQuestion] = useState({ num1: 0, num2: 0, answer: "" });
+  const [mathQuestion, setMathQuestion] = useState({ num1: 0, num2: 0, operator: "+", answer: "" });
   const [mathScore, setMathScore] = useState(0);
+  const [mathTimeLeft, setMathTimeLeft] = useState(15);
+  const mathTimerRef = useRef<number | null>(null);
   const [wordSequence, setWordSequence] = useState<string[]>([]);
   const [userSequence, setUserSequence] = useState<{ word: string; index: number }[]>([]);
   const [wordPhase, setWordPhase] = useState<"memorize" | "recall">("memorize");
@@ -460,10 +462,68 @@ const BrainGames = () => {
   }, [wordPhase, timeLeft]);
 
   const generateMathQuestion = () => {
-    const num1 = Math.floor(Math.random() * 50) + 10;
-    const num2 = Math.floor(Math.random() * 50) + 10;
-    setMathQuestion({ num1, num2, answer: "" });
+    const availableOperators = ["+"];
+    if (mathScore >= 3) availableOperators.push("-");
+    if (mathScore >= 6) availableOperators.push("*");
+
+    const operator = availableOperators[Math.floor(Math.random() * availableOperators.length)];
+
+    let range = 20;
+    if (mathScore >= 10) range = 150;
+    else if (mathScore >= 6) range = 100;
+    else if (mathScore >= 3) range = 50;
+
+    let num1 = 0;
+    let num2 = 0;
+
+    if (operator === "+") {
+      num1 = Math.floor(Math.random() * range) + 5;
+      num2 = Math.floor(Math.random() * range) + 5;
+    } else if (operator === "-") {
+      const n1 = Math.floor(Math.random() * range) + 10;
+      const n2 = Math.floor(Math.random() * range) + 5;
+      num1 = Math.max(n1, n2);
+      num2 = Math.min(n1, n2);
+    } else if (operator === "*") {
+      let maxFactor = 9;
+      if (mathScore >= 10) maxFactor = 15;
+      else if (mathScore >= 8) maxFactor = 12;
+      num1 = Math.floor(Math.random() * (maxFactor - 2)) + 2;
+      num2 = Math.floor(Math.random() * 9) + 2;
+    }
+
+    setMathQuestion({ num1, num2, operator, answer: "" });
   };
+
+  useEffect(() => {
+    if (activeGame === "math") {
+      if (mathTimerRef.current) clearInterval(mathTimerRef.current);
+
+      setMathTimeLeft(15);
+      mathTimerRef.current = window.setInterval(() => {
+        setMathTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(mathTimerRef.current!);
+            
+            showError("Time's up!", "Be quicker next time!");
+            toast({
+              title: "✗ Time's up!",
+              description: "The time limit has been exceeded",
+              variant: "destructive",
+            });
+            
+            generateMathQuestion();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000) as unknown as number;
+
+      return () => {
+        if (mathTimerRef.current) clearInterval(mathTimerRef.current);
+      };
+    }
+  }, [activeGame, mathQuestion.num1, mathQuestion.num2, mathQuestion.operator]);
 
   const handleCardClick = (index: number) => {
     if (flippedCards.length === 2 || flippedCards.includes(index) || matchedCards.includes(index)) {
@@ -498,8 +558,21 @@ const BrainGames = () => {
   };
 
   const checkMathAnswer = () => {
-    const correct = mathQuestion.num1 + mathQuestion.num2;
+    let correct = 0;
+    if (mathQuestion.operator === "+") {
+      correct = mathQuestion.num1 + mathQuestion.num2;
+    } else if (mathQuestion.operator === "-") {
+      correct = mathQuestion.num1 - mathQuestion.num2;
+    } else if (mathQuestion.operator === "*") {
+      correct = mathQuestion.num1 * mathQuestion.num2;
+    }
+
     const userAnswer = parseInt(mathQuestion.answer);
+    if (isNaN(userAnswer)) {
+      showWarning("Invalid Input", "Please enter a valid number");
+      return;
+    }
+
     if (userAnswer === correct) {
       const newScore = mathScore + 1;
       setMathScore(newScore);
@@ -854,9 +927,15 @@ const BrainGames = () => {
             <CardDescription>Solve as many problems as you can!</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className={`flex items-center justify-center gap-2 p-3 rounded-lg max-w-xs mx-auto ${mathTimeLeft <= 5 ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-primary/10'}`}>
+              <Timer className="w-5 h-5 text-primary" />
+              <span className="text-2xl font-bold">{mathTimeLeft}s</span>
+              <span className="text-sm text-muted-foreground">remaining</span>
+            </div>
+
             <div className="text-center space-y-4">
               <div className="text-5xl font-bold text-foreground">
-                {mathQuestion.num1} + {mathQuestion.num2} = ?
+                {mathQuestion.num1} {mathQuestion.operator} {mathQuestion.num2} = ?
               </div>
               <div className="flex gap-4 items-center justify-center max-w-md mx-auto">
                 <input
