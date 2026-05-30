@@ -200,6 +200,50 @@ const Emergency = () => {
   const [activeSection, setActiveSection]         = useState("numbers");
   const [checkedReminders, setCheckedReminders]   = useState<number[]>([]);
   const [hospitalLoading, setHospitalLoading]     = useState<string | null>(null);
+  const [detectedCountry, setDetectedCountry]     = useState<string | null>(null);
+
+  useEffect(() => {
+    // Attempt keyless geolocation lookup using ipapi.co
+    fetch("https://ipapi.co/json/")
+      .then((res) => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
+      .then((data) => {
+        if (data.country_name) {
+          // Normalize country names if needed (e.g. "United States" vs "USA", "United Kingdom" vs "UK")
+          let mappedName = data.country_name;
+          if (mappedName === "United States") mappedName = "USA";
+          else if (mappedName === "United Kingdom") mappedName = "UK";
+          setDetectedCountry(mappedName);
+        }
+      })
+      .catch((err) => {
+        console.error("Geolocation fetch failed:", err);
+      });
+  }, []);
+
+  const getDetectedCountryMatch = () => {
+    if (!detectedCountry) return null;
+    const lower = detectedCountry.toLowerCase();
+    
+    // Direct matches
+    const directMatch = emergencyNumbers.find(n => n.country.toLowerCase() === lower);
+    if (directMatch) return directMatch;
+    
+    // Europe fallback mapping for EU countries
+    const europeanCountries = [
+      "austria", "belgium", "bulgaria", "croatia", "cyprus", "czech republic", 
+      "denmark", "estonia", "finland", "greece", "hungary", "ireland", "italy", 
+      "latvia", "lithuania", "luxembourg", "malta", "netherlands", "poland", 
+      "portugal", "romania", "slovakia", "slovenia", "spain", "sweden"
+    ];
+    if (europeanCountries.includes(lower)) {
+      return emergencyNumbers.find(n => n.country === "Europe") || null;
+    }
+    
+    return null;
+  };
 
   // ── Refs for each section ──────────────────────────────────────────────────
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -249,10 +293,15 @@ const Emergency = () => {
 
 
   // ── Filtered numbers ───────────────────────────────────────────────────────
+  const localMatch = getDetectedCountryMatch();
   const filteredNumbers = emergencyNumbers.filter(
-    (n) =>
-      n.country.toLowerCase().includes(searchCountry.toLowerCase()) ||
-      n.number.includes(searchCountry)
+    (n) => {
+      if (localMatch && n.country === localMatch.country && !searchCountry) return false;
+      return (
+        n.country.toLowerCase().includes(searchCountry.toLowerCase()) ||
+        n.number.includes(searchCountry)
+      );
+    }
   );
 
   // ── Copy handler ───────────────────────────────────────────────────────────
@@ -425,6 +474,50 @@ const Emergency = () => {
           onChange={(e) => setSearchCountry(e.target.value)}
           className="w-full max-w-sm px-4 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40"
         />
+
+        {/* Featured Local Hotline Card */}
+        {localMatch && !searchCountry && (
+          <div className="p-5 rounded-xl border border-destructive bg-destructive/5 dark:bg-destructive/10 relative overflow-hidden transition-all duration-300 shadow-md">
+            <span className="absolute left-0 top-0 h-full w-1.5 bg-destructive animate-pulse" />
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive text-white uppercase tracking-wider animate-pulse mb-1">
+                  <MapPin className="w-3 h-3" /> Detected Local Helpline
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl">{localMatch.flag}</span>
+                  <h3 className="text-xl font-bold text-foreground">{localMatch.country}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">{localMatch.description} for your current location</p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <p className="text-5xl font-black text-destructive leading-none tracking-tight">
+                  {localMatch.number}
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  <a
+                    href={`tel:${localMatch.callNumber}`}
+                    onClick={(e) => { if (!isMobile()) e.preventDefault(); }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-destructive hover:bg-destructive/90 text-white text-xs font-bold transition-all active:scale-95 shadow-sm"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Call
+                  </a>
+                  <button
+                    onClick={() => handleCopyNumber(localMatch.number, localMatch.country)}
+                    className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-destructive/20 hover:bg-destructive/5 text-destructive text-xs font-semibold transition-colors"
+                    title="Copy number"
+                  >
+                    {copiedNumber === localMatch.number
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                      : <><Copy className="w-3.5 h-3.5 mr-1" /> Copy</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredNumbers.map((item, idx) => (
