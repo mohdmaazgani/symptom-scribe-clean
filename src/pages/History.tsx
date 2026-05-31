@@ -102,6 +102,26 @@ const History = () => {
     }
   };
 
+ const exportCSV = () => {
+    const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
+    const rows = history.map((entry) => [
+      new Date(entry.created_at).toLocaleDateString(),
+      `"${entry.symptoms.replace(/"/g, '""')}"`,
+      entry.severity_level,
+      entry.risk_score,
+      entry.resolved ? "Yes" : "No",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "symptom-history.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "high": return "destructive";
@@ -117,6 +137,11 @@ const History = () => {
           <h1 className="text-3xl font-bold text-foreground">Symptom History</h1>
           <p className="text-muted-foreground">Review your past health consultations</p>
         </div>
+        {history.length > 0 && (
+          <Button onClick={exportCSV} variant="outline" size="sm">
+            Export CSV
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
