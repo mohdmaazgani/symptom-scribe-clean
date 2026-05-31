@@ -190,13 +190,6 @@ const Auth = () => {
     if (error) {
       showError("Sign Up Failed", error.message);
     } else {
-      if (data.user) {
-        await supabase.from("profiles").insert({
-          user_id: data.user.id,
-          full_name: fullName,
-        });
-      }
-
       showSuccess(
         "Account Created!",
         "You can now sign in with your credentials."
