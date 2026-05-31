@@ -27,35 +27,18 @@ if (redisUrl && redisToken) {
 
 function memoryRateLimit(ip: string): { success: boolean } {
     const now = Date.now();
-
     const existing = requestStore.get(ip);
 
-    // First request
-    if (!existing) {
-        requestStore.set(ip, {
-            count: 1,
-            timestamp: now,
-        });
-
+    // Initialize or reset expired window
+    if (!existing || now - existing.timestamp > WINDOW_SIZE_MS) {
+        requestStore.set(ip, { count: 1, timestamp: now });
         return { success: true };
     }
 
-    // Reset window
-    if (now - existing.timestamp > WINDOW_SIZE_MS) {
-        requestStore.set(ip, {
-            count: 1,
-            timestamp: now,
-        });
-
-        return { success: true };
-    }
-
-    // Block request
     if (existing.count >= MAX_REQUESTS) {
         return { success: false };
     }
 
-    // Increment safely
     requestStore.set(ip, {
         count: existing.count + 1,
         timestamp: existing.timestamp,
@@ -68,10 +51,17 @@ export async function rateLimit(ip: string): Promise<{ success: boolean }> {
     if (redis) {
         try {
             const key = `ratelimit:${ip}`;
-            const count = await redis.incr(key);
-            if (count === 1) {
-                await redis.expire(key, 60);
-            }
+            // Atomic pipeline: INCR + EXPIRE NX fixes two bugs:
+            // 1. Race condition — a crash between INCR and EXPIRE would leave the key
+            //    without a TTL, permanently rate-limiting that IP.
+            // 2. Off-by-one — the old `count === 1` guard was fragile; EXPIRE NX sets
+            //    the TTL exactly once (when no TTL exists) regardless of count value.
+            const pipeline = redis.pipeline();
+            pipeline.incr(key);
+            pipeline.expire(key, 60, "NX");
+            const results = await pipeline.exec();
+            const count = results[0] as number;
+
             if (count > MAX_REQUESTS) {
                 return { success: false };
             }
