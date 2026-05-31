@@ -25,6 +25,7 @@ import HealthLibrary from "./pages/HealthLibrary";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import ScrollToTop from "@/components/ScrollToTop";
+import BlogPostPage from "@/pages/BlogPostPage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -154,6 +155,7 @@ const App = () => (
           />
           <Route path="/health-library" element={<HealthLibrary />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
