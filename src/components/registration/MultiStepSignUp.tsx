@@ -15,13 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { showError, showSuccess } from "@/lib/toast-helpers";
-import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
+import { cn } from "@/utils/utils";
+import { showError, showSuccess } from "@/utils/toast-helpers";
+import { PasswordStrengthMeter } from "@/components/common/PasswordStrengthMeter";
 import {
   DEFAULT_PASSWORD_POLICY,
   evaluatePasswordStrength,
-} from "@/lib/password-strength";
+} from "@/utils/password-strength";
 
 const STEPS = ["Account", "Personal", "Health", "Emergency", "Review"] as const;
 
@@ -464,3 +464,4 @@ const ReviewStep = ({ data }: { data: RegistrationData }) => {
 };
 
 export default MultiStepSignUp;
+

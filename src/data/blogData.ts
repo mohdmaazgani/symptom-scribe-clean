@@ -202,3 +202,4 @@ export const blogPosts: BlogPost[] = [
 export function getPostBySlug(slug: string): BlogPost | undefined {
   return blogPosts.find((p) => p.slug === slug);
 }
+

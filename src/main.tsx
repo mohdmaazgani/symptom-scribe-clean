@@ -1,11 +1,9 @@
 import { createRoot } from "react-dom/client";
-import { browserEnv } from "./lib/env";
-import StartupDiagnostics from "./components/StartupDiagnostics";
-import "./index.css";
-
-import ErrorBoundary from "./components/ErrorBoundary";
-
-import { ThemeProvider } from "./components/theme-provider";
+import { browserEnv } from "@/utils/env";
+import StartupDiagnostics from "@/components/common/StartupDiagnostics";
+import "@/styles/index.css";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/common/ThemeProvider";
 
 
 const root = createRoot(document.getElementById("root")!);
@@ -29,3 +27,4 @@ if (!browserEnv.diagnostics.isValid) {
     );
   });
 }
+

@@ -15,8 +15,8 @@ import BrainGames from "./pages/BrainGames";
 import HealthFacts from "./pages/HealthFacts";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Layout from "./components/Layout";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
+import Layout from "@/components/layout/Layout";
 import AIHealthAssistant from "./pages/AIHealthAssistant";
 
 import Privacy from "./pages/Privacy";
@@ -26,7 +26,7 @@ import Accessibility from "./pages/Accessibility";
 import HealthLibrary from "./pages/HealthLibrary";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
-import ScrollToTop from "@/components/ScrollToTop";
+import ScrollToTop from "@/components/common/ScrollToTop";
 import BlogPostPage from "@/pages/BlogPostPage";
 const queryClient = new QueryClient();
 
@@ -177,3 +177,4 @@ const App = () => (
 );
 
 export default App;
+

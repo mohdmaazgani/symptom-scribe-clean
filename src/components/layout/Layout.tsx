@@ -1,0 +1,41 @@
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AnimatedThemeToggler } from "@/components/common/AnimatedThemeToggler";
+import { BackToTop } from "@/components/common/BackToTop";
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
+  return (
+    <SidebarProvider>
+      <div className="h-screen overflow-hidden flex w-full bg-background">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col min-h-0">
+          <header className="h-14 shrink-0 border-b border-border flex items-center px-4 bg-card">
+            <div className="font-semibold text-lg">
+              Health Tracker
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <AnimatedThemeToggler />
+
+              {/* ✅ Visible ONLY on mobile. Hidden on laptop/desktop. */}
+              <div className="md:hidden">
+                <SidebarTrigger />
+              </div>
+            </div>
+          </header>
+          <main id="main-scroll" className="flex-1 min-h-0 p-6 overflow-auto">
+            {children}
+          </main>
+          <BackToTop />
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default Layout;
+

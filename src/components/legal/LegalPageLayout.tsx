@@ -50,3 +50,4 @@ const LegalPageLayout = ({ title, icon: Icon, children }: LegalPageLayoutProps) 
 };
 
 export default LegalPageLayout;
+
