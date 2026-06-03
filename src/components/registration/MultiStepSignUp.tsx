@@ -104,9 +104,15 @@ const MultiStepSignUp = () => {
         return false;
       }
       if (data.date_of_birth) {
-        const age =
-          new Date().getFullYear() - new Date(data.date_of_birth).getFullYear();
-        if (age < 0 || age > 120) {
+        const dob = new Date(data.date_of_birth);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dob >= today) {
+          showError("Invalid Date of Birth", "Date of birth cannot be in the future");
+          return false;
+        }
+        const age = today.getFullYear() - dob.getFullYear();
+        if (age > 120) {
           showError("Invalid Date of Birth", "Please enter a valid date of birth");
           return false;
         }
@@ -334,6 +340,7 @@ const PersonalStep = ({ data, update }: StepProps) => (
       <Input
         id="signup-dob"
         type="date"
+        max={new Date().toISOString().split("T")[0]}
         value={data.date_of_birth}
         onChange={(e) => update({ date_of_birth: e.target.value })}
       />
