@@ -6,23 +6,101 @@ on:
 
 jobs:
   welcome:
-    if: github.event.pull_request.merged == true && github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Ensure the workflow only runs if the Pull Request was successfully merged.
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
+      # Only pull-requests: write is needed to list and create comments on Pull Requests.
       pull-requests: write
+
     steps:
       - name: Post welcome comment
         uses: actions/github-script@v7
         with:
           script: |
-            const message = `🎉 Thank you for contributing to the project! 🌟
+            const author = context.payload.pull_request.user.login;
+            const currentPRNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
-            If you find the repository helpful, please consider giving it a star ⭐ — it really helps support and motivate the project.
+            // 1. Skip welcoming bot accounts to avoid system noise.
+            if (context.payload.pull_request.user.type === 'Bot' || author.endsWith('[bot]')) {
+              console.log('Skipping welcome message for bot contributor.');
+              return;
+            }
 
-            Happy Contributing 🚀`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            // 2. Fetch all issues/PRs created by this author in the repository.
+            // Rather than listing all closed PRs in the entire repository (which is slow and hits rate limits
+            // in repositories with thousands of PRs), we list issues/PRs created by this user.
+            console.log(`Checking PR history for contributor: ${author}`);
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner,
+                repo,
+                creator: author,
+                state: 'all',
+                per_page: 100
+              }
+            );
+
+            let hasPriorMergedPR = false;
+            for (const issue of issues) {
+              // Only check pull requests other than the current PR.
+              if (issue.pull_request && issue.number !== currentPRNumber) {
+                // If it is closed, check if it was actually merged.
+                if (issue.state === 'closed') {
+                  const prDetails = await github.rest.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: issue.number
+                  });
+                  if (prDetails.data.merged_at) {
+                    hasPriorMergedPR = true;
+                    break; // Stop early once a prior merged PR is found!
+                  }
+                }
+              }
+            }
+
+            if (hasPriorMergedPR) {
+              console.log('User has a prior merged PR. Not a first-time contributor.');
+              return;
+            }
+
+            console.log('No prior merged pull requests found. This is a first-time contributor!');
+
+            // 3. Duplicate Prevention: Check existing comments on the PR.
+            // Uses a hidden HTML comment marker <!-- first-contributor-welcome --> to guarantee accurate detection.
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: currentPRNumber,
+            });
+
+            const alreadyWelcomed = comments.data.some(comment => 
+              comment.body && comment.body.includes('first-contributor-welcome')
+            );
+
+            if (alreadyWelcomed) {
+              console.log('Welcome comment already exists. Skipping duplicate post.');
+              return;
+            }
+
+            // 4. Construct the welcome message with the hidden marker.
+            const message = `<!-- first-contributor-welcome -->\n\n` +
+              `🎉 Thank you for your contribution @${author}! 🌟\n\n` +
+              `Your Pull Request has been successfully merged into the project.\n\n` +
+              `If you find the repository helpful, please consider giving it a star ⭐ — it really helps support and motivate the project.\n\n` +
+              `We look forward to seeing more of your contributions.\n\n` +
+              `Happy Contributing 🚀`;
+
+            // 5. Post the comment.
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: currentPRNumber,
               body: message
             });
+
+            console.log('Welcome comment successfully posted.');
