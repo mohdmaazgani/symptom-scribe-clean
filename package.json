@@ -11,7 +11,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -61,7 +60,6 @@
     "react-router-dom": "^7.16.0",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
-    "space-separated-tokens": "^2.0.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
@@ -69,9 +67,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@tailwindcss/typography": "^0.5.16",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^22.19.19",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
