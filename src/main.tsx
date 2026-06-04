@@ -19,20 +19,13 @@ if (!browserEnv.diagnostics.isValid) {
 
 	root.render(<StartupDiagnostics />);
 } else {
-	void import("./App.tsx").then(({ default: App }) => {
-
-  root.render(
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  );
-});
-
-		root.render(
-  <ThemeProvider>
-    <App />
-  </ThemeProvider>
-);
-	});
-
+  void import("./App.tsx").then(({ default: App }) => {
+    root.render(
+      <ErrorBoundary>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  });
 }
