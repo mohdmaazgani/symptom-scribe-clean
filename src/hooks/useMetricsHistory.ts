@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/types/database.types";
+
+type HealthMetric = Tables<"health_metrics">;
 
 export function useMetricsHistory(userId: string) {
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState<HealthMetric[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchHistory = async () => {

@@ -6,6 +6,10 @@ import { Activity, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import { showError, showInfo } from "@/utils/toast-helpers";
 import CountUp from "react-countup";
 
+import { Tables } from "@/types/database.types";
+
+type SymptomHistory = Tables<"symptom_history">;
+
 interface Stats {
   totalSymptoms: number;
   unresolvedSymptoms: number;
@@ -20,7 +24,7 @@ const Dashboard = () => {
     avgRiskScore: 0,
     recentActivity: 0,
   });
-  const [recentHistory, setRecentHistory] = useState<any[]>([]);
+  const [recentHistory, setRecentHistory] = useState<SymptomHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -148,20 +148,21 @@ const Settings = () => {
         clearSafeStorage();
         navigate("/auth");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
   console.error("[DELETE_ACCOUNT_ERROR]", error);
+  const errorMessage = error instanceof Error ? error.message : String(error);
 
-  if (error?.message?.includes("Unauthorized")) {
+  if (errorMessage.includes("Unauthorized")) {
     showError(
       "Unauthorized",
       "You are not authorized to delete this account"
     );
-  } else if (error?.message?.includes("User not found")) {
+  } else if (errorMessage.includes("User not found")) {
     showError(
       "User Not Found",
       "The account could not be found"
     );
-  } else if (error?.message?.includes("network")) {
+  } else if (errorMessage.includes("network")) {
     showError(
       "Network Error",
       "Please check your internet connection and try again"

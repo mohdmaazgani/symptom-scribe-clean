@@ -60,6 +60,15 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Trash2 } from "lucide-react";
+import { Tables, Json } from "@/types/database.types";
+
+type HealthMetric = Tables<"health_metrics">;
+
+type MetricValue = {
+  systolic?: number;
+  diastolic?: number;
+  value?: number;
+};
 
 const metricTypes = [
   {
@@ -79,14 +88,6 @@ const metricTypes = [
     unit: "%",
   },
 ];
-
-interface MetricEntry {
-  id: string;
-  metric_type: string;
-  value: any;
-  notes: string | null;
-  recorded_at: string;
-}
 
 const Metrics = () => {
   const [metricType, setMetricType] = useState("");
@@ -134,7 +135,7 @@ const Metrics = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       setHistoryUserId(user.id);
-      let metricValue: any = {};
+      let metricValue: MetricValue = {};
       if (metricType === "blood_pressure") {
         metricValue = {
           systolic: parseInt(systolic),
@@ -147,7 +148,7 @@ const Metrics = () => {
       const { error } = await supabase.from("health_metrics").insert({
         user_id: user.id,
         metric_type: metricType,
-        value: metricValue,
+        value: metricValue as Json,
         notes: notes || null,
       });
 
@@ -176,14 +177,15 @@ const Metrics = () => {
       setLoading(false);
     }
   };
-  const formatMetricValue = (record: any) => {
+  const formatMetricValue = (record: HealthMetric) => {
+    const val = record.value as MetricValue;
     if (record.metric_type === "blood_pressure") {
-      return `${record.value?.systolic}/${record.value?.diastolic} mmHg`;
+      return `${val?.systolic}/${val?.diastolic} mmHg`;
     }
 
     const metric = metricTypes.find((m) => m.value === record.metric_type);
 
-    return `${record.value?.value} ${metric?.unit || ""}`;
+    return `${val?.value} ${metric?.unit || ""}`;
   };
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString([], {
@@ -194,7 +196,7 @@ const Metrics = () => {
       minute: "2-digit",
     });
   };
-  const filteredRecords = records.filter((record: any) => {
+  const filteredRecords = records.filter((record: HealthMetric) => {
     const metricMatch =
       historyMetricFilter === "all" ||
       record.metric_type === historyMetricFilter;
@@ -205,7 +207,7 @@ const Metrics = () => {
 
     const days = parseInt(timeframeFilter);
 
-    const recordDate = new Date(record.recorded_at);
+    const recordDate = new Date(record.recorded_at || "");
     const now = new Date();
 
     const diffTime = now.getTime() - recordDate.getTime();
@@ -420,7 +422,7 @@ const Metrics = () => {
                     </TableHeader>
 
                     <TableBody>
-                      {filteredRecords.map((record: any) => (
+                      {filteredRecords.map((record: HealthMetric) => (
                         <TableRow key={record.id}>
                           <TableCell>
                             {formatDate(record.recorded_at)}
