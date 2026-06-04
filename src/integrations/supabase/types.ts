@@ -85,6 +85,8 @@ export type Database = {
           id: string
           updated_at: string | null
           user_id: string
+          xp: number
+          level: number
         }
         Insert: {
           allergies?: string[] | null
@@ -99,6 +101,8 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id: string
+          xp?: number
+          level?: number
         }
         Update: {
           allergies?: string[] | null
@@ -113,6 +117,8 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string
+          xp?: number
+          level?: number
         }
         Relationships: []
       }

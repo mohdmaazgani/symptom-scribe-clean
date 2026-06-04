@@ -134,6 +134,7 @@ const Settings = () => {
         return;
       }
 
+
       // Delete account
       const { error } = await supabase.functions.invoke(
   "delete-account"
@@ -153,6 +154,22 @@ showSuccess(
 
 clearSafeStorage();
 navigate("/auth");
+
+      // Call Edge Function to perform deletion via Admin API
+      const { error: deleteFuncError } = await supabase.functions.invoke("delete-user-account");
+
+      if (deleteFuncError) {
+        showError("Deletion Failed", deleteFuncError.message);
+      } else {
+        // Log out locally (clear session)
+        await supabase.auth.signOut();
+        showSuccess("Account Deleted", "Your account has been deleted successfully");
+        
+        // Clear storage and redirect
+        clearSafeStorage();
+        navigate("/auth");
+      }
+
     } catch (error) {
       showError("Deletion Failed", "Could not delete account. Please try again later");
     } finally {

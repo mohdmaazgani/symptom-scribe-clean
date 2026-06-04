@@ -12,21 +12,114 @@ const suggestions = [
   { emoji: "😵‍💫", label: "Feeling tired and dizzy" },
 ];
  
+// ── SpeechRecognition types (not in all TS lib versions) ──────────────────
+interface ISpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+ 
+interface ISpeechRecognitionErrorEvent extends Event {
+  readonly error: string;
+}
+ 
+interface ISpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: ISpeechRecognitionEvent) => void) | null;
+  onerror: ((event: ISpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+ 
+interface ISpeechRecognitionConstructor {
+  new (): ISpeechRecognition;
+}
+ 
+declare global {
+  interface Window {
+    SpeechRecognition?: ISpeechRecognitionConstructor;
+    webkitSpeechRecognition?: ISpeechRecognitionConstructor;
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────
+ 
 const AIHealthAssistant = () => {
   const [symptoms, setSymptoms] = useState("");
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; time: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const { toast } = useToast();
  
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
  
+  // Cleanup recognition on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+    };
+  }, []);
+ 
   const getTime = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
  
+  const handleVoiceInput = () => {
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+ 
+    if (!SpeechRecognitionAPI) {
+      showError(
+        "Not supported",
+        "Voice recognition is not supported in your browser. Try Chrome or Edge."
+      );
+      return;
+    }
+ 
+    // If already listening, stop
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+ 
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
+ 
+    setIsListening(true);
+ 
+    recognition.onresult = (event: ISpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setSymptoms(transcript);
+    };
+ 
+    recognition.onerror = (event: ISpeechRecognitionErrorEvent) => {
+      setIsListening(false);
+      if (event.error !== "aborted") {
+        showError("Voice error", "Could not capture voice. Please try again.");
+      }
+    };
+ 
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+ 
+    recognition.start();
+  };
+ 
+  // ─── handleAnalyze — UNTOUCHED ────────────────────────────────────────────
   const handleAnalyze = async (text?: string) => {
     const userMessage = (text ?? symptoms).trim();
     if (!userMessage || loading) return;
@@ -176,6 +269,7 @@ const AIHealthAssistant = () => {
       setLoading(false);
     }
   };
+  // ─────────────────────────────────────────────────────────────────────────
  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -207,9 +301,7 @@ const AIHealthAssistant = () => {
       {/* Chat area */}
       <div className="flex-1 overflow-y-auto">
         {!hasMessages ? (
-          /* Empty / Welcome state */
           <div className="flex flex-col items-center justify-center h-full px-6 pb-4 gap-6 text-center">
-            {/* Bot avatar */}
             <div className="flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-3xl shadow-lg">
                 🤖
@@ -221,13 +313,12 @@ const AIHealthAssistant = () => {
                 <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                   I can help you understand your symptoms and provide health insights.{" "}
                   <span className="text-teal-500 font-medium">
-                   How can I assist you today?
-                  </span>  
+                    How can I assist you today?
+                  </span>
                 </p>
               </div>
             </div>
  
-            {/* Try asking chips — horizontal scroll */}
             <div className="w-full max-w-lg">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
@@ -249,7 +340,6 @@ const AIHealthAssistant = () => {
             </div>
           </div>
         ) : (
-          /* Messages */
           <div className="max-w-2xl mx-auto w-full px-4 py-5 space-y-5">
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -285,7 +375,6 @@ const AIHealthAssistant = () => {
                       return html;
                     })() }} />
                   </div>
- 
                   <span className={`text-[10px] text-muted-foreground px-1 ${msg.role === "user" ? "text-right" : "text-left"}`}>
                     {msg.time} {msg.role === "user" && "✓"}
                   </span>
@@ -293,7 +382,6 @@ const AIHealthAssistant = () => {
               </div>
             ))}
  
-            {/* Typing indicator */}
             {loading && (
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
@@ -315,15 +403,35 @@ const AIHealthAssistant = () => {
       <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-background">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2 bg-muted border border-border rounded-2xl px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
+ 
+            {/* Voice button */}
+            <button
+              onClick={handleVoiceInput}
+              disabled={loading}
+              title={isListening ? "Stop listening" : "Speak your symptoms"}
+              className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                isListening
+                  ? "bg-red-500/20 text-red-500 animate-pulse"
+                  : "text-muted-foreground hover:text-teal-500 hover:bg-teal-500/10"
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+              aria-label={isListening ? "Stop voice input" : "Start voice input"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+              </svg>
+            </button>
+ 
             <textarea
               ref={textareaRef}
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Describe your symptoms in detail…"
+              placeholder={isListening ? "Listening…" : "Describe your symptoms in detail…"}
               rows={1}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed text-center placeholder:text-center self-center"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed self-center"
             />
+ 
             <button
               onClick={() => handleAnalyze()}
               disabled={loading || !symptoms.trim()}
@@ -335,8 +443,11 @@ const AIHealthAssistant = () => {
               </svg>
             </button>
           </div>
+ 
           <p className="text-center text-xs text-muted-foreground mt-1.5">
-            Press Enter to send · Shift+Enter for new line
+            {isListening
+              ? "🔴 Listening… click the mic to stop"
+              : "Press Enter to send · Shift+Enter for new line"}
           </p>
         </div>
       </div>

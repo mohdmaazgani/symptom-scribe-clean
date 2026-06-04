@@ -83,26 +83,34 @@ serve(async (req: Request): Promise<Response> => {
     const systemPrompt = `
 You are a professional medical assistant helping users understand their symptoms.
 
-Respond ONLY with valid JSON matching this schema:
+Provide a clear, detailed, and helpful response in standard Markdown format. You MUST structure your response with the following sections and exact headers so the frontend can parse them properly:
 
-{
-  "summary": "string",
-  "possible_causes": ["string"],
-  "recommendations": ["string"],
-  "severity": "Low | Moderate | High"
-}
+### Severity Level
+Severity Level: ${
+      safetyCheck.isEmergency
+        ? "High"
+        : "[Low | Moderate | High] (choose the appropriate one based on symptoms)"
+    }
 
-Do not return markdown.
-Do not wrap JSON in code blocks.
+### Possible Causes
+Provide a bulleted list of possible causes:
+- [Cause 1]
+- [Cause 2]
 
-${safetyCheck.isEmergency
-        ? `
+### Recommendations
+Provide self-care steps or action items:
+- [Recommendation 1]
+- [Recommendation 2]
+
+${
+  safetyCheck.isEmergency
+    ? `
 IMPORTANT:
-The user's symptoms may indicate a medical emergency.
-Strongly encourage immediate professional medical attention.
+The user's symptoms indicate a potential medical emergency.
+You MUST set the Severity Level to High, and strongly advise immediate professional medical attention or visiting the nearest emergency room.
 `
-        : ""
-      }
+    : ""
+}
 
 ⚠️ Important: This is general health information only. Consult a qualified healthcare provider for diagnosis and treatment.
 `;

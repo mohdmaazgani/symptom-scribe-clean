@@ -80,6 +80,12 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 
 If you are still migrating older local setups, `VITE_SUPABASE_ANON_KEY` is accepted as a fallback, but it should be replaced with the publishable key.
 
+### What environment variables do the Supabase edge functions need?
+
+The browser app only needs VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY, with VITE_SUPABASE_ANON_KEY kept as a legacy fallback. The edge functions use a separate runtime secret set: LOVABLE_API_KEY is required for the symptom-analyzer function, UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are optional for distributed rate limiting, and delete-user-account needs SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.
+
+Browser-loaded variables belong in .env.local, while Supabase runtime secrets should be configured in the Supabase dashboard or with the Supabase CLI before running or deploying edge functions. Never expose SUPABASE_SERVICE_ROLE_KEY to the browser.
+
 **4. Start the development server**
 
 ```bash
@@ -209,6 +215,13 @@ npm install
 
 - Double-check your `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`
 - Make sure your Supabase project is active and not paused
+
+### Edge function fails with missing secret errors
+
+- Verify that LOVABLE_API_KEY is configured for the symptom-analyzer edge function
+- Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN only if you want Upstash-backed distributed rate limiting; they are optional
+- Confirm that SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are set for delete-user-account
+- Re-run the Supabase secret setup locally or in the dashboard, then redeploy the function if needed
 
 ### TypeScript errors after pulling latest changes
 

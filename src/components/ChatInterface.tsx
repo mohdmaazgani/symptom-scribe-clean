@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
+import ChatLoading from "./ChatLoading";
 
 interface Message {
   role: "user" | "assistant";
@@ -198,10 +199,13 @@ const ChatInterface = () => {
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       <div className="flex-1 overflow-y-auto space-y-4 p-4">
-        {messages.map((message, index) => (
-          <ChatMessage key={index} role={message.role} content={message.content} />
-        ))}
+       {messages.map((message, index) => (
+  <ChatMessage key={index} role={message.role} content={message.content} />
+))}
+
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+          <ChatLoading />
+        )}
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center animate-pulse">
               <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
@@ -214,6 +218,10 @@ const ChatInterface = () => {
               </div>
             </div>
           </div>
+
+               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+          <ChatLoading />
+
         )}
         <div ref={messagesEndRef} />
       </div>

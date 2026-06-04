@@ -189,3 +189,9 @@ All colors MUST be HSL.
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
 }
+html,
+body {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}

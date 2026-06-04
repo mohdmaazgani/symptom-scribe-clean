@@ -71,12 +71,38 @@ Create a local env file before starting the app:
 cp .env.example .env.local
 ```
 
-Required frontend variables:
+Required browser variables:
 
 - VITE_SUPABASE_URL
 - VITE_SUPABASE_PUBLISHABLE_KEY
 
 Legacy support is available for VITE_SUPABASE_ANON_KEY, but it should be treated as a temporary fallback only.
+
+### Supabase Edge Function Setup
+
+The browser app and Supabase edge functions use different environment surfaces. Browser variables are loaded into Vite at build time and live in .env.local. Supabase runtime secrets are read by the deployed edge functions or by the Supabase CLI when you run them locally.
+
+Browser environment variables:
+
+- VITE_SUPABASE_URL - used by the frontend to build the Supabase client and function URLs.
+- VITE_SUPABASE_PUBLISHABLE_KEY - canonical browser key for authentication and API access.
+- VITE_SUPABASE_ANON_KEY - legacy fallback only for older local setups.
+
+Edge function secrets:
+
+- LOVABLE_API_KEY - required by supabase/functions/symptom-analyzer to call the AI gateway.
+- UPSTASH_REDIS_REST_URL - optional; enables distributed rate limiting when present.
+- UPSTASH_REDIS_REST_TOKEN - optional; used with UPSTASH_REDIS_REST_URL for Upstash-backed rate limiting.
+- SUPABASE_URL - required by Supabase auth-admin flows such as delete-user-account.
+- SUPABASE_ANON_KEY - required by delete-user-account to validate the caller before using admin privileges.
+- SUPABASE_SERVICE_ROLE_KEY - required by delete-user-account for server-side account deletion; never expose this value to the browser.
+
+Local development setup:
+
+1. Copy .env.example to .env.local for the browser app.
+2. Set browser variables in .env.local with VITE_ prefixed values.
+3. Configure edge-function secrets with the Supabase CLI or the Supabase dashboard secrets settings before running or deploying edge functions.
+4. Keep the service role key out of browser-loaded files and client-side code.
 
 ---
 

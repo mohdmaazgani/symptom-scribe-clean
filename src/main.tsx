@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { browserEnv } from "./lib/env";
 import StartupDiagnostics from "./components/StartupDiagnostics";
 import "./index.css";
+import { ThemeProvider } from "./components/theme-provider";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -15,6 +16,10 @@ if (!browserEnv.diagnostics.isValid) {
 	root.render(<StartupDiagnostics />);
 } else {
 	void import("./App.tsx").then(({ default: App }) => {
-		root.render(<App />);
+		root.render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
+);
 	});
 }
