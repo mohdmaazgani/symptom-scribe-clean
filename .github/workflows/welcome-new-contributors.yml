@@ -1,0 +1,89 @@
+name: Welcome First-Time Contributors
+
+on:
+  pull_request_target:
+    types:
+      - closed
+
+jobs:
+  welcome:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Check if first-time contributor and post welcome message
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const contributor = context.payload.pull_request.user.login;
+            if (context.payload.pull_request.user.type === 'Bot') return;
+            const prNumber    = context.payload.pull_request.number;
+            const owner       = context.repo.owner;
+            const repo        = context.repo.repo;
+
+            console.log(`PR #${prNumber} merged by: ${contributor}`);
+
+            let mergedPRCount = 0;
+            try {
+              const searchResult = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:pr is:merged author:${contributor}`,
+                per_page: 2
+              });
+              mergedPRCount = searchResult.data.total_count;
+              console.log(`Total merged PRs by ${contributor}: ${mergedPRCount}`);
+            } catch (err) {
+              console.error('Search API error:', err.message);
+              return;
+            }
+
+            if (mergedPRCount !== 1) {
+              console.log('Not a first-time contributor. Skipping welcome message.');
+              return;
+            }
+
+            const WELCOME_MARKER = '<!-- welcome-first-time-contributor -->';
+            try {
+              const comments = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: prNumber,
+                per_page: 50
+              });
+              const alreadyWelcomed = comments.data.some(c => c.body.includes(WELCOME_MARKER));
+              if (alreadyWelcomed) {
+                console.log('Welcome message already posted. Skipping duplicate.');
+                return;
+              }
+            } catch (err) {
+              console.error('Error fetching comments:', err.message);
+              return;
+            }
+
+            const welcomeMessage = [
+              WELCOME_MARKER,
+              '',
+              `🎉 **Thank you for your contribution, @${contributor}!** 🌟`,
+              '',
+              'Your Pull Request has been successfully merged into the project. Welcome to the **Symptom Scribe** contributor family!',
+              '',
+              'If you find this repository helpful, please consider giving it a ⭐ — it really helps support and motivate the project.',
+              '',
+              'We look forward to seeing more of your amazing contributions!',
+              '',
+              '**Happy Contributing** 🚀'
+            ].join('\n');
+
+            try {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: welcomeMessage
+              });
+              console.log(`Welcome message posted successfully for @${contributor}`);
+            } catch (err) {
+              console.error('Failed to post comment:', err.message);
+            }

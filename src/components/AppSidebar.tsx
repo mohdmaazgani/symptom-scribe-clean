@@ -1,7 +1,17 @@
-import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Settings, Bot } from "lucide-react";
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Activity,
+  History,
+  User,
+  Phone,
+  LogOut,
+  Brain,
+  Sparkles,
+  Settings,
+  Bot,
+} from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Activity, History, User, Phone, LogOut, Brain, Sparkles, Settings } from "lucide-react";
-import { NavLink,useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -19,7 +29,7 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "AI Health Assistant", url: "/ai-health-assistant", icon: Bot }, 
+  { title: "AI Health Assistant", url: "/ai-health-assistant", icon: Bot },
   { title: "Health Metrics", url: "/metrics", icon: Activity },
   { title: "History", url: "/history", icon: History },
   { title: "Profile", url: "/profile", icon: User },
@@ -30,8 +40,7 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-
-  const { state, setOpenMobile, isMobile } = useSidebar(); 
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -62,7 +71,6 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-
         <NavLink to="/" className="flex items-center" onClick={handleMobileNavClick}>
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
@@ -70,7 +78,7 @@ export function AppSidebar() {
             </h2>
           )}
         </NavLink>
-        
+
         {/* ✅ Hidden on mobile, visible on laptop/desktop */}
         <div className="hidden md:block">
           <SidebarTrigger />
@@ -85,7 +93,6 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-
                     <NavLink to={item.url} end className={getNavCls} onClick={handleMobileNavClick}>
                       <item.icon className="h-5 w-5" />
                       {!isCollapsed && <span>{item.title}</span>}
@@ -94,7 +101,10 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut} className="hover:bg-destructive/10 text-destructive">
+                <SidebarMenuButton
+                  onClick={handleSignOut}
+                  className="hover:bg-destructive/10 text-destructive"
+                >
                   <LogOut className="h-5 w-5" />
                   {!isCollapsed && <span>Sign Out</span>}
                 </SidebarMenuButton>

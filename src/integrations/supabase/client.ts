@@ -2,16 +2,25 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { browserEnv } from '@/lib/env';
+const { supabaseUrl, supabasePublishableKey } = browserEnv;
 
-const { supabaseUrl: SUPABASE_URL, supabasePublishableKey: SUPABASE_PUBLISHABLE_KEY } = browserEnv;
+// ✅ Validate required environment variables
+const missingVars = [];
+if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+if (!supabasePublishableKey) missingVars.push('SUPABASE_PUBLISHABLE_KEY');
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+if (missingVars.length > 0) {
+  throw new Error(
+    `Missing required Supabase environment variables:\n` +
+    missingVars.map(v => `- ${v}`).join('\n')
+  );
+}
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
   auth: {
     storage: localStorage,
-    persistSession: true,
+    persistence: 'session',
     autoRefreshToken: true,
-  }
+  },
 });
+  

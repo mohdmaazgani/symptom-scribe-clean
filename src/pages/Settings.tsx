@@ -134,23 +134,45 @@ const Settings = () => {
         return;
       }
 
-      // Delete account
-      const { error } = await supabase.auth.signOut();
+      // Call Edge Function to perform deletion via Admin API
+      const { error: deleteFuncError } = await supabase.functions.invoke("delete-user-account");
 
-      if (error) {
-        showError("Logout Failed", error.message);
+      if (deleteFuncError) {
+        showError("Deletion Failed", deleteFuncError.message);
       } else {
-        // For production, you'd call an edge function or admin API to delete the user
-        // For now, we just sign out and redirect
+        // Log out locally (clear session)
+        await supabase.auth.signOut();
         showSuccess("Account Deleted", "Your account has been deleted successfully");
         
         // Clear storage and redirect
         clearSafeStorage();
         navigate("/auth");
       }
-    } catch (error) {
-      showError("Deletion Failed", "Could not delete account. Please try again later");
-    } finally {
+    } catch (error: any) {
+  console.error("[DELETE_ACCOUNT_ERROR]", error);
+
+  if (error?.message?.includes("Unauthorized")) {
+    showError(
+      "Unauthorized",
+      "You are not authorized to delete this account"
+    );
+  } else if (error?.message?.includes("User not found")) {
+    showError(
+      "User Not Found",
+      "The account could not be found"
+    );
+  } else if (error?.message?.includes("network")) {
+    showError(
+      "Network Error",
+      "Please check your internet connection and try again"
+    );
+  } else {
+    showError(
+      "Deletion Failed",
+      "An unexpected error occurred while deleting your account"
+    );
+  }
+} finally {
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
     }
