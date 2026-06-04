@@ -88,13 +88,11 @@ const Privacy = () => {
         <Section title="7. Contact Us">
           <p>
             If you have questions about this Privacy Policy or your data, please contact us at{" "}
-            <a href="https://github.com/mohdmaazgani/symptom-scribe-clean/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-            >
-              Open a GitHub Issue
-            </a>
+            <a href="mailto:privacy@symptomscribe.com"
+            className="text-primary hover:underline"
+          >
+             privacy@symptomscribe.com
+           </a>
             .
           </p>
         </Section>
