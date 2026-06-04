@@ -135,19 +135,24 @@ const Settings = () => {
       }
 
       // Delete account
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.functions.invoke(
+  "delete-account"
+);
 
-      if (error) {
-        showError("Logout Failed", error.message);
-      } else {
-        // For production, you'd call an edge function or admin API to delete the user
-        // For now, we just sign out and redirect
-        showSuccess("Account Deleted", "Your account has been deleted successfully");
-        
-        // Clear storage and redirect
-        clearSafeStorage();
-        navigate("/auth");
-      }
+if (error) {
+  showError("Deletion Failed", error.message);
+  return;
+}
+
+await supabase.auth.signOut();
+
+showSuccess(
+  "Account Deleted",
+  "Your account has been permanently deleted"
+);
+
+clearSafeStorage();
+navigate("/auth");
     } catch (error) {
       showError("Deletion Failed", "Could not delete account. Please try again later");
     } finally {
