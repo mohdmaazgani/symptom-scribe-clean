@@ -2,16 +2,36 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
 
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:8080",
+];
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin":
+    origin && ALLOWED_ORIGINS.includes(origin)
+      ? origin
+      : ALLOWED_ORIGINS[0],
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+});
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
+
       headers: corsHeaders,
+
+      headers: getCorsHeaders(origin),
+
     });
   }
 
@@ -24,7 +44,11 @@ serve(async (req) => {
         {
           status: 401,
           headers: {
+
             ...corsHeaders,
+
+            ...getCorsHeaders(origin),
+
             "Content-Type": "application/json",
           },
         }
@@ -49,7 +73,11 @@ serve(async (req) => {
         {
           status: 401,
           headers: {
+
             ...corsHeaders,
+
+            ...getCorsHeaders(origin),
+
             "Content-Type": "application/json",
           },
         }
@@ -68,7 +96,11 @@ serve(async (req) => {
         {
           status: 500,
           headers: {
+
             ...corsHeaders,
+
+            ...getCorsHeaders(origin),
+
             "Content-Type": "application/json",
           },
         }
@@ -83,7 +115,11 @@ serve(async (req) => {
       {
         status: 200,
         headers: {
+
           ...corsHeaders,
+
+          ...getCorsHeaders(origin),
+
           "Content-Type": "application/json",
         },
       }
@@ -99,7 +135,11 @@ serve(async (req) => {
       {
         status: 500,
         headers: {
+
           ...corsHeaders,
+
+          ...getCorsHeaders(origin),
+
           "Content-Type": "application/json",
         },
       }

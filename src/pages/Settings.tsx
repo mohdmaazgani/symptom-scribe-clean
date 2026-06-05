@@ -173,6 +173,33 @@ navigate("/auth");
     } catch (error) {
       showError("Deletion Failed", "Could not delete account. Please try again later");
     } finally {
+
+    } catch (error: any) {
+  console.error("[DELETE_ACCOUNT_ERROR]", error);
+
+  if (error?.message?.includes("Unauthorized")) {
+    showError(
+      "Unauthorized",
+      "You are not authorized to delete this account"
+    );
+  } else if (error?.message?.includes("User not found")) {
+    showError(
+      "User Not Found",
+      "The account could not be found"
+    );
+  } else if (error?.message?.includes("network")) {
+    showError(
+      "Network Error",
+      "Please check your internet connection and try again"
+    );
+  } else {
+    showError(
+      "Deletion Failed",
+      "An unexpected error occurred while deleting your account"
+    );
+  }
+} finally {
+
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
     }

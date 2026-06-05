@@ -6,16 +6,44 @@ import { detectEmergencySymptoms } from "./medicalSafety.ts";
 import { rateLimit } from "./rateLimit.ts";
 import { jsonResponse } from "./utils.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:8080",
+  "https://symptom-scribe.vercel.app",
+];
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin":
+    origin && ALLOWED_ORIGINS.includes(origin)
+      ? origin
+      : "null",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-};
+});
 
 serve(async (req: Request): Promise<Response> => {
+  
+  const origin = req.headers.get("origin");
+
+if (
+  origin &&
+  !ALLOWED_ORIGINS.includes(origin)
+) {
+  return new Response(
+    JSON.stringify({
+      error: "Origin not allowed",
+    }),
+    {
+      status: 403,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      headers: corsHeaders,
+      headers: getCorsHeaders(origin),
     });
   }
 
@@ -33,7 +61,7 @@ serve(async (req: Request): Promise<Response> => {
           error: "Rate limit exceeded. Please try again later.",
         },
         429,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
@@ -47,7 +75,7 @@ serve(async (req: Request): Promise<Response> => {
           error: "Invalid JSON body",
         },
         400,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
@@ -60,7 +88,7 @@ serve(async (req: Request): Promise<Response> => {
           details: parsed.error.flatten(),
         },
         400,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
@@ -76,7 +104,7 @@ serve(async (req: Request): Promise<Response> => {
           error: "LOVABLE_API_KEY is not configured",
         },
         500,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
@@ -152,7 +180,7 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
           status: response.status,
         },
         response.status,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
@@ -162,14 +190,14 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
           error: "Empty AI response body",
         },
         500,
-        corsHeaders
+        getCorsHeaders(origin)
       );
     }
 
     return new Response(response.body, {
       status: 200,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         "Content-Type": "text/event-stream",
       },
     });
@@ -184,7 +212,7 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
             : "Unknown server error",
       },
       500,
-      corsHeaders
+      getCorsHeaders(origin)
     );
   }
 });
