@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
@@ -331,12 +332,13 @@ const PersonalStep = ({ data, update }: StepProps) => (
     </div>
     <div className="space-y-2">
       <Label htmlFor="signup-dob">Date of Birth</Label>
-      <Input
-        id="signup-dob"
-        type="date"
-        value={data.date_of_birth}
-        onChange={(e) => update({ date_of_birth: e.target.value })}
-      />
+    <Input
+     id="signup-dob"
+     type="date"
+     max={new Date().toISOString().split("T")[0]}
+     value={data.date_of_birth}
+     onChange={(e) => update({ date_of_birth: e.target.value })}
+     />
     </div>
     <div className="space-y-2">
       <Label htmlFor="signup-gender">Gender</Label>
