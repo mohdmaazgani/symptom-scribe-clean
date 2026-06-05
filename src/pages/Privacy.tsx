@@ -1,7 +1,8 @@
+
 import { Shield } from "lucide-react";
 import LegalPageLayout from "@/components/legal/LegalPageLayout";
 import Section from "@/components/legal/Section";
-
+ 
 const Privacy = () => {
   return (
     <LegalPageLayout title="Privacy Policy" icon={Shield}>
@@ -15,7 +16,7 @@ const Privacy = () => {
             Please read this policy carefully. If you disagree with its terms, please discontinue use of the application.
           </p>
         </Section>
-
+ 
         <Section title="2. Information We Collect">
           <p>We may collect the following types of information:</p>
           <ul className="mt-3 space-y-2">
@@ -32,7 +33,7 @@ const Privacy = () => {
             ))}
           </ul>
         </Section>
-
+ 
         <Section title="3. How We Use Your Information">
           <p>We use the information we collect to:</p>
           <ul className="mt-3 space-y-2">
@@ -50,7 +51,7 @@ const Privacy = () => {
             ))}
           </ul>
         </Section>
-
+ 
         <Section title="4. Sharing of Information">
           <p>
             We do not sell, trade, or rent your personal information to third parties. We may share information with
@@ -58,7 +59,7 @@ const Privacy = () => {
             We may also disclose information when required by law.
           </p>
         </Section>
-
+ 
         <Section title="5. Data Security">
           <p>
             We implement industry-standard security measures including encryption, secure servers, and regular security
@@ -66,7 +67,7 @@ const Privacy = () => {
             guarantee absolute security.
           </p>
         </Section>
-
+ 
         <Section title="6. Your Rights">
           <p>You have the right to:</p>
           <ul className="mt-3 space-y-2">
@@ -84,20 +85,24 @@ const Privacy = () => {
             ))}
           </ul>
         </Section>
-
+ 
         <Section title="7. Contact Us">
           <p>
             If you have questions about this Privacy Policy or your data, please contact us at{" "}
-            <a href="mailto:privacy@symptomscribe.com"
-            className="text-primary hover:underline"
-          >
-             privacy@symptomscribe.com
-           </a>
+            <a
+              href="https://github.com/mohdmaazgani/symptom-scribe-clean/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Open a GitHub Issue
+            </a>
             .
           </p>
         </Section>
     </LegalPageLayout>
   );
 };
-
+ 
 export default Privacy;
+ 
