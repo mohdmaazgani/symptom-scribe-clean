@@ -334,7 +334,6 @@ const PersonalStep = ({ data, update }: StepProps) => (
     <Input
      id="signup-dob"
      type="date"
-     max={new Date().toISOString().split("T")[0]}
      value={data.date_of_birth}
      onChange={(e) => update({ date_of_birth: e.target.value })}
      />
