@@ -2,32 +2,36 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Chat from "./pages/Chat";
-import Metrics from "./pages/Metrics";
-import History from "./pages/History";
-import Profile from "./pages/Profile";
-import Emergency from "./pages/Emergency";
-import BrainGames from "./pages/BrainGames";
-import HealthFacts from "./pages/HealthFacts";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
-import AIHealthAssistant from "./pages/AIHealthAssistant";
-
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Disclaimer from "./pages/Disclaimer";
-import Accessibility from "./pages/Accessibility";
-import HealthLibrary from "./pages/HealthLibrary";
-import Blog from "./pages/Blog";
-import Contact from "./pages/Contact";
 import ScrollToTop from "@/components/ScrollToTop";
-import BlogPostPage from "@/pages/BlogPostPage";
+
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Metrics = lazy(() => import("./pages/Metrics"));
+const History = lazy(() => import("./pages/History"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Emergency = lazy(() => import("./pages/Emergency"));
+const BrainGames = lazy(() => import("./pages/BrainGames"));
+const HealthFacts = lazy(() => import("./pages/HealthFacts"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AIHealthAssistant = lazy(() => import("./pages/AIHealthAssistant"));
+
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Disclaimer = lazy(() => import("./pages/Disclaimer"));
+const Accessibility = lazy(() => import("./pages/Accessibility"));
+const HealthLibrary = lazy(() => import("./pages/HealthLibrary"));
+const Blog = lazy(() => import("./pages/Blog"));
+const Contact = lazy(() => import("./pages/Contact"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -37,7 +41,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ScrollToTop />
-        <Routes>
+
+<Suspense fallback={<div>Loading...</div>}>
+  <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route
@@ -170,8 +176,9 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+</Suspense>
+</BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
