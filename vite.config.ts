@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => ({
         description: "AI-powered symptom checker and health tracker.",
         theme_color: "#22d3ee",
         background_color: "#0f172a",
+        display: "standalone",
+        start_url: "/",
         icons: [
           {
             src: "pwa-64x64.png",
@@ -47,7 +49,11 @@ export default defineConfig(({ mode }) => ({
           }
         ],
       },
-    })
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        navigateFallback: "/index.html",
+      },
+    }),
   ].filter(Boolean),
   resolve: {
     alias: {

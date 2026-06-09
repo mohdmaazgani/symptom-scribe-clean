@@ -224,7 +224,7 @@ const AIHealthAssistant = () => {
             } else if (/severity\s+level/i.test(trimmedLine)) {
               currentSection = "severity";
               const severityMatch = trimmedLine.match(
-                /severity\s+level\s*:\s*[*_#`\[]*\s*(low|moderate|high)/i
+                /severity\s+level\s*:\s*[*_#`[]*\s*(low|moderate|high)/i
               );
               if (severityMatch) {
                 severityLevel = severityMatch[1].toLowerCase();

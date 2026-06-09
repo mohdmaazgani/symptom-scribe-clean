@@ -13,6 +13,17 @@ interface Stats {
   recentActivity: number;
 }
 
+interface SymptomHistoryRecord {
+  id: string;
+  symptoms: string;
+  severity_level: string;
+  possible_causes: string[] | null;
+  recommendations: string[] | null;
+  risk_score: number | null;
+  resolved: boolean;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({
     totalSymptoms: 0,
@@ -20,7 +31,7 @@ const Dashboard = () => {
     avgRiskScore: 0,
     recentActivity: 0,
   });
-  const [recentHistory, setRecentHistory] = useState<any[]>([]);
+  const [recentHistory, setRecentHistory] = useState<SymptomHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

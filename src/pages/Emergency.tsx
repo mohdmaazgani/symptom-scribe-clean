@@ -261,7 +261,9 @@ const Emergency = () => {
       gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.4);
-    } catch (_) {}
+    } catch (_) {
+      // Silently fail if AudioContext is not supported or allowed
+    }
   };
 
   // ── Filtered numbers ───────────────────────────────────────────────────────

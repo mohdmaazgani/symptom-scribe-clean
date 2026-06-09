@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
+import { db, syncOfflineData, type OfflineMetric } from "@/lib/offline-db";
 import {
   Table,
   TableBody,
@@ -83,7 +84,7 @@ const metricTypes = [
 interface MetricEntry {
   id: string;
   metric_type: string;
-  value: any;
+  value: { value?: number; systolic?: number; diastolic?: number };
   notes: string | null;
   recorded_at: string;
 }
@@ -117,9 +118,33 @@ const Metrics = () => {
 
     fetchUser();
   }, []);
+
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
   const [historyMetricFilter, setHistoryMetricFilter] = useState("all");
   const [timeframeFilter, setTimeframeFilter] = useState("all");
   const [historyView, setHistoryView] = useState("table");
+
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      const synced = await syncOfflineData();
+      if (synced) {
+        refresh();
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [refresh]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -134,7 +159,7 @@ const Metrics = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       setHistoryUserId(user.id);
-      let metricValue: any = {};
+      let metricValue: { value?: number; systolic?: number; diastolic?: number } = {};
       if (metricType === "blood_pressure") {
         metricValue = {
           systolic: parseInt(systolic),
@@ -144,22 +169,59 @@ const Metrics = () => {
         metricValue = { value: parseFloat(value) };
       }
 
-      const { error } = await supabase.from("health_metrics").insert({
-        user_id: user.id,
-        metric_type: metricType,
-        value: metricValue,
-        notes: notes || null,
-      });
-
-      if (error) throw error;
-
       const metricLabel = metricTypes.find(
         (m) => m.value === metricType,
       )?.label;
-      showSuccess(
-        `${metricLabel} Recorded`,
-        "Your health metric has been saved successfully.",
-      );
+
+      const recordId = crypto.randomUUID();
+      const recordedAt = new Date().toISOString();
+
+      if (navigator.onLine) {
+        const { error } = await supabase.from("health_metrics").insert({
+          id: recordId,
+          user_id: user.id,
+          metric_type: metricType,
+          value: metricValue,
+          notes: notes || null,
+          recorded_at: recordedAt,
+        });
+
+        if (error) throw error;
+
+        // Cache locally
+        await db.healthMetrics.put({
+          id: recordId,
+          user_id: user.id,
+          metric_type: metricType,
+          value: metricValue,
+          notes: notes || null,
+          recorded_at: recordedAt,
+          pending_sync: 0,
+          pending_delete: 0,
+        });
+
+        showSuccess(
+          `${metricLabel} Recorded`,
+          "Your health metric has been saved successfully.",
+        );
+      } else {
+        // Save offline in local database
+        await db.healthMetrics.put({
+          id: recordId,
+          user_id: user.id,
+          metric_type: metricType,
+          value: metricValue,
+          notes: notes || null,
+          recorded_at: recordedAt,
+          pending_sync: 1,
+          pending_delete: 0,
+        });
+
+        showSuccess(
+          `${metricLabel} Saved Offline`,
+          "No internet connection. Saved locally and will sync once online.",
+        );
+      }
 
       // Reset form
       setValue("");
@@ -167,7 +229,7 @@ const Metrics = () => {
       setDiastolic("");
       setNotes("");
 
-      // Refresh history to show the new entry with trend
+      // Refresh history
       refresh();
     } catch (error) {
       console.error("Error saving metric:", error);
@@ -176,14 +238,15 @@ const Metrics = () => {
       setLoading(false);
     }
   };
-  const formatMetricValue = (record: any) => {
+  const formatMetricValue = (record: OfflineMetric) => {
+    const recordValue = record.value as { value?: number; systolic?: number; diastolic?: number } | null;
     if (record.metric_type === "blood_pressure") {
-      return `${record.value?.systolic}/${record.value?.diastolic} mmHg`;
+      return `${recordValue?.systolic}/${recordValue?.diastolic} mmHg`;
     }
 
     const metric = metricTypes.find((m) => m.value === record.metric_type);
 
-    return `${record.value?.value} ${metric?.unit || ""}`;
+    return `${recordValue?.value} ${metric?.unit || ""}`;
   };
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString([], {
@@ -194,7 +257,7 @@ const Metrics = () => {
       minute: "2-digit",
     });
   };
-  const filteredRecords = records.filter((record: any) => {
+  const filteredRecords = records.filter((record: OfflineMetric) => {
     const metricMatch =
       historyMetricFilter === "all" ||
       record.metric_type === historyMetricFilter;
@@ -219,7 +282,15 @@ const Metrics = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
+          {!isOnline && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 px-3 py-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-ping" />
+              Offline Mode
+            </span>
+          )}
+        </div>
         <p className="text-muted-foreground">
           Track your vital signs and health measurements
         </p>
@@ -420,7 +491,7 @@ const Metrics = () => {
                     </TableHeader>
 
                     <TableBody>
-                      {filteredRecords.map((record: any) => (
+                      {filteredRecords.map((record: OfflineMetric) => (
                         <TableRow key={record.id}>
                           <TableCell>
                             {formatDate(record.recorded_at)}

@@ -9,6 +9,7 @@ import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { type Json } from "@/integrations/supabase/types";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,11 +21,20 @@ const INITIAL_GREETING: Message = {
   content: "Hello! I'm your AI health assistant. Please describe your symptoms, and I'll help you understand possible causes and recommend self-care steps.\n\n⚠️ Remember: I provide general information only. For medical diagnosis or treatment, always consult a healthcare professional.",
 };
 
+interface ChatSession {
+  id: string;
+  user_id: string;
+  title: string | null;
+  messages: Json;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([INITIAL_GREETING]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -68,7 +78,7 @@ const ChatInterface = () => {
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) return;
     setActiveSessionId(sessionId);
-    const loadedMessages = (session.messages as Message[]) || [];
+    const loadedMessages = (session.messages as unknown as Message[]) || [];
     if (loadedMessages.length === 0) {
       setMessages([INITIAL_GREETING]);
     } else {
@@ -93,9 +103,10 @@ const ChatInterface = () => {
       }
       
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error deleting session:", err);
-      showError("Delete Failed", err.message || "Failed to delete chat session");
+      const errorMsg = err instanceof Error ? err.message : "Failed to delete chat session";
+      showError("Delete Failed", errorMsg);
     }
   };
 
@@ -145,7 +156,7 @@ const ChatInterface = () => {
           .insert({
             user_id: user.id,
             title,
-            messages: newMessages as any,
+            messages: newMessages as unknown as Json,
           })
           .select()
           .single();
@@ -153,12 +164,12 @@ const ChatInterface = () => {
         if (createError) throw createError;
         currentSessionId = newSession.id;
         setActiveSessionId(currentSessionId);
-        setSessions((prev) => [newSession, ...prev]);
+        setSessions((prev) => [newSession as unknown as ChatSession, ...prev]);
       } else {
         const { error: updateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: newMessages as any,
+            messages: newMessages as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -227,7 +238,7 @@ const ChatInterface = () => {
         const { error: finalUpdateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: finalMessages as any,
+            messages: finalMessages as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -304,10 +315,11 @@ const ChatInterface = () => {
           }
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Chat error:", error);
       dismissLoading();
-      showError("Analysis failed", error.message || "Failed to get AI response. Please try again.");
+      const errorMsg = error instanceof Error ? error.message : "Failed to get AI response. Please try again.";
+      showError("Analysis failed", errorMsg);
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
       setIsLoading(false);

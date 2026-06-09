@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, X, Trash2, Eye, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
+import { db, syncOfflineData } from "@/lib/offline-db";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +36,29 @@ const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const { toast } = useToast();
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
     fetchHistory();
+
+    const handleOnline = async () => {
+      setIsOnline(true);
+      const synced = await syncOfflineData();
+      if (synced) {
+        fetchHistory();
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   const fetchHistory = async () => {
@@ -45,16 +66,65 @@ const History = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from("symptom_history")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("symptom_history")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setHistory(data || []);
+        if (error) throw error;
+
+        if (data) {
+          // Sync with local Dexie store
+          // First, delete non-pending records in Dexie to avoid stales
+          await db.symptomHistory
+            .where("user_id")
+            .equals(user.id)
+            .filter((record) => record.pending_sync === 0 && record.pending_delete === 0 && record.pending_update === 0)
+            .delete();
+
+          // Bulk add the new ones
+          const localEntries = data.map((record: SymptomEntry) => ({
+            id: record.id,
+            user_id: record.user_id,
+            symptoms: record.symptoms,
+            severity_level: record.severity_level,
+            possible_causes: record.possible_causes,
+            recommendations: record.recommendations,
+            risk_score: record.risk_score,
+            resolved: record.resolved,
+            created_at: record.created_at || new Date().toISOString(),
+            pending_sync: 0,
+            pending_update: 0,
+            pending_delete: 0,
+          }));
+          
+          await db.symptomHistory.bulkPut(localEntries);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching history:", error);
+      console.warn("Error fetching history from Supabase, falling back to local DB:", error);
+    }
+
+    // Load from local Dexie database for the UI (both online & offline)
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const localRecords = await db.symptomHistory
+          .where("user_id")
+          .equals(user.id)
+          .filter((record) => record.pending_delete === 0)
+          .toArray();
+
+        // Sort by created_at desc
+        localRecords.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setHistory(localRecords as unknown as SymptomEntry[]);
+      }
+    } catch (err) {
+      console.error("Error loading local symptoms:", err);
     } finally {
       setLoading(false);
     }
@@ -62,19 +132,32 @@ const History = () => {
 
   const toggleResolved = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from("symptom_history")
-        .update({ resolved: !currentStatus })
-        .eq("id", id);
+      const newStatus = !currentStatus;
 
-      if (error) throw error;
+      if (navigator.onLine) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .update({ resolved: newStatus })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        // Update local Dexie record
+        await db.symptomHistory.update(id, { resolved: newStatus, pending_update: 0 });
+      } else {
+        // Offline mode: save locally and mark as pending_update
+        await db.symptomHistory.update(id, { resolved: newStatus, pending_update: 1 });
+      }
 
       toast({
         title: "Status Updated",
-        description: !currentStatus ? "Marked as resolved" : "Marked as unresolved",
+        description: newStatus ? "Marked as resolved" : "Marked as unresolved",
       });
 
-      fetchHistory();
+      // Update state immediately
+      setHistory((prev) =>
+        prev.map((entry) => (entry.id === id ? { ...entry, resolved: newStatus } : entry))
+      );
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -87,15 +170,23 @@ const History = () => {
 
   const deleteEntry = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("symptom_history")
-        .delete()
-        .eq("id", id);
+      if (navigator.onLine) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .delete()
+          .eq("id", id);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        await db.symptomHistory.delete(id);
+      } else {
+        // Offline mode: mark for pending delete
+        await db.symptomHistory.update(id, { pending_delete: 1 });
+      }
 
       showSuccess("Record deleted", "The symptom history has been permanently removed.");
-      fetchHistory();
+      // Update state immediately
+      setHistory((prev) => prev.filter((entry) => entry.id !== id));
     } catch (error) {
       console.error("Error deleting history:", error);
       showError("Delete failed", "Could not delete this health record.");
@@ -134,7 +225,15 @@ const History = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Symptom History</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground">Symptom History</h1>
+            {!isOnline && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 px-3 py-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-ping" />
+                Offline Mode
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground">Review your past health consultations</p>
         </div>
         {history.length > 0 && (
