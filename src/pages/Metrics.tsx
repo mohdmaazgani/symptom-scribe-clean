@@ -61,6 +61,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Trash2 } from "lucide-react";
+import { toPng } from "html-to-image";
+import { useRef } from "react";
 
 const metricTypes = [
   {
@@ -90,6 +92,15 @@ interface MetricEntry {
 }
 
 const Metrics = () => {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const downloadChart = async () => {
+    if (!chartRef.current) return;
+  const dataUrl = await toPng(chartRef.current);
+  const link = document.createElement("a");
+  link.download = "health-metric-chart.png";
+  link.href = dataUrl;
+  link.click();
+};
   const [metricType, setMetricType] = useState("");
   const [value, setValue] = useState("");
   const [systolic, setSystolic] = useState("");
@@ -404,11 +415,17 @@ const Metrics = () => {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
           <CardTitle>Metrics History</CardTitle>
           <CardDescription>
             Your previously recorded health metrics
           </CardDescription>
+          </div>
+          {historyView==="chart"&&(
+          <Button onClick={downloadChart}>
+          Download Chart
+          </Button>)}
         </CardHeader>
 
         <CardContent>
@@ -557,7 +574,7 @@ const Metrics = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="h-[400px] w-full rounded-xl border p-4">
+                  <div ref={chartRef} className="h-[400px] w-full rounded-xl border p-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={filteredRecords}>
                         <CartesianGrid strokeDasharray="3 3" />
