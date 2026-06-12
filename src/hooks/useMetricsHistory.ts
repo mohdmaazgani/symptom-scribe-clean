@@ -49,7 +49,6 @@ export function useMetricsHistory(userId: string | null) {
         .filter((record) => record.pending_delete === 0)
         .toArray();
 
-      // Sort based on selected order
       const sortedRecords = [...localRecords];
 
       if (sortOrder === 'newest') {
@@ -93,7 +92,7 @@ export function useMetricsHistory(userId: string | null) {
     if (userId) {
       fetchHistory();
     }
-  }, [userId, sortOrder, fetchHistory]);
+  }, [userId, fetchHistory]);
 
   return {
     records,

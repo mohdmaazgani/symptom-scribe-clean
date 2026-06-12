@@ -26,8 +26,6 @@ import {
   Droplet,
   Wind,
   TrendingUp,
-  TrendingDown,
-  Minus,
   ArrowUpDown,
 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
@@ -85,16 +83,9 @@ const metricTypes = [
   },
 ];
 
-interface MetricEntry {
-  id: string;
-  metric_type: string;
-  value: { value?: number; systolic?: number; diastolic?: number };
-  notes: string | null;
-  recorded_at: string;
-}
-
 const Metrics = () => {
   const chartRef = useRef<HTMLDivElement>(null);
+  
   const downloadChart = async () => {
     if (!chartRef.current) return;
     const dataUrl = await toPng(chartRef.current);
@@ -103,6 +94,7 @@ const Metrics = () => {
     link.href = dataUrl;
     link.click();
   };
+  
   const [metricType, setMetricType] = useState("");
   const [value, setValue] = useState("");
   const [systolic, setSystolic] = useState("");
@@ -169,14 +161,15 @@ const Metrics = () => {
     if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
     if (metricType !== "blood_pressure" && !value) return;
 
-    if (metricType==="heart_rate"){
-      const hr=Number(value);
-      if(hr<30||hr>250){
+    if (metricType === "heart_rate"){
+      const hr = Number(value);
+      if(hr < 30 || hr > 250){
         alert("Heart Rate must be between 30 and 250 BPM");
         return;
       }
     }
-    if (metricType==="temperature"){
+    
+    if (metricType === "temperature"){
       const temp = Number(value);
       if (temp < 86 || temp > 113) {
         alert("Temperature must be between 86°F and 113°F");
@@ -225,6 +218,7 @@ const Metrics = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       setHistoryUserId(user.id);
+      
       let metricValue: { value?: number; systolic?: number; diastolic?: number } = {};
       if (metricType === "blood_pressure") {
         metricValue = {
@@ -533,7 +527,6 @@ const Metrics = () => {
                   </SelectContent>
                 </Select>
 
-                {/* SORT TOGGLE BUTTONS - NEW CODE ADDED HERE */}
                 <div className="flex gap-2 ml-auto">
                   <Button
                     variant={sortOrder === "newest" ? "default" : "outline"}
