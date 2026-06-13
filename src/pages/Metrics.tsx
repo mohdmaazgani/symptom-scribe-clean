@@ -30,8 +30,8 @@ import {
   Minus,
 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
-import { useMetricsHistory } from "@/hooks/useMetricsHistory";
-import { db, syncOfflineData, type OfflineMetric } from "@/lib/offline-db";
+import { db, syncOfflineData, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
+import { whenEncryptionReady } from "@/lib/encryption";
 import {
   Table,
   TableBody,
@@ -237,6 +237,8 @@ const Metrics = () => {
       const recordId = crypto.randomUUID();
       const recordedAt = new Date().toISOString();
 
+      const key = await whenEncryptionReady();
+
       if (navigator.onLine) {
         const { error } = await supabase.from("health_metrics").insert({
           id: recordId,
@@ -250,7 +252,7 @@ const Metrics = () => {
         if (error) throw error;
 
         // Cache locally
-        await db.healthMetrics.put({
+        const record = {
           id: recordId,
           user_id: user.id,
           metric_type: metricType,
@@ -259,7 +261,9 @@ const Metrics = () => {
           recorded_at: recordedAt,
           pending_sync: 0,
           pending_delete: 0,
-        });
+        };
+        const encryptedRecord = await encryptMetric(record, key);
+        await db.healthMetrics.put(encryptedRecord);
 
         showSuccess(
           `${metricLabel} Recorded`,
@@ -267,7 +271,7 @@ const Metrics = () => {
         );
       } else {
         // Save offline in local database
-        await db.healthMetrics.put({
+        const record = {
           id: recordId,
           user_id: user.id,
           metric_type: metricType,
@@ -276,7 +280,9 @@ const Metrics = () => {
           recorded_at: recordedAt,
           pending_sync: 1,
           pending_delete: 0,
-        });
+        };
+        const encryptedRecord = await encryptMetric(record, key);
+        await db.healthMetrics.put(encryptedRecord);
 
         showSuccess(
           `${metricLabel} Saved Offline`,

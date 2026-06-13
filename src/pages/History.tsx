@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, X, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
-import { db, syncOfflineData } from "@/lib/offline-db";
+import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
+import { whenEncryptionReady } from "@/lib/encryption";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +67,8 @@ const History = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const key = await whenEncryptionReady();
+
       if (navigator.onLine) {
         const { data, error } = await supabase
           .from("symptom_history")
@@ -87,22 +90,26 @@ const History = () => {
             )
             .delete();
 
-          const localEntries = data.map((record: SymptomEntry) => ({
+          const localEntries = data.map((record) => ({
             id: record.id,
-            user_id: (record as any).user_id,
-            symptoms: record.symptoms,
-            severity_level: record.severity_level,
+            user_id: record.user_id,
+            symptoms: record.symptoms || "",
+            severity_level: record.severity_level || "low",
             possible_causes: record.possible_causes,
             recommendations: record.recommendations,
             risk_score: record.risk_score,
-            resolved: record.resolved,
+            resolved: !!record.resolved,
             created_at: record.created_at || new Date().toISOString(),
             pending_sync: 0,
             pending_update: 0,
             pending_delete: 0,
           }));
 
-          await db.symptomHistory.bulkPut(localEntries);
+          const encryptedEntries = await Promise.all(
+            localEntries.map((entry) => encryptSymptom(entry, key))
+          );
+
+          await db.symptomHistory.bulkPut(encryptedEntries);
         }
       }
     } catch (error) {
@@ -112,16 +119,21 @@ const History = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const key = await whenEncryptionReady();
         const localRecords = await db.symptomHistory
           .where("user_id")
           .equals(user.id)
           .filter((record) => record.pending_delete === 0)
           .toArray();
 
-        localRecords.sort(
+        const decryptedRecords = await Promise.all(
+          localRecords.map((record) => decryptSymptom(record, key))
+        );
+
+        decryptedRecords.sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        setHistory(localRecords as unknown as SymptomEntry[]);
+        setHistory(decryptedRecords as unknown as SymptomEntry[]);
       }
     } catch (err) {
       console.error("Error loading local symptoms:", err);
@@ -201,7 +213,7 @@ const History = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string): "default" | "secondary" | "destructive" => {
     switch (severity) {
       case "high": return "destructive";
       case "moderate": return "default";
@@ -305,7 +317,7 @@ const History = () => {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <Badge variant={getSeverityColor(entry.severity_level) as any}>
+                    <Badge variant={getSeverityColor(entry.severity_level)}>
                       {entry.severity_level}
                     </Badge>
                     <Button

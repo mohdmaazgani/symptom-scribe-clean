@@ -1,6 +1,12 @@
 import Dexie, { type Table } from "dexie";
 import { supabase } from "@/integrations/supabase/client";
 import { type Json } from "@/integrations/supabase/types";
+import {
+  encryptText,
+  decryptText,
+  whenEncryptionReady,
+  registerEncryptionHooks,
+} from "./encryption";
 
 export interface OfflineMetric {
   id: string;
@@ -43,6 +49,100 @@ class OfflineDatabase extends Dexie {
 
 export const db = new OfflineDatabase();
 
+// Encryption and Decryption Mappers
+export async function encryptSymptom(record: OfflineSymptom, key: CryptoKey): Promise<OfflineSymptom> {
+  const encrypted = { ...record };
+  if (record.symptoms) {
+    encrypted.symptoms = `enc:str:${await encryptText(record.symptoms, key)}`;
+  }
+  if (record.possible_causes) {
+    encrypted.possible_causes = [`enc:json:${await encryptText(JSON.stringify(record.possible_causes), key)}`];
+  }
+  if (record.recommendations) {
+    encrypted.recommendations = [`enc:json:${await encryptText(JSON.stringify(record.recommendations), key)}`];
+  }
+  return encrypted;
+}
+
+export async function decryptSymptom(record: OfflineSymptom, key: CryptoKey): Promise<OfflineSymptom> {
+  const decrypted = { ...record };
+  if (record.symptoms && record.symptoms.startsWith("enc:str:")) {
+    const rawEnc = record.symptoms.substring(8);
+    decrypted.symptoms = await decryptText(rawEnc, key);
+  }
+  if (
+    record.possible_causes &&
+    record.possible_causes.length === 1 &&
+    record.possible_causes[0].startsWith("enc:json:")
+  ) {
+    const rawEnc = record.possible_causes[0].substring(9);
+    decrypted.possible_causes = JSON.parse(await decryptText(rawEnc, key));
+  }
+  if (
+    record.recommendations &&
+    record.recommendations.length === 1 &&
+    record.recommendations[0].startsWith("enc:json:")
+  ) {
+    const rawEnc = record.recommendations[0].substring(9);
+    decrypted.recommendations = JSON.parse(await decryptText(rawEnc, key));
+  }
+  return decrypted;
+}
+
+export async function encryptMetric(record: OfflineMetric, key: CryptoKey): Promise<OfflineMetric> {
+  const encrypted = { ...record };
+  if (record.notes) {
+    encrypted.notes = `enc:str:${await encryptText(record.notes, key)}`;
+  }
+  return encrypted;
+}
+
+export async function decryptMetric(record: OfflineMetric, key: CryptoKey): Promise<OfflineMetric> {
+  const decrypted = { ...record };
+  if (record.notes && record.notes.startsWith("enc:str:")) {
+    const rawEnc = record.notes.substring(8);
+    decrypted.notes = await decryptText(rawEnc, key);
+  }
+  return decrypted;
+}
+
+// Register Encryption Hooks for Auth Lifecycles
+registerEncryptionHooks({
+  onLogout: async () => {
+    try {
+      await db.healthMetrics.clear();
+      await db.symptomHistory.clear();
+    } catch (err) {
+      console.error("Error clearing database on logout:", err);
+    }
+  },
+  onTokenRefresh: async (oldKey, newKey) => {
+    try {
+      const metrics = await db.healthMetrics.toArray();
+      for (const record of metrics) {
+        const decrypted = await decryptMetric(record, oldKey);
+        const encrypted = await encryptMetric(decrypted, newKey);
+        await db.healthMetrics.put(encrypted);
+      }
+
+      const symptoms = await db.symptomHistory.toArray();
+      for (const record of symptoms) {
+        const decrypted = await decryptSymptom(record, oldKey);
+        const encrypted = await encryptSymptom(decrypted, newKey);
+        await db.symptomHistory.put(encrypted);
+      }
+    } catch (err) {
+      console.error("Error migrating offline database on token rotation, clearing tables:", err);
+      try {
+        await db.healthMetrics.clear();
+        await db.symptomHistory.clear();
+      } catch (clearErr) {
+        console.error("Failed to clear database after migration failure:", clearErr);
+      }
+    }
+  },
+});
+
 export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
 
@@ -50,6 +150,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
+    const key = await whenEncryptionReady();
     let syncedAny = false;
 
     // 1. Sync pending health metrics deletions
@@ -77,7 +178,8 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingMetricsInserts) {
-      const { pending_sync, pending_delete, ...supabaseData } = record;
+      const decrypted = await decryptMetric(record, key);
+      const { pending_sync, pending_delete, ...supabaseData } = decrypted;
       const { error } = await supabase
         .from("health_metrics")
         .insert(supabaseData);
@@ -113,7 +215,8 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
+      const decrypted = await decryptSymptom(record, key);
+      const { pending_sync, pending_delete, pending_update, ...supabaseData } = decrypted;
       const { error } = await supabase
         .from("symptom_history")
         .insert(supabaseData);
@@ -149,7 +252,3 @@ export const syncOfflineData = async (): Promise<boolean> => {
   }
 };
 
-// FIX #2: Removed the global window.addEventListener("online", syncOfflineData) that
-// was here previously. It caused syncOfflineData to fire 3× on every reconnect because
-// History.tsx and Metrics.tsx each add their own "online" listener too.
-// The page-level components are the single source of truth for triggering sync.
