@@ -95,6 +95,12 @@ const Privacy = () => {
             >
               Open a GitHub Issue
             </a>
+            {" "}or{" "}
+            <a href="/contact"
+                className="text-primary hover:underline"
+            >
+              Contact Support
+            </a>
             .
           </p>
         </Section>
