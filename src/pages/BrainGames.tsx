@@ -200,35 +200,19 @@ const BrainGames = () => {
     fetchUserStats();
   }, []);
 
-  // Save stats when XP changes (after initial load is complete)
-  useEffect(() => {
-    if (!statsLoaded) return;
+  const awardXp = async (pointsToGain: number) => {
+    if (pointsToGain <= 0) return;
+    setXp((prev) => prev + pointsToGain);
 
-    const saveStats = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const newLevel = Math.floor(xp / XP_PER_LEVEL) + 1;
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            xp: xp,
-            level: newLevel,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error("Error saving user stats:", error);
-      }
-    };
-
-    saveStats();
-  }, [xp, statsLoaded]);
+    try {
+      const { error } = await supabase.rpc("award_user_xp", {
+        points_to_add: pointsToGain,
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error awarding user XP:", err);
+    }
+  };
 
   const { toast } = useToast();
 
@@ -533,11 +517,9 @@ const BrainGames = () => {
 
         const newScore = patternScore + pointsEarned;
         const newStreak = patternStreak + 1;
-        const newXp = xp + xpEarned;
-
         setPatternScore(newScore);
         setPatternStreak(newStreak);
-        setXp(newXp);
+        awardXp(xpEarned);
 
         if (timeBonus > 0) {
           showSuccess(
@@ -580,7 +562,7 @@ const BrainGames = () => {
 
         // Bonus XP for completing
         const completionBonus = 50;
-        setXp((prev) => prev + completionBonus);
+        awardXp(completionBonus);
         showSuccess("Game Complete!", `+${completionBonus} XP bonus!`);
         return;
       }
@@ -601,7 +583,6 @@ const BrainGames = () => {
       questionTimeLeft,
       patternScore,
       patternStreak,
-      xp,
       toast,
     ]
   );
@@ -809,7 +790,7 @@ const BrainGames = () => {
         if (matchedCards.length + 2 === memoryCards.length) {
           setMemoryGameWon(true);
           const winXp = 30;
-          setXp((prev) => prev + winXp);
+          awardXp(winXp);
           showSuccess(
             "🎉 Congratulations! 🎉",
             `You've matched all pairs! Great memory! (+${winXp} XP)`
@@ -848,7 +829,7 @@ const BrainGames = () => {
       const newScore = mathScore + 1;
       setMathScore(newScore);
       const mathXp = 5;
-      setXp((prev) => prev + mathXp);
+      awardXp(mathXp);
       showSuccess("✓ Correct! ✓", `Score: ${newScore} (+${mathXp} XP)`);
       toast({
         title: "✓ Correct!",
@@ -1817,7 +1798,7 @@ const BrainGames = () => {
                             wordSequence.every((word, i) => word === userSequence[i].word);
                           if (correct) {
                             const recallXp = 40;
-                            setXp((prev) => prev + recallXp);
+                            awardXp(recallXp);
                             showSuccess(
                               "🎉 PERFECT! 🎉",
                               `Exceptional memory recall! (+${recallXp} XP)`

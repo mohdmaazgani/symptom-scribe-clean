@@ -2,15 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db, type OfflineMetric, encryptMetric, decryptMetric } from "@/lib/offline-db";
 import { whenEncryptionReady } from "@/lib/encryption";
-
+import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 
 export function useMetricsHistory(userId: string | null) {
   const [records, setRecords] = useState<OfflineMetric[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const fetchHistory = useCallback(async () => {
-    // never query with an empty/null userId.
     if (!userId) return;
 
     setLoading(true);
@@ -20,11 +19,7 @@ export function useMetricsHistory(userId: string | null) {
 
       if (navigator.onLine) {
         try {
-          const { data, error } = await supabase
-            .from("health_metrics")
-            .select("*")
-            .eq("user_id", userId)
-            .order("recorded_at", { ascending: false });
+          const { data, error } = await getCachedData<OfflineMetric[]>("health_metrics");
 
           if (!error && data) {
             await db.healthMetrics
@@ -65,16 +60,25 @@ export function useMetricsHistory(userId: string | null) {
         localRecords.map((record) => decryptMetric(record, key))
       );
 
-      decryptedRecords.sort(
-        (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
-      );
-      setRecords(decryptedRecords);
+      const sortedRecords = [...decryptedRecords];
+
+      if (sortOrder === 'newest') {
+        sortedRecords.sort(
+          (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+        );
+      } else {
+        sortedRecords.sort(
+          (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+        );
+      }
+
+      setRecords(sortedRecords);
     } catch (err) {
       console.error("Error loading local metrics:", err);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, sortOrder]);
 
   const deleteRecord = async (id: string) => {
     if (navigator.onLine) {
@@ -84,6 +88,7 @@ export function useMetricsHistory(userId: string | null) {
         .eq("id", id);
 
       if (!error) {
+        await invalidateCache("health_metrics");
         await db.healthMetrics.delete(id);
         fetchHistory();
         return;
@@ -95,7 +100,6 @@ export function useMetricsHistory(userId: string | null) {
   };
 
   useEffect(() => {
-    // Only fire when userId is a real non-empty string.
     if (userId) {
       fetchHistory();
     }
@@ -103,9 +107,10 @@ export function useMetricsHistory(userId: string | null) {
 
   return {
     records,
-    //  Still "loading" if userId hasn't resolved yet.
     loading: loading || !userId,
     refresh: fetchHistory,
     deleteRecord,
+    setSortOrder,
+    sortOrder,
   };
 }

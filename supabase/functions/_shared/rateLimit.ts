@@ -1,4 +1,4 @@
-import { Redis } from "https://esm.sh/@upstash/redis";
+import { redis } from "./redis.ts";
 
 type RequestRecord = {
   count: number;
@@ -9,21 +9,6 @@ const requestStore = new Map<string, RequestRecord>();
 
 const WINDOW_SIZE_MS = 60 * 1000;
 const MAX_REQUESTS = 10;
-
-const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
-const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
-
-let redis: Redis | null = null;
-if (redisUrl && redisToken) {
-  try {
-    redis = new Redis({
-      url: redisUrl,
-      token: redisToken,
-    });
-  } catch (error) {
-    console.error("Failed to initialize Upstash Redis:", error);
-  }
-}
 
 function memoryRateLimit(ip: string): { success: boolean } {
   const now = Date.now();

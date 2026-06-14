@@ -31,7 +31,6 @@ import Contact from "./pages/Contact";
 import ScrollToTop from "@/components/ScrollToTop";
 import BlogPostPage from "@/pages/BlogPostPage";
 const queryClient = new QueryClient();
-
 const App = () => {
   useEffect(() => {
     const cleanup = initializeEncryption();
@@ -45,7 +44,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter>
           <ScrollToTop />
           <Routes>
           <Route path="/" element={<Index />} />

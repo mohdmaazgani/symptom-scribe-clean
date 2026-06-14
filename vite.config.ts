@@ -61,7 +61,35 @@ export default defineConfig(({ mode }) => ({
     },
   },
   test: {
+    /**
+     * Use jsdom to simulate a browser DOM environment, which is required for
+     * React Testing Library to render components and query the DOM.
+     */
+    environment: "jsdom",
+    /**
+     * Run the global setup file before each test suite. This file extends
+     * Vitest's `expect` with `@testing-library/jest-dom` matchers.
+     */
+    setupFiles: ["./src/test/setup.ts"],
+    /**
+     * Make Vitest globals (describe, it, expect, vi, etc.) available in every
+     * test file without explicit imports.
+     */
     globals: true,
-    environment: "node",
+    /**
+     * Collect test coverage from source files (excluding config, types, and
+     * test files themselves). Run `npm run test:coverage` to generate a report.
+     */
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        "src/test/**",
+        "src/vite-env.d.ts",
+        "src/main.tsx",
+      ],
+      reporter: ["text", "html"],
+    },
   },
 }));

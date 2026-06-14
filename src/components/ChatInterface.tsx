@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
+import { invalidateCache } from "@/lib/cached-queries";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
@@ -266,7 +267,7 @@ const ChatInterface = () => {
         setSessions((prev) =>
           prev.map((s) =>
             s.id === currentSessionId
-              ? { ...s, messages: finalMessages, updated_at: new Date().toISOString() }
+              ? { ...s, messages: finalMessages as unknown as Json, updated_at: new Date().toISOString() }
               : s
           )
         );
@@ -327,6 +328,7 @@ const ChatInterface = () => {
             console.error("Error saving symptom history:", insertError);
             showError("Save failed", "Could not save to your health history");
           } else {
+            await invalidateCache("symptom_history");
             showSuccess("Saved to history", "This analysis has been added to your health records");
           }
         }

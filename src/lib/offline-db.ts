@@ -7,6 +7,7 @@ import {
   whenEncryptionReady,
   registerEncryptionHooks,
 } from "./encryption";
+import { invalidateCache } from "@/lib/cached-queries";
 
 export interface OfflineMetric {
   id: string;
@@ -243,6 +244,13 @@ export const syncOfflineData = async (): Promise<boolean> => {
         await db.symptomHistory.update(record.id, { pending_update: 0 });
         syncedAny = true;
       }
+    }
+
+    if (syncedAny) {
+      await Promise.all([
+        invalidateCache("health_metrics").catch(() => {}),
+        invalidateCache("symptom_history").catch(() => {}),
+      ]);
     }
 
     return syncedAny;

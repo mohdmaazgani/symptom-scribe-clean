@@ -32,14 +32,16 @@ Application fails to start or Supabase features do not work correctly.
 
 ### Solution
 
-Verify that your `.env` file exists and contains all required variables.
+Verify that your `.env.local` file exists and contains the required browser variables. For local development, copy `.env.example` to `.env.local` and fill in the Supabase values from Dashboard → Project Settings → API.
 
 Example:
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
+
+`VITE_SUPABASE_ANON_KEY` is supported only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing.
 
 Restart the development server after modifying environment variables.
 
@@ -53,7 +55,7 @@ npm run dev
 
 ### Problem
 
-Changes made to `.env` are not reflected in the application.
+Changes made to `.env.local` are not reflected in the application.
 
 ### Solution
 
@@ -130,7 +132,7 @@ Verify:
 
 ```env
 VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+VITE_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 Check the Supabase Dashboard:
@@ -330,6 +332,27 @@ Check:
 
 ---
 
+## Edge Function Missing Secret Errors
+
+### Problem
+
+Supabase edge functions return missing configuration or server credential errors.
+
+### Solution
+
+Keep browser variables in `.env.local`, and configure edge-function secrets in Supabase instead. Common runtime secrets are:
+
+* `LOVABLE_API_KEY` for symptom analysis
+* `SUPABASE_URL` and `SUPABASE_ANON_KEY` for auth-validating functions
+* `SUPABASE_SERVICE_ROLE_KEY` for account-deletion functions
+* `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` for emergency SMS alerts
+* `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for optional Upstash-backed rate limiting/cache support
+* `WEBHOOK_SECRET` for optional webhook-triggered cache invalidation
+
+Do not place these server-side secrets in `.env.local`.
+
+---
+
 ## Local Storage Issues
 
 ### Problem
@@ -429,8 +452,10 @@ Example:
 
 ```env
 VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+VITE_SUPABASE_PUBLISHABLE_KEY=
 ```
+
+Only use `VITE_SUPABASE_ANON_KEY` as a temporary fallback for older local setups. Rename it to `VITE_SUPABASE_PUBLISHABLE_KEY` when updating your environment.
 
 ---
 

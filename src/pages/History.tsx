@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenEncryptionReady } from "@/lib/encryption";
+import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import {
 
 interface SymptomEntry {
   id: string;
+  user_id?: string;
   symptoms: string;
   severity_level: string;
   possible_causes: string[];
@@ -44,9 +46,6 @@ const History = () => {
   useEffect(() => {
     fetchHistory();
 
-    // FIX #2: This component owns exactly one "online" listener.
-    // The duplicate global listener in offline-db.ts has been removed,
-    // so sync now fires exactly once per reconnect event.
     const handleOnline = async () => {
       setIsOnline(true);
       const synced = await syncOfflineData();
@@ -70,11 +69,7 @@ const History = () => {
       const key = await whenEncryptionReady();
 
       if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from("symptom_history")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+        const { data, error } = await getCachedData<SymptomEntry[]>("symptom_history");
 
         if (error) throw error;
 
@@ -153,6 +148,7 @@ const History = () => {
           .eq("id", id);
 
         if (error) throw error;
+        await invalidateCache("symptom_history");
         await db.symptomHistory.update(id, { resolved: newStatus, pending_update: 0 });
       } else {
         await db.symptomHistory.update(id, { resolved: newStatus, pending_update: 1 });
@@ -181,6 +177,7 @@ const History = () => {
           .eq("id", id);
 
         if (error) throw error;
+        await invalidateCache("symptom_history");
         await db.symptomHistory.delete(id);
       } else {
         await db.symptomHistory.update(id, { pending_delete: 1 });

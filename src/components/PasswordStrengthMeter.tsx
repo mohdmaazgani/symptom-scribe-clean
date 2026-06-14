@@ -66,7 +66,7 @@ export function PasswordStrengthMeter({
     <div className="space-y-3">
       {/* Label */}
       <Label htmlFor={id} className="text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-red-500" aria-hidden="true">*</span>}
       </Label>
 
       {/* Password Input */}
