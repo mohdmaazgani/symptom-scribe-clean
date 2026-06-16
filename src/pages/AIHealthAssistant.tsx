@@ -294,7 +294,7 @@ const AIHealthAssistant = () => {
   const hasMessages = messages.length > 0 || loading;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-background text-foreground w-full max-w-full overflow-x-hidden px-4 sm:px-6">
       {/* Header */}
       <div className="flex-shrink-0 px-5 py-3 border-b border-border flex items-center justify-end gap-3">
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -311,9 +311,9 @@ const AIHealthAssistant = () => {
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-3xl shadow-lg">
                 🤖
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">Hello! I'm your AI Health Assistant 👋</h2>
-                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              <div className="w-full min-w-0 text-center">
+                <h2 className="text-lg font-semibold break-words leading-relaxed min-w-0">Hello! I'm your AI Health Assistant 👋</h2>
+                <p className="text-sm text-muted-foreground mt-1 break-words leading-relaxed min-w-0">
                   I can help you understand your symptoms and provide health insights.{" "}
                   <span className="text-teal-500 font-medium">How can I assist you today?</span>
                 </p>
@@ -326,12 +326,12 @@ const AIHealthAssistant = () => {
                 <span className="text-xs text-muted-foreground px-2">Try asking</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex flex-wrap gap-2 pb-1">
                 {suggestions.map((s) => (
                   <button
                     key={s.label}
                     onClick={() => handleAnalyze(s.label)}
-                    className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[90px]"
+                    className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center"
                   >
                     <span className="text-xl">{s.emoji}</span>
                     <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
@@ -473,7 +473,7 @@ const AIHealthAssistant = () => {
             </button>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-1.5">
+          <p className="text-center text-xs text-muted-foreground mt-1.5 break-words leading-relaxed min-w-0">
             {isListening
               ? "🔴 Listening… click the mic to stop"
               : "AI-generated guidance — always consult a doctor for medical advice"}

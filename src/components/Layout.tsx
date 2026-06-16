@@ -27,7 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </header>
-          <main id="main-scroll" className="flex-1 min-h-0 p-6 overflow-auto">
+          <main id="main-scroll" className="flex-1 min-h-0 p-4 sm:p-6 overflow-x-hidden overflow-y-auto">
             {children}
           </main>
           <BackToTop />
