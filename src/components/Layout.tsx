@@ -13,7 +13,7 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="h-screen overflow-hidden flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 shrink-0 border-b border-border flex items-center px-4 bg-card">
+          <header className="h-14 shrink-0 border-b border-border flex items-center px-4 sm:px-6 bg-card">
             <div className="font-semibold text-lg">
               Health Tracker
             </div>
@@ -27,7 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
           </header>
-          <main id="main-scroll" className="flex-1 min-h-0 p-4 sm:p-6 overflow-x-hidden overflow-y-auto">
+          <main id="main-scroll" className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto min-w-0">
             {children}
           </main>
           <BackToTop />

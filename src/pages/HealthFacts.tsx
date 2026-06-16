@@ -307,7 +307,7 @@ const HealthFacts = () => {
   const savedFacts = FACTS.filter((f) => saved.has(f.id));
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-primary" />
@@ -325,12 +325,12 @@ const HealthFacts = () => {
           <div className={`h-1.5 w-full bg-gradient-to-r ${currentFact.color}`} />
 
           <CardHeader className="pb-2">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 min-w-0">
+            <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 flex-1 min-w-0">
-                <Badge className={`bg-gradient-to-r ${currentFact.color} text-white border-0 text-xs`}>
+                <Badge className={`bg-gradient-to-r ${currentFact.color} text-white border-0 text-xs truncate max-w-full`}>
                   {currentFact.emoji} {currentFact.category}
                 </Badge>
-                <CardTitle className="text-xl leading-snug break-words min-w-0">{currentFact.hook}</CardTitle>
+                <CardTitle className="text-xl leading-snug break-words">{currentFact.hook}</CardTitle>
               </div>
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center flex-shrink-0 text-2xl`}>
                 {currentFact.emoji}
@@ -340,55 +340,56 @@ const HealthFacts = () => {
 
           <CardContent className="space-y-4">
             {/* The fact */}
-            <p className="text-base leading-relaxed text-foreground">{currentFact.fact}</p>
+            <p className="text-base leading-relaxed text-foreground break-words">{currentFact.fact}</p>
 
             {/* Mind-blown callout */}
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 min-w-0 w-full">
               <span className="text-lg flex-shrink-0">🤯</span>
-              <p className="text-sm text-foreground leading-relaxed">{currentFact.mindBlown}</p>
+              <p className="text-sm text-foreground leading-relaxed break-words min-w-0 flex-1">{currentFact.mindBlown}</p>
             </div>
 
             {/* Actions row */}
-            <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap sm:items-center">
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`gap-1.5 w-full sm:w-auto ${liked.has(currentFact.id) ? "text-red-500 border-red-500" : ""}`}
+                  className={`gap-1.5 w-full sm:w-auto h-auto whitespace-normal ${liked.has(currentFact.id) ? "text-red-500 border-red-500" : ""}`}
                   onClick={() => handleLike(currentFact.id)}
                 >
-                  <ThumbsUp className="w-4 h-4" />
+                  <ThumbsUp className="w-4 h-4 flex-shrink-0" />
                   {liked.has(currentFact.id) ? "Liked" : "Like"}
                 </Button>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`gap-1.5 w-full sm:w-auto ${saved.has(currentFact.id) ? "text-primary border-primary" : ""}`}
+                  className={`gap-1.5 w-full sm:w-auto h-auto whitespace-normal ${saved.has(currentFact.id) ? "text-primary border-primary" : ""}`}
                   onClick={() => handleSave(currentFact.id)}
                 >
-                  <Bookmark className="w-4 h-4" />
+                  <Bookmark className="w-4 h-4 flex-shrink-0" />
                   {saved.has(currentFact.id) ? "Saved" : "Save"}
                 </Button>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 w-full sm:w-auto"
+                  className="gap-1.5 w-full sm:w-auto h-auto whitespace-normal"
                   onClick={() => handleShare(currentFact)}
                 >
-                  <Share2 className="w-4 h-4" />
+                  <Share2 className="w-4 h-4 flex-shrink-0" />
                   Share
                 </Button>
               </div>
+
               <a
                 href={`https://en.wikipedia.org/wiki/${currentFact.wikiTopic}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto sm:ml-auto"
               >
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground w-full justify-center">
-                  <ExternalLink className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground w-full h-auto whitespace-normal justify-center sm:justify-start">
+                  <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                   Read more
                 </Button>
               </a>
@@ -409,17 +410,17 @@ const HealthFacts = () => {
 
       {/* Saved Facts */}
       {savedFacts.length > 0 && (
-        <Card className="w-full min-w-0 max-w-full">
+        <Card className="w-full min-w-0 max-w-full overflow-hidden">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg break-words min-w-0">
-              <Bookmark className="w-5 h-5 text-primary flex-shrink-0" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bookmark className="w-5 h-5 text-primary" />
               Saved Facts ({savedFacts.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {savedFacts.map((fact) => (
-              <div key={fact.id} className="p-3 rounded-lg border border-border bg-accent/30 min-w-0">
-                <div className="flex items-start gap-2 min-w-0">
+              <div key={fact.id} className="p-3 rounded-lg border border-border bg-accent/30">
+                <div className="flex items-start gap-2">
                   <span className="text-lg flex-shrink-0">{fact.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold break-words">{fact.hook}</p>
@@ -436,7 +437,7 @@ const HealthFacts = () => {
       )}
 
       {/* Recent History */}
-      <Card>
+      <Card className="w-full min-w-0 max-w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
