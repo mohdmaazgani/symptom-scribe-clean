@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, X, Trash2, Search } from "lucide-react";
+import { CheckCircle, X, Trash2, Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
@@ -20,6 +20,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface SymptomEntry {
   id: string;
@@ -223,6 +231,44 @@ const History = () => {
     a.download = "symptom-history.csv";
     a.click();
     URL.revokeObjectURL(url);
+    toast({ title: "Export Successful", description: "Your CSV has been downloaded." });
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text("Symptom History Report", 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+    const tableColumn = ["Date", "Symptoms", "Severity", "Risk", "Resolved"];
+    const tableRows = history.map(entry => [
+      new Date(entry.created_at).toLocaleDateString(),
+      entry.symptoms,
+      entry.severity_level,
+      entry.risk_score,
+      entry.resolved ? "Yes" : "No"
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 36,
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [41, 128, 185] },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20 },
+      }
+    });
+
+    doc.save("symptom-history.pdf");
+    toast({ title: "Export Successful", description: "Your PDF has been downloaded." });
   };
 
   const getSeverityColor = (severity: string): "default" | "secondary" | "destructive" => {
@@ -257,9 +303,18 @@ const History = () => {
           <p className="text-muted-foreground">Review your past health consultations</p>
         </div>
         {history.length > 0 && (
-          <Button onClick={exportCSV} variant="outline" size="sm">
-            Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="w-4 h-4" />
+                Export Data
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportCSV}>Export as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPDF}>Export as PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
