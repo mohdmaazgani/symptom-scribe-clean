@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import AIHealthAssistant from "./pages/AIHealthAssistant";
+import Medications from "./pages/Medications";
 
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -141,12 +142,22 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="/ai-health-assistant"
             element={
               <ProtectedRoute>
                 <Layout>
                   <AIHealthAssistant />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/medications"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Medications />
                 </Layout>
               </ProtectedRoute>
             }
