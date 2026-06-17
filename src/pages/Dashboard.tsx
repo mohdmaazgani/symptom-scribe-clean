@@ -8,6 +8,8 @@ import { showError, showInfo } from "@/lib/toast-helpers";
 import CountUp from "react-countup";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { getCachedData } from "@/lib/cached-queries";
+import SymptomTrendChart from "@/components/charts/SymptomTrendChart";
+import WellnessRadarChart from "@/components/charts/WellnessRadarChart";
 
 interface Stats {
   totalSymptoms: number;
@@ -118,6 +120,7 @@ const Dashboard = () => {
     recentActivity: 0,
   });
   const [recentHistory, setRecentHistory] = useState<SymptomHistoryRecord[]>([]);
+  const [allHistory, setAllHistory] = useState<SymptomHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -155,6 +158,7 @@ const Dashboard = () => {
         });
 
         setRecentHistory(symptoms.slice(0, 5));
+        setAllHistory(symptoms);
       } else {
         setStats({
           totalSymptoms: 0,
@@ -163,6 +167,7 @@ const Dashboard = () => {
           recentActivity: 0,
         });
         setRecentHistory([]);
+        setAllHistory([]);
         showInfo("Welcome!", "Start by consulting with the AI Assistant");
       }
     } catch (error) {
@@ -270,6 +275,12 @@ const Dashboard = () => {
             <p className="text-xs text-muted-foreground">Last 7 days</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SymptomTrendChart records={allHistory} />
+        <WellnessRadarChart records={allHistory} />
       </div>
 
       <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5">
