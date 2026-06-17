@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { Mail, MessageSquare, Phone, CheckCircle } from "lucide-react";
+import { contactSchema, type ContactFormValues } from "@/lib/validation-schemas";
+import FieldError from "@/components/ui/FieldError";
 
-type ContactForm = {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-};
-
-type ContactFormErrors = Partial<Record<keyof ContactForm, string>>;
+type ContactFormErrors = Partial<Record<keyof ContactFormValues, string>>;
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState<ContactForm>({ name: "", email: "", subject: "", message: "" });
+  const [form, setForm] = useState<ContactFormValues>({ name: "", email: "", subject: "", message: "" });
   const [errors, setErrors] = useState<ContactFormErrors>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -21,37 +16,20 @@ const Contact = () => {
     setErrors((currentErrors) => ({ ...currentErrors, [name]: undefined }));
   };
 
-  const validateForm = () => {
-    const nextErrors: ContactFormErrors = {};
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!form.name.trim()) {
-      nextErrors.name = "Name is required.";
-    }
-
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!emailPattern.test(form.email.trim())) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!form.subject) {
-      nextErrors.subject = "Please select a topic.";
-    }
-
-    if (!form.message.trim()) {
-      nextErrors.message = "Message is required.";
-    } else if (form.message.trim().length < 10) {
-      nextErrors.message = "Message must be at least 10 characters.";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    setErrors({});
+
+    const parsed = contactSchema.safeParse(form);
+    if (!parsed.success) {
+      const nextErrors: ContactFormErrors = {};
+      parsed.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof ContactFormValues;
+        if (!nextErrors[field]) nextErrors[field] = err.message;
+      });
+      setErrors(nextErrors);
+      return;
+    }
 
     setSubmitted(true);
   };
@@ -123,29 +101,29 @@ const Contact = () => {
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={errors.name ? "contact-name-error" : undefined}
                   className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                {errors.name && <p id="contact-name-error" className="mt-1 text-sm text-destructive">{errors.name}</p>}
+                {errors.name && <FieldError id="contact-name-error" message={errors.name} />}
               </div>
               <div>
                 <label htmlFor="contact-email" className="text-sm font-medium block mb-1">Email</label>
                 <input id="contact-email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com"
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={errors.email ? "contact-email-error" : undefined}
-                  className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                {errors.email && <p id="contact-email-error" className="mt-1 text-sm text-destructive">{errors.email}</p>}
+                  className={`w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.email ? "border-destructive" : ""}`} />
+                {errors.email && <FieldError id="contact-email-error" message={errors.email} />}
               </div>
               <div>
                 <label htmlFor="contact-subject" className="text-sm font-medium block mb-1">Subject</label>
                 <select id="contact-subject" name="subject" value={form.subject} onChange={handleChange}
                   aria-invalid={Boolean(errors.subject)}
                   aria-describedby={errors.subject ? "contact-subject-error" : undefined}
-                  className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  className={`w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.subject ? "border-destructive" : ""}`}>
                   <option value="">Select a topic</option>
                   <option value="bug">Bug Report</option>
                   <option value="feature">Feature Request</option>
                   <option value="account">Account Issue</option>
                   <option value="other">Other</option>
                 </select>
-                {errors.subject && <p id="contact-subject-error" className="mt-1 text-sm text-destructive">{errors.subject}</p>}
+                {errors.subject && <FieldError id="contact-subject-error" message={errors.subject} />}
               </div>
               <div>
                 <label htmlFor="contact-message" className="text-sm font-medium block mb-1">Message</label>
@@ -153,8 +131,8 @@ const Contact = () => {
                   placeholder="Describe your issue or question..."
                   aria-invalid={Boolean(errors.message)}
                   aria-describedby={errors.message ? "contact-message-error" : undefined}
-                  className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
-                {errors.message && <p id="contact-message-error" className="mt-1 text-sm text-destructive">{errors.message}</p>}
+                  className={`w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${errors.message ? "border-destructive" : ""}`} />
+                {errors.message && <FieldError id="contact-message-error" message={errors.message} />}
               </div>
               <button type="submit"
                 className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
