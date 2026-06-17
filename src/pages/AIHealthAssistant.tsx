@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
+import { Volume2, VolumeX } from "lucide-react";
+import { motion } from "framer-motion";
 
 const suggestions = [
   { emoji: "🤒", label: "I have a fever" },
@@ -54,6 +56,7 @@ const AIHealthAssistant = () => {
   >([]);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [currentlyReadingText, setCurrentlyReadingText] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
@@ -63,12 +66,41 @@ const AIHealthAssistant = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Cleanup recognition on unmount
+  // Cleanup recognition and speech synthesis on unmount
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
+      window.speechSynthesis?.cancel();
     };
   }, []);
+
+  const handleToggleSpeech = (text: string) => {
+    if (currentlyReadingText === text) {
+      window.speechSynthesis.cancel();
+      setCurrentlyReadingText(null);
+    } else {
+      window.speechSynthesis.cancel();
+
+      // Clean markdown tags and bullets for natural pronunciation
+      const cleanText = text
+        .replace(/\*\*(.+?)\*\*/g, "$1")
+        .replace(/[-*•]\s+/g, "")
+        .replace(/\n+/g, " ");
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+
+      utterance.onend = () => {
+        setCurrentlyReadingText(null);
+      };
+
+      utterance.onerror = () => {
+        setCurrentlyReadingText(null);
+      };
+
+      setCurrentlyReadingText(text);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const getTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -352,46 +384,65 @@ const AIHealthAssistant = () => {
                     🤖
                   </div>
                 )}
-                <div className="flex flex-col gap-1 max-w-[78%]">
+                <div className="flex flex-col gap-1 max-w-[78%] relative group">
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed relative ${
                       msg.role === "user"
                         ? "bg-teal-500 text-white rounded-br-sm ml-auto"
-                        : "bg-muted text-foreground rounded-bl-sm border border-border"
+                        : `bg-muted text-foreground rounded-bl-sm border border-border transition-all duration-300 ${
+                            currentlyReadingText === msg.text
+                              ? "ring-2 ring-teal-500/30 bg-teal-500/5"
+                              : ""
+                          }`
                     }`}
                   >
-                    <span
-                      dangerouslySetInnerHTML={{
-                        __html: (() => {
-                          const lines = msg.text.split("\n");
-                          let html = "";
-                          let inList = false;
-                          for (const line of lines) {
-                            const listMatch = line.trim().match(/^[-*•]\s+(.+)/);
-                            if (listMatch) {
-                              if (!inList) {
-                                html +=
-                                  "<ul style='padding-left:16px;margin:6px 0;list-style:disc'>";
-                                inList = true;
-                              }
-                              html += `<li style='margin:2px 0'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
-                            } else {
-                              if (inList) {
-                                html += "</ul>";
-                                inList = false;
-                              }
-                              if (line.trim() === "") {
-                                html += "<br>";
+                    {msg.role === "assistant" && (
+                      <button
+                        onClick={() => handleToggleSpeech(msg.text)}
+                        className="absolute right-2 top-2 p-1.5 rounded-lg text-muted-foreground hover:text-teal-500 hover:bg-teal-500/10 transition-colors"
+                        title={currentlyReadingText === msg.text ? "Stop reading" : "Read aloud"}
+                      >
+                        {currentlyReadingText === msg.text ? (
+                          <VolumeX className="w-3.5 h-3.5" />
+                        ) : (
+                          <Volume2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                    <div className={msg.role === "assistant" ? "pr-6" : ""}>
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: (() => {
+                            const lines = msg.text.split("\n");
+                            let html = "";
+                            let inList = false;
+                            for (const line of lines) {
+                              const listMatch = line.trim().match(/^[-*•]\s+(.+)/);
+                              if (listMatch) {
+                                if (!inList) {
+                                  html +=
+                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc'>";
+                                  inList = true;
+                                }
+                                html += `<li style='margin:2px 0'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
                               } else {
-                                html += `<p style='margin:2px 0'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
+                                if (inList) {
+                                  html += "</ul>";
+                                  inList = false;
+                                }
+                                if (line.trim() === "") {
+                                  html += "<br>";
+                                } else {
+                                  html += `<p style='margin:2px 0'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
+                                }
                               }
                             }
-                          }
-                          if (inList) html += "</ul>";
-                          return html;
-                        })(),
-                      }}
-                    />
+                            if (inList) html += "</ul>";
+                            return html;
+                          })(),
+                        }}
+                      />
+                    </div>
                   </div>
                   <span
                     className={`text-[10px] text-muted-foreground px-1 ${msg.role === "user" ? "text-right" : "text-left"}`}
@@ -445,6 +496,25 @@ const AIHealthAssistant = () => {
                 <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
               </svg>
             </button>
+
+            {isListening && (
+              <div className="flex items-center gap-0.5 px-1 h-5 flex-shrink-0">
+                {[1, 2, 3, 4, 5].map((bar) => (
+                  <motion.div
+                    key={bar}
+                    className="w-0.5 bg-red-500 rounded-full"
+                    animate={{
+                      height: ["25%", "100%", "25%"],
+                    }}
+                    transition={{
+                      duration: 0.5 + bar * 0.1,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
 
             <textarea
               ref={textareaRef}

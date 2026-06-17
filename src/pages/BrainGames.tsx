@@ -1225,27 +1225,51 @@ const BrainGames = () => {
         </div>
 
         <motion.div
+          key={`lobby-status-${level}`}
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 rounded-[2.5rem] shadow-xl flex items-center gap-8 px-8"
+          animate={{ 
+            opacity: 1, 
+            scale: [0.9, 1.05, 1],
+          }}
+          transition={{ 
+            duration: 0.5, 
+            ease: "easeOut" 
+          }}
+          className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-8 min-w-[280px] sm:min-w-[320px]"
         >
-          <div className="text-center">
-            <p className="text-3xl font-black text-primary">{level}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Global Level
-            </p>
+          <div className="flex items-center gap-8 justify-center">
+            <div className="text-center">
+              <p className="text-3xl font-black text-primary">{level}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Global Level
+              </p>
+            </div>
+            <div className="w-px h-10 bg-border/50" />
+            <div className="text-center">
+              <p className="text-3xl font-black text-primary">{xp}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Total XP
+              </p>
+            </div>
+            <div className="w-px h-10 bg-border/50" />
+            <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg shadow-orange-500/20">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
           </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="text-center">
-            <p className="text-3xl font-black text-primary">{xp}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Total XP
-            </p>
-          </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg shadow-orange-500/20">
-            <Trophy className="w-6 h-6 text-white" />
+
+          <div className="space-y-1.5 w-full">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span>Progress to Level {level + 1}</span>
+              <span>{xp % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
+            </div>
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden border border-border/10">
+              <motion.div
+                className="h-full bg-gradient-to-r from-primary to-primary-glow rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              />
+            </div>
           </div>
         </motion.div>
       </header>
@@ -1458,42 +1482,43 @@ const BrainGames = () => {
                   </CardHeader>
                   <CardContent className="p-8 md:p-12">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                      {memoryCards.map((card, index) => (
-                        <motion.div
-                          key={index}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Memory card ${index + 1}`}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              handleCardClick(index);
-                            }
-                          }}
-                          onClick={() => handleCardClick(index)}
-                          className={`aspect-square rounded-3xl flex items-center justify-center text-5xl cursor-pointer transition-all duration-500 shadow-md ${
-                            flippedCards.includes(index) || matchedCards.includes(index)
-                              ? "bg-gradient-to-br from-primary to-primary-glow text-white [transform:rotateY(180deg)] shadow-xl shadow-primary/20"
-                              : "bg-muted border-2 border-border/50 hover:border-primary/30 hover:bg-accent [transform:rotateY(0deg)]"
-                          }`}
-                        >
-                          <div
-                            className={
-                              flippedCards.includes(index) || matchedCards.includes(index)
-                                ? "[transform:rotateY(180deg)]"
-                                : ""
-                            }
+                      {memoryCards.map((card, index) => {
+                        const isFlipped = flippedCards.includes(index) || matchedCards.includes(index);
+                        return (
+                          <div 
+                            key={index} 
+                            className="[perspective:1000px] w-full aspect-square relative"
                           >
-                            {flippedCards.includes(index) || matchedCards.includes(index) ? (
-                              <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
-                            ) : (
-                              <div className="w-8 h-8 rounded-full border-4 border-muted-foreground/20 opacity-20" />
-                            )}
+                            <motion.div
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Memory card ${index + 1}`}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  handleCardClick(index);
+                                }
+                              }}
+                              onClick={() => handleCardClick(index)}
+                              className={`w-full h-full duration-500 [transform-style:preserve-3d] relative transition-transform ${
+                                isFlipped ? "[transform:rotateY(180deg)]" : ""
+                              }`}
+                            >
+                              {/* Card Back */}
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] bg-muted border-2 border-border/50 rounded-3xl flex items-center justify-center hover:border-primary/30 hover:bg-accent transition-colors shadow-md">
+                                <Brain className="w-10 h-10 text-primary opacity-40 animate-pulse" />
+                              </div>
+
+                              {/* Card Front */}
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-primary to-primary-glow text-white rounded-3xl flex items-center justify-center text-5xl shadow-xl shadow-primary/20">
+                                <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
+                              </div>
+                            </motion.div>
                           </div>
-                        </motion.div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
