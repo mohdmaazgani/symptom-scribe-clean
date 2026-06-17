@@ -307,13 +307,13 @@ const HealthFacts = () => {
   const savedFacts = FACTS.filter((f) => saved.has(f.id));
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 overflow-x-hidden space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-primary" />
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex flex-wrap items-center gap-2 sm:gap-3 break-words">
+          <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-primary flex-shrink-0" />
           Did You Know?
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-1 break-words">
           Weird, surprising health facts — things your textbook never told you
         </p>
       </div>
@@ -395,7 +395,7 @@ const HealthFacts = () => {
               </a>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-muted-foreground">
               <span>{FACTS.length - shownIds.current.size} facts left this round</span>
               <span>{shownIds.current.size} / {FACTS.length} seen</span>
             </div>
