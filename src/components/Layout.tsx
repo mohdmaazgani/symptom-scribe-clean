@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/BackToTop";
+import NetworkStatusBadge from "@/components/NetworkStatusBadge";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              <NetworkStatusBadge />
               <AnimatedThemeToggler />
 
               {/* ✅ Visible ONLY on mobile. Hidden on laptop/desktop. */}

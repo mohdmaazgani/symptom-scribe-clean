@@ -31,9 +31,10 @@ import {
 import type { Json } from "@/integrations/supabase/types";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
-import { db, syncOfflineData, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
+import { db, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
 import { whenEncryptionReady } from "@/lib/encryption";
 import { invalidateCache } from "@/lib/cached-queries";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import {
   Table,
   TableBody,
@@ -129,32 +130,11 @@ const Metrics = () => {
     fetchUser();
   }, []);
 
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const { isOnline } = useNetworkStatus({ autoSync: true, onSynced: refresh });
 
   const [historyMetricFilter, setHistoryMetricFilter] = useState("all");
   const [timeframeFilter, setTimeframeFilter] = useState("all");
   const [historyView, setHistoryView] = useState("table");
-
-  useEffect(() => {
-    const handleOnline = async () => {
-      setIsOnline(true);
-      const synced = await syncOfflineData();
-      if (synced) {
-        refresh();
-      }
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [refresh]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
