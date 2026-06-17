@@ -65,6 +65,26 @@ import {
 import { Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { useRef } from "react";
+import {
+  heartRateSchema,
+  temperatureSchema,
+  weightSchema,
+  bloodSugarSchema,
+  oxygenSaturationSchema,
+  bloodPressureSchema,
+} from "@/lib/validation-schemas";
+import FieldError from "@/components/ui/FieldError";
+import { z } from "zod";
+
+// Map metric type → its zod schema
+const METRIC_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  heart_rate: heartRateSchema,
+  temperature: temperatureSchema,
+  weight: weightSchema,
+  blood_sugar: bloodSugarSchema,
+  oxygen_saturation: oxygenSaturationSchema,
+  blood_pressure: bloodPressureSchema,
+};
 
 const metricTypes = [
   {
@@ -103,6 +123,7 @@ const Metrics = () => {
   const [diastolic, setDiastolic] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const [historyUserId, setHistoryUserId] = useState("");
 
@@ -158,59 +179,29 @@ const Metrics = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
 
-    if (!metricType) return;
-    if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
-    if (metricType !== "blood_pressure" && !value) return;
-
-    if (metricType === "heart_rate") {
-      const hr = Number(value);
-      if (hr < 30 || hr > 250) {
-        alert("Heart Rate must be between 30 and 250 BPM");
-        return;
-      }
-    }
-    
-    if (metricType === "temperature") {
-      const temp = Number(value);
-      if (temp < 86 || temp > 113) {
-        alert("Temperature must be between 86°F and 113°F");
-        return;
-      }
+    if (!metricType) {
+      setFieldErrors({ metricType: "Please select a metric type" });
+      return;
     }
 
-    if (metricType === "weight") {
-      const wt = Number(value);
-      if (wt <= 0 || wt > 500) {
-        alert("Weight must be between 1 and 500 lbs");
-        return;
-      }
-    }
+    // Validate using the appropriate zod schema
+    const schema = METRIC_SCHEMAS[metricType];
+    const rawValues =
+      metricType === "blood_pressure"
+        ? { systolic, diastolic, notes }
+        : { value, notes };
 
-    if (metricType === "blood_sugar") {
-      const sugar = Number(value);
-      if (sugar < 20 || sugar > 1000) {
-        alert("Blood Sugar must be between 20 and 1000 mg/dL");
-        return;
-      }
-    }
-
-    if (metricType === "oxygen_saturation") {
-      const oxygen = Number(value);
-      if (oxygen < 70 || oxygen > 100) {
-        alert("Oxygen Saturation must be between 70% and 100%");
-        return;
-      }
-    }
-
-    if (metricType === "blood_pressure") {
-      const sys = Number(systolic);
-      const dia = Number(diastolic);
-
-      if (sys < 50 || sys > 300 || dia < 30 || dia > 200) {
-        alert("Blood Pressure values are out of valid range");
-        return;
-      }
+    const parsed = schema.safeParse(rawValues);
+    if (!parsed.success) {
+      const errors: Record<string, string> = {};
+      parsed.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        if (!errors[field]) errors[field] = err.message;
+      });
+      setFieldErrors(errors);
+      return;
     }
     
     setLoading(true);
@@ -297,6 +288,7 @@ const Metrics = () => {
       setSystolic("");
       setDiastolic("");
       setNotes("");
+      setFieldErrors({});
 
       refresh();
     } catch (error) {
@@ -394,11 +386,17 @@ const Metrics = () => {
           <CardDescription>Enter your latest health metrics</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label>Metric Type</Label>
-              <Select value={metricType} onValueChange={setMetricType}>
-                <SelectTrigger>
+              <Select
+                value={metricType}
+                onValueChange={(val) => {
+                  setMetricType(val);
+                  setFieldErrors({});
+                }}
+              >
+                <SelectTrigger aria-describedby={fieldErrors.metricType ? "metricType-error" : undefined}>
                   <SelectValue placeholder="Select metric type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,6 +407,7 @@ const Metrics = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError id="metricType-error" message={fieldErrors.metricType} />
             </div>
 
             {metricType && (
@@ -416,33 +415,38 @@ const Metrics = () => {
                 {metricType === "blood_pressure" ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="systolic">Systolic</Label>
+                      <Label htmlFor="systolic">Systolic (mmHg)</Label>
                       <Input
                         id="systolic"
                         type="number"
                         placeholder="120"
                         value={systolic}
                         onChange={(e) => setSystolic(e.target.value)}
-                        required
+                        aria-invalid={!!fieldErrors.systolic}
+                        aria-describedby={fieldErrors.systolic ? "systolic-error" : undefined}
+                        className={fieldErrors.systolic ? "border-destructive" : ""}
                       />
+                      <FieldError id="systolic-error" message={fieldErrors.systolic} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="diastolic">Diastolic</Label>
+                      <Label htmlFor="diastolic">Diastolic (mmHg)</Label>
                       <Input
                         id="diastolic"
                         type="number"
                         placeholder="80"
                         value={diastolic}
                         onChange={(e) => setDiastolic(e.target.value)}
-                        required
+                        aria-invalid={!!fieldErrors.diastolic}
+                        aria-describedby={fieldErrors.diastolic ? "diastolic-error" : undefined}
+                        className={fieldErrors.diastolic ? "border-destructive" : ""}
                       />
+                      <FieldError id="diastolic-error" message={fieldErrors.diastolic} />
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Label htmlFor="value">
-                      Value (
-                      {metricTypes.find((m) => m.value === metricType)?.unit})
+                      Value ({metricTypes.find((m) => m.value === metricType)?.unit})
                     </Label>
                     <Input
                       id="value"
@@ -451,8 +455,11 @@ const Metrics = () => {
                       placeholder="Enter value"
                       value={value}
                       onChange={(e) => setValue(e.target.value)}
-                      required
+                      aria-invalid={!!fieldErrors.value}
+                      aria-describedby={fieldErrors.value ? "value-error" : undefined}
+                      className={fieldErrors.value ? "border-destructive" : ""}
                     />
+                    <FieldError id="value-error" message={fieldErrors.value} />
                   </div>
                 )}
 
@@ -464,7 +471,11 @@ const Metrics = () => {
                     placeholder="Any additional notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    aria-invalid={!!fieldErrors.notes}
+                    aria-describedby={fieldErrors.notes ? "notes-error" : undefined}
+                    className={fieldErrors.notes ? "border-destructive" : ""}
                   />
+                  <FieldError id="notes-error" message={fieldErrors.notes} />
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full">
