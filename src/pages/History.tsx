@@ -44,6 +44,21 @@ const History = () => {
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('symptom-search-input');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const fetchHistory = useCallback(async (queryText = "") => {
     setLoading(true);
     try {
@@ -288,8 +303,9 @@ const History = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
+            id="symptom-search-input"
             type="text"
-            placeholder="Search symptoms..."
+            placeholder="Search symptoms... (Ctrl+K to focus)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -307,10 +323,26 @@ const History = () => {
         </select>
       </div>
 
+      {isFiltering && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { 
+              setSearchQuery(""); 
+              setSeverityFilter("all"); 
+            }}
+            className="gap-2"
+          >
+            <X className="h-4 w-4" />
+            Clear All Filters
+          </Button>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-center text-muted-foreground">Loading history...</p>
       ) : history.length === 0 ? (
-        // FIX #3: Genuinely no data at all
         <Card>
           <CardContent className="pt-6 text-center space-y-2">
             <p className="text-muted-foreground">
@@ -319,7 +351,6 @@ const History = () => {
           </CardContent>
         </Card>
       ) : filteredHistory.length === 0 ? (
-        // FIX #3: Data exists but filters returned nothing — different message
         <Card>
           <CardContent className="pt-6 text-center space-y-2">
             <p className="text-muted-foreground">
@@ -335,7 +366,6 @@ const History = () => {
           </CardContent>
         </Card>
       ) : (
-        // FIX #3: Render filteredHistory, not history
         <div className="space-y-4">
           {filteredHistory.map((entry) => (
             <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
