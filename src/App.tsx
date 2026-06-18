@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { initializeEncryption } from "@/lib/encryption";
+import { supabase } from "@/integrations/supabase/client";
+import { syncOfflineData } from "@/lib/offline-db";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -35,8 +37,37 @@ const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {
     const cleanup = initializeEncryption();
+
+    const syncOnBoot = async () => {
+      if (navigator.onLine) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await syncOfflineData();
+          }
+        } catch (err) {
+          console.error("Failed to sync offline data on boot:", err);
+        }
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+          if (navigator.onLine) {
+            await syncOfflineData().catch((err) =>
+              console.error("Failed to sync offline data on session ready:", err)
+            );
+          }
+        }
+      }
+    );
+
+    syncOnBoot();
+
     return () => {
       cleanup?.();
+      subscription.unsubscribe();
     };
   }, []);
 
