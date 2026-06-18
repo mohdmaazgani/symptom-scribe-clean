@@ -64,7 +64,7 @@ export function AppSidebar() {
   };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (typeof window !== "undefined" && (window as any).isGameActive) {
+    if (typeof window !== "undefined" && window.isGameActive) {
       const confirmLeave = window.confirm(
         "Are you sure you want to leave? Your active game progress will be lost."
       );
@@ -72,7 +72,7 @@ export function AppSidebar() {
         e.preventDefault();
         return;
       }
-      (window as any).isGameActive = false;
+      window.isGameActive = false;
     }
     handleMobileNavClick();
   };

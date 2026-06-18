@@ -369,7 +369,7 @@ const BrainGames = () => {
       (activeGame === "pattern" && currentQuestion !== null && !gameCompleted)
     );
 
-    (window as any).isGameActive = isGameActive;
+    window.isGameActive = isGameActive;
 
     if (isGameActive) {
       if (!window.location.hash.includes("game-active")) {
@@ -395,7 +395,7 @@ const BrainGames = () => {
           "Are you sure you want to leave? Your active game progress will be lost."
         );
         if (confirmLeave) {
-          (window as any).isGameActive = false;
+          window.isGameActive = false;
           setActiveGame(null);
           window.history.back();
         } else {
@@ -410,7 +410,7 @@ const BrainGames = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
-      (window as any).isGameActive = false;
+      window.isGameActive = false;
     };
   }, [activeGame, memoryCards.length, memoryGameWon, wordSequence.length, currentQuestion, gameCompleted]);
 
