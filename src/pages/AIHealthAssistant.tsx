@@ -326,67 +326,88 @@ const AIHealthAssistant = () => {
   const hasMessages = messages.length > 0 || loading;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-full bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-5 py-3 border-b border-border flex items-center justify-end gap-3">
+      <div className="flex-shrink-0 w-full px-3 sm:px-5 py-3 border-b border-border flex items-center justify-end gap-3">
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs text-muted-foreground font-medium">Online</span>
         </div>
       </div>
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Chat area — must have min-w-0 so it can shrink inside the flex column */}
+      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
         {!hasMessages ? (
-          <div className="flex flex-col items-center justify-center h-full px-6 pb-4 gap-6 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-3xl shadow-lg">
+          /* ── Empty state ── */
+          <div className="flex flex-col items-center justify-center h-full px-4 sm:px-6 pb-4 gap-6 text-center">
+            <div className="flex flex-col items-center gap-3 w-full min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-lg flex-shrink-0">
                 🤖
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">Hello! I'm your AI Health Assistant 👋</h2>
-                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              <div className="w-full min-w-0 px-2">
+                <h2 className="text-base sm:text-lg font-semibold break-words">
+                  Hello! I'm your AI Health Assistant 👋
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto break-words">
                   I can help you understand your symptoms and provide health insights.{" "}
                   <span className="text-teal-500 font-medium">How can I assist you today?</span>
                 </p>
               </div>
             </div>
 
-            <div className="w-full max-w-lg">
+            {/* Suggestion chips — the tricky part */}
+            {/*
+              The chip row uses overflow-x-auto so chips scroll horizontally on mobile.
+              For that to clip (not overflow the page) every ancestor up to the scroll
+              root needs either overflow-hidden or min-w-0. We give the wrapper
+              overflow-hidden and use negative-margin bleed (-mx-4/px-4) so the
+              scrollable track visually reaches the edges without triggering page overflow.
+            */}
+            <div className="w-full max-w-lg min-w-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground px-2">Try asking</span>
+                <span className="text-xs text-muted-foreground px-2 flex-shrink-0">Try asking</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {suggestions.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => handleAnalyze(s.label)}
-                    className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[90px]"
-                  >
-                    <span className="text-xl">{s.emoji}</span>
-                    <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
-                  </button>
-                ))}
+              <div className="overflow-hidden">
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => handleAnalyze(s.label)}
+                      className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[88px]"
+                    >
+                      <span className="text-xl">{s.emoji}</span>
+                      <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto w-full px-4 py-5 space-y-5">
+          /* ── Messages ── */
+          /*
+            Only one max-w here — max-w-2xl. Putting both max-w-2xl and max-w-full
+            on the same element is a no-op (the smaller wins) and signals confusion.
+            The important additions are min-w-0 so this div can shrink, and
+            overflow-hidden so no child can leak out horizontally.
+          */
+          <div className="max-w-2xl mx-auto w-full min-w-0 overflow-hidden px-3 sm:px-4 py-5 space-y-5">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 sm:gap-3 min-w-0 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 shadow-sm">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 shadow-sm">
                     🤖
                   </div>
                 )}
-                <div className="flex flex-col gap-1 max-w-[78%] relative group">
+                {/* min-w-0 here is essential — without it max-w-[85%] has nothing to be 85% *of* */}
+                <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[78%] min-w-0 relative group">
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed relative ${
+                    className={`rounded-2xl px-3.5 sm:px-4 py-3 text-sm leading-relaxed relative break-words [overflow-wrap:anywhere] ${
                       msg.role === "user"
                         ? "bg-teal-500 text-white rounded-br-sm ml-auto"
                         : `bg-muted text-foreground rounded-bl-sm border border-border transition-all duration-300 ${
@@ -421,10 +442,10 @@ const AIHealthAssistant = () => {
                               if (listMatch) {
                                 if (!inList) {
                                   html +=
-                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc'>";
+                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc;overflow-wrap:anywhere'>";
                                   inList = true;
                                 }
-                                html += `<li style='margin:2px 0'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
+                                html += `<li style='margin:2px 0;overflow-wrap:anywhere'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
                               } else {
                                 if (inList) {
                                   html += "</ul>";
@@ -433,7 +454,7 @@ const AIHealthAssistant = () => {
                                 if (line.trim() === "") {
                                   html += "<br>";
                                 } else {
-                                  html += `<p style='margin:2px 0'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
+                                  html += `<p style='margin:2px 0;overflow-wrap:anywhere'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
                                 }
                               }
                             }
@@ -454,8 +475,8 @@ const AIHealthAssistant = () => {
             ))}
 
             {loading && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
+              <div className="flex items-start gap-2 sm:gap-3 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
                   🤖
                 </div>
                 <div className="bg-muted border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
@@ -471,9 +492,9 @@ const AIHealthAssistant = () => {
       </div>
 
       {/* Input — pinned at bottom */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-background">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 bg-muted border border-border rounded-2xl px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
+      <div className="flex-shrink-0 w-full border-t border-border px-3 sm:px-4 py-3 bg-background">
+        <div className="max-w-2xl mx-auto w-full min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-muted border border-border rounded-2xl px-3 sm:px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
             {/* Voice button */}
             <button
               onClick={handleVoiceInput}
@@ -521,9 +542,9 @@ const AIHealthAssistant = () => {
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening…" : "Describe your symptoms in detail…"}
+              placeholder={isListening ? "Listening…" : "Describe your symptoms…"}
               rows={1}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed self-center"
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed self-center"
             />
 
             <button
@@ -543,7 +564,7 @@ const AIHealthAssistant = () => {
             </button>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-1.5">
+          <p className="text-center text-xs text-muted-foreground mt-1.5 px-2 break-words">
             {isListening
               ? "🔴 Listening… click the mic to stop"
               : "AI-generated guidance — always consult a doctor for medical advice"}
