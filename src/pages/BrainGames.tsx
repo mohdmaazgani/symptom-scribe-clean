@@ -202,15 +202,30 @@ const BrainGames = () => {
 
   const awardXp = async (pointsToGain: number) => {
     if (pointsToGain <= 0) return;
-    setXp((prev) => prev + pointsToGain);
 
     try {
       const { error } = await supabase.rpc("award_user_xp", {
         points_to_add: pointsToGain,
       });
-      if (error) throw error;
+      
+      if (error) {
+        // Handle rate limiting exceptions explicitly
+        const isRateLimit = error.message?.includes("Rate limit") || error.details?.includes("Rate limit");
+        if (isRateLimit) {
+          showWarning(
+            "XP Cap Reached",
+            "You've reached the maximum XP limit (100 XP per 5 minutes). Take a break and play again shortly!"
+          );
+        } else {
+          showError("Sync Error", "Failed to save game progress to server.");
+        }
+        return;
+      }
+
+      setXp((prev) => prev + pointsToGain);
     } catch (err) {
       console.error("Error awarding user XP:", err);
+      showError("Sync Error", "Failed to save game progress to server.");
     }
   };
 
