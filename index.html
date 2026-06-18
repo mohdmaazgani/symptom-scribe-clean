@@ -15,20 +15,18 @@
     <meta property="og:title" content="Smart Health Tracker - AI Symptom Analyzer" />
     <meta property="og:description" content="Describe your symptoms and get AI-powered health insights with severity levels and self-care advice." />
     <meta property="og:type" content="website" />
-   
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     <script>
       (function() {
-        const theme = localStorage.getItem('theme') || 'light';
-        if (theme === 'dark') {
+        const theme = localStorage.getItem('symptom-scribe-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || (!theme && prefersDark) || (theme === 'system' && prefersDark)) {
           document.documentElement.classList.add('dark');
-          document.documentElement.dataset.theme = 'dark';
         } else {
           document.documentElement.classList.remove('dark');
-          document.documentElement.dataset.theme = 'light';
         }
       })();
     </script>

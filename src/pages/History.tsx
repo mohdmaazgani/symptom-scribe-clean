@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { CheckCircle, X, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
-import { whenEncryptionReady } from "@/lib/encryption";
+import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 import {
   AlertDialog,
@@ -37,29 +37,12 @@ const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
-
-  useEffect(() => {
-    fetchHistory();
-
-    const handleOnline = async () => {
-      setIsOnline(true);
-      const synced = await syncOfflineData();
-      if (synced) fetchHistory();
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,29 +59,42 @@ const History = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async (queryText = "") => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const key = await whenEncryptionReady();
+      const keys = await whenKeysReady();
+      const searchTokens = queryText ? await generateSearchTokens(queryText, keys.searchKey) : [];
 
       if (navigator.onLine) {
-        const { data, error } = await getCachedData<SymptomEntry[]>("symptom_history");
+        let query = supabase.from("symptom_history").select("*").eq("user_id", user.id);
+        
+        if (severityFilter !== "all") {
+          query = query.eq("severity_level", severityFilter);
+        }
 
+        if (searchTokens.length > 0) {
+          query = query.contains("search_tokens", searchTokens);
+        }
+
+        const { data, error } = await query;
         if (error) throw error;
 
         if (data) {
-          await db.symptomHistory
-            .where("user_id")
-            .equals(user.id)
-            .filter(
-              (record) =>
-                record.pending_sync === 0 &&
-                record.pending_delete === 0 &&
-                record.pending_update === 0
-            )
-            .delete();
+          if (!queryText && severityFilter === "all") {
+            await db.symptomHistory
+              .where("user_id")
+              .equals(user.id)
+              .filter(
+                (record) =>
+                  record.pending_sync === 0 &&
+                  record.pending_delete === 0 &&
+                  record.pending_update === 0
+              )
+              .delete();
+          }
 
           const localEntries = data.map((record) => ({
             id: record.id,
@@ -110,13 +106,15 @@ const History = () => {
             risk_score: record.risk_score,
             resolved: !!record.resolved,
             created_at: record.created_at || new Date().toISOString(),
+            ai_analysis: record.ai_analysis,
+            search_tokens: record.search_tokens,
             pending_sync: 0,
             pending_update: 0,
             pending_delete: 0,
           }));
 
           const encryptedEntries = await Promise.all(
-            localEntries.map((entry) => encryptSymptom(entry, key))
+            localEntries.map((entry) => encryptSymptom(entry, keys.encryptionKey, keys.searchKey))
           );
 
           await db.symptomHistory.bulkPut(encryptedEntries);
@@ -129,15 +127,29 @@ const History = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const key = await whenEncryptionReady();
-        const localRecords = await db.symptomHistory
+        const keys = await whenKeysReady();
+        const searchTokens = queryText ? await generateSearchTokens(queryText, keys.searchKey) : [];
+
+        let localQuery = db.symptomHistory
           .where("user_id")
           .equals(user.id)
-          .filter((record) => record.pending_delete === 0)
-          .toArray();
+          .filter((record) => record.pending_delete === 0);
+
+        if (severityFilter !== "all") {
+          localQuery = localQuery.filter((record) => record.severity_level === severityFilter);
+        }
+
+        if (searchTokens.length > 0) {
+          localQuery = localQuery.filter((record) =>
+            record.search_tokens &&
+            searchTokens.every((token) => record.search_tokens!.includes(token))
+          );
+        }
+
+        const localRecords = await localQuery.toArray();
 
         const decryptedRecords = await Promise.all(
-          localRecords.map((record) => decryptSymptom(record, key))
+          localRecords.map((record) => decryptSymptom(record, keys.encryptionKey))
         );
 
         decryptedRecords.sort(
@@ -150,7 +162,34 @@ const History = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [severityFilter]);
+
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      const synced = await syncOfflineData();
+      if (synced) fetchHistory(debouncedQuery);
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [debouncedQuery, fetchHistory]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchHistory(debouncedQuery);
+  }, [debouncedQuery, fetchHistory]);
 
   const toggleResolved = async (id: string, currentStatus: boolean) => {
     try {
@@ -233,11 +272,8 @@ const History = () => {
     }
   };
 
-  const filteredHistory = history.filter(
-    (entry) =>
-      entry.symptoms.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (severityFilter === "all" || entry.severity_level === severityFilter)
-  );
+  // The history state is already filtered by fetchHistory using blind indexes and severity
+  const filteredHistory = history;
 
   const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all";
 

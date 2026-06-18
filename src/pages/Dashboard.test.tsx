@@ -47,6 +47,36 @@ vi.mock("@/lib/cached-queries", () => ({
   getCachedData: vi.fn(),
 }));
 
+// Mock encryption and offline-db to prevent blocking promises in tests
+vi.mock("@/lib/encryption", () => ({
+  whenEncryptionReady: vi.fn().mockResolvedValue({}),
+  whenKeysReady: vi.fn().mockResolvedValue({ encryptionKey: {}, searchKey: {} }),
+  whenSearchReady: vi.fn().mockResolvedValue({}),
+  generateSearchTokens: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/offline-db", () => ({
+  db: {
+    healthMetrics: {
+      clear: vi.fn(),
+      toArray: vi.fn().mockResolvedValue([]),
+      bulkPut: vi.fn(),
+      put: vi.fn(),
+    },
+    symptomHistory: {
+      clear: vi.fn(),
+      toArray: vi.fn().mockResolvedValue([]),
+      bulkPut: vi.fn(),
+      put: vi.fn(),
+    },
+  },
+  decryptSymptom: vi.fn((s) => s),
+  decryptMetric: vi.fn((m) => m),
+  encryptSymptom: vi.fn((s) => s),
+  encryptMetric: vi.fn((m) => m),
+  syncOfflineData: vi.fn().mockResolvedValue(false),
+}));
+
 // Mock react-countup so it renders plain numbers synchronously (avoids
 // animation timers interfering with assertions)
 vi.mock("react-countup", () => ({
@@ -139,10 +169,10 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Total Consultations")).toBeInTheDocument();
-      expect(screen.getByText("Active Issues")).toBeInTheDocument();
-      expect(screen.getByText("Overall Wellness")).toBeInTheDocument();
-      expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Total Consultations/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Active Issues/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Overall Wellness/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Recent Activity/i })).toBeInTheDocument();
     });
   });
 
@@ -154,10 +184,12 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      // Total consultations = 2
-      expect(screen.getByText("Lifetime symptom checks").parentElement).toHaveTextContent("2");
-      // Unresolved (active issues) = 1
-      expect(screen.getByText("Requiring follow-up").parentElement).toHaveTextContent("1");
+      // Check that "2" appears somewhere near "Lifetime symptom checks"
+      const lifetimeText = screen.getByText(/Lifetime symptom checks/i);
+      expect(lifetimeText.closest("div")).toHaveTextContent("2");
+      
+      const followupText = screen.getByText(/Requiring follow-up/i);
+      expect(followupText.closest("div")).toHaveTextContent("1");
     });
   });
 
@@ -169,9 +201,13 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      // First 60 chars of the first symptom should be visible
+      // Use a function matcher to find text across elements
       expect(
-        screen.getByText(/Persistent headache with nausea/i)
+        screen.getByText((content, element) => {
+          const hasText = element?.textContent?.includes("Persistent headache with nausea") ?? false;
+          const hasChildren = element ? element.children.length === 0 : false;
+          return hasText && hasChildren;
+        })
       ).toBeInTheDocument();
     });
   });
@@ -184,8 +220,10 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      const highBadge = screen.getByText("high");
-      expect(highBadge).toHaveClass("text-destructive");
+      // Find the element containing "high" and check its class
+      const elements = screen.getAllByText(/high/i);
+      const highBadge = elements.find(el => el.classList.contains("text-destructive"));
+      expect(highBadge).toBeInTheDocument();
     });
   });
 

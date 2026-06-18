@@ -8,6 +8,8 @@ import { showError, showInfo } from "@/lib/toast-helpers";
 import CountUp from "react-countup";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { getCachedData } from "@/lib/cached-queries";
+import { decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
+import { whenEncryptionReady } from "@/lib/encryption";
 
 interface Stats {
   totalSymptoms: number;
@@ -132,14 +134,19 @@ const Dashboard = () => {
         return;
       }
 
-      const { data: symptoms, error } = await getCachedData<SymptomHistoryRecord[]>("symptom_history");
+      const { data: rawSymptoms, error } = await getCachedData<SymptomHistoryRecord[]>("symptom_history");
 
       if (error) {
         showError("Error loading dashboard", "Could not fetch your health data");
         console.error("Error fetching symptoms:", error);
       }
 
-      if (symptoms && symptoms.length > 0) {
+      if (rawSymptoms && rawSymptoms.length > 0) {
+        const key = await whenEncryptionReady();
+        const symptoms = await Promise.all(
+          rawSymptoms.map((s) => decryptSymptom(s as unknown as OfflineSymptom, key))
+        );
+
         const unresolved = symptoms.filter(s => !s.resolved).length;
         const avgRisk = symptoms.reduce((sum, s) => sum + (s.risk_score || 0), 0) / symptoms.length;
 
@@ -154,7 +161,7 @@ const Dashboard = () => {
           recentActivity: recent,
         });
 
-        setRecentHistory(symptoms.slice(0, 5));
+        setRecentHistory(symptoms.slice(0, 5) as unknown as SymptomHistoryRecord[]);
       } else {
         setStats({
           totalSymptoms: 0,

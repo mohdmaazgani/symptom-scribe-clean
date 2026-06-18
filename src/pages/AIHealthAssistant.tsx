@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
+import { whenKeysReady } from "@/lib/encryption";
+import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import { Volume2, VolumeX } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -286,7 +288,9 @@ const AIHealthAssistant = () => {
                 ? Math.floor(Math.random() * 30) + 40
                 : Math.floor(Math.random() * 30) + 10;
 
-          const { error: insertError } = await supabase.from("symptom_history").insert({
+          const recordId = crypto.randomUUID();
+          const record = {
+            id: recordId,
             user_id: user.id,
             symptoms: userMessage,
             ai_analysis: assistantContent,
@@ -294,13 +298,29 @@ const AIHealthAssistant = () => {
             possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
             recommendations: recommendations.length > 0 ? recommendations : null,
             risk_score: riskScore,
-          });
+            resolved: false,
+            created_at: new Date().toISOString(),
+          };
+
+          const keys = await whenKeysReady();
+          const encryptedRecord = await encryptSymptom(record as unknown as OfflineSymptom, keys.encryptionKey, keys.searchKey);
+
+          const { error: insertError } = await supabase.from("symptom_history").insert(encryptedRecord);
 
           if (insertError) {
             console.error("Error saving symptom history:", insertError);
             showError("Save failed", "Could not save to your health history");
           } else {
             await invalidateCache("symptom_history");
+            
+            // Save locally to Dexie immediately
+            await db.symptomHistory.put({
+              ...encryptedRecord,
+              pending_sync: 0,
+              pending_update: 0,
+              pending_delete: 0,
+            } as unknown as OfflineSymptom);
+
             showSuccess("Saved to history", "This analysis has been added to your health records");
           }
         }
