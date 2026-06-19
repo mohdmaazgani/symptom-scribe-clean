@@ -19,6 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SymptomEntry {
   id: string;
@@ -221,6 +227,14 @@ const History = () => {
     }
   };
 
+  const getSeverityTooltip = (severity: string): string => {
+    switch (severity) {
+      case "high": return "Urgent medical attention recommended";
+      case "moderate": return "Symptoms require attention";
+      default: return "Mild symptoms, no immediate concern";
+    }
+  };
+
   const filteredHistory = history.filter(
     (entry) =>
       entry.symptoms.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -330,9 +344,18 @@ const History = () => {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <Badge variant={getSeverityColor(entry.severity_level)}>
-                      {entry.severity_level}
-                    </Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant={getSeverityColor(entry.severity_level)}>
+                            {entry.severity_level}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {getSeverityTooltip(entry.severity_level)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       variant={entry.resolved ? "outline" : "default"}
                       size="sm"
