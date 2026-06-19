@@ -20,12 +20,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface SymptomEntry {
   id: string;
@@ -395,18 +389,13 @@ const History = () => {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant={getSeverityColor(entry.severity_level)}>
-                            {entry.severity_level}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {getSeverityTooltip(entry.severity_level)}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Badge 
+                      variant={getSeverityColor(entry.severity_level)} 
+                      className="cursor-help"
+                      title={getSeverityTooltip(entry.severity_level)}
+                    >
+                      {entry.severity_level}
+                    </Badge>
                     <Button
                       variant={entry.resolved ? "outline" : "default"}
                       size="sm"
