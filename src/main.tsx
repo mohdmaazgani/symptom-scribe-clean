@@ -3,7 +3,7 @@ import { browserEnv } from "./lib/env";
 import StartupDiagnostics from "./components/StartupDiagnostics";
 import "./index.css";
 
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "./components/common/ErrorBoundary.tsx";
 
 import { ThemeProvider } from "./components/theme-provider";
 

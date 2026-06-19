@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
-import { BackToTop } from "@/components/BackToTop";
+import { BackToTop } from "@/components/common/BackToTop";
 
 interface LayoutProps {
   children: React.ReactNode;

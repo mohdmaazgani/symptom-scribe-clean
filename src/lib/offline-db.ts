@@ -250,7 +250,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingMetricsInserts) {
-      const { pending_sync, pending_delete, ...supabaseData } = record;
+      const { pending_sync, pending_delete, search_tokens: _st_m, ...supabaseData } = record;
       const { error } = await supabase
         .from("health_metrics")
         .insert(supabaseData);
@@ -286,7 +286,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
+      const { pending_sync, pending_delete, pending_update, search_tokens: _st_s, ...supabaseData } = record;
       const { error } = await supabase
         .from("symptom_history")
         .insert(supabaseData);
@@ -328,4 +328,3 @@ export const syncOfflineData = async (): Promise<boolean> => {
     return false;
   }
 };
-

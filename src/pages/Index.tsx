@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Hero from "@/components/Hero";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/AnimatedThemeToggler";
-import { BackToTop } from "@/components/BackToTop";
+import { BackToTop } from "@/components/common/BackToTop";
 import { 
   Github,
   ExternalLink,

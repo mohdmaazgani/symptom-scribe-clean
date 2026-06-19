@@ -29,6 +29,8 @@ class MeshNetworkManager {
   private nodeId: string = "";
   private nodeName: string = "";
   private listeners: Set<() => void> = new Set();
+  private pingIntervalId: ReturnType<typeof setInterval> | null = null;
+  private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
   private isOfflineSimulated: boolean = false;
 
   constructor() {
@@ -50,6 +52,9 @@ class MeshNetworkManager {
       if (this.isOnline()) {
         this.syncMeshAlerts();
       }
+
+      // Tear down intervals and channel when the tab closes
+      window.addEventListener("beforeunload", () => this.destroy());
     }
   }
 
@@ -115,16 +120,32 @@ class MeshNetworkManager {
     };
 
     ping();
-    setInterval(ping, 10000);
+    this.pingIntervalId = setInterval(ping, 10000);
 
     // Housekeeping cleanup every 5 seconds
-    setInterval(() => {
+    this.cleanupIntervalId = setInterval(() => {
       const activePeersCountBefore = this.peers.size;
       this.getPeers(); // triggers cleanup
       if (this.peers.size !== activePeersCountBefore) {
         this.notifyListeners();
       }
     }, 5000);
+  }
+
+  public destroy() {
+    if (this.pingIntervalId !== null) {
+      clearInterval(this.pingIntervalId);
+      this.pingIntervalId = null;
+    }
+    if (this.cleanupIntervalId !== null) {
+      clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
+    }
+    if (this.channel) {
+      this.channel.close();
+      this.channel = null;
+    }
+    this.listeners.clear();
   }
 
   private postMessage(msg: MeshMessage) {

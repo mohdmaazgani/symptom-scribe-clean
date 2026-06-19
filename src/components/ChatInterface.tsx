@@ -307,9 +307,22 @@ const ChatInterface = () => {
           }
         }
 
-        const riskScore = severityLevel === 'high' ? Math.floor(Math.random() * 20) + 70 
-          : severityLevel === 'moderate' ? Math.floor(Math.random() * 30) + 40 
-          : Math.floor(Math.random() * 30) + 10;
+        const computeRiskScore = (
+          severity: string,
+          causesCount: number,
+          recsCount: number
+        ): number => {
+          const causeWeight = causesCount * 2;
+          const recPenalty = recsCount === 0 ? 4 : 0;
+          if (severity === 'high') {
+            return Math.min(100, Math.max(70, 75 + causeWeight - recPenalty));
+          }
+          if (severity === 'moderate') {
+            return Math.min(69, Math.max(40, 50 + causeWeight - recPenalty));
+          }
+          return Math.min(39, Math.max(10, 20 + causeWeight - recPenalty));
+        };
+        const riskScore = computeRiskScore(severityLevel, possibleCauses.length, recommendations.length);
 
         const isMedicalAnalysis =
           assistantContent.includes("Possible Causes") ||
