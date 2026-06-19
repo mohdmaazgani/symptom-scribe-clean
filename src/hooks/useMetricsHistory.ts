@@ -1,67 +1,84 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { db, type OfflineMetric } from "@/lib/offline-db";
-
-
+import { db, type OfflineMetric, encryptMetric, decryptMetric } from "@/lib/offline-db";
+import { whenEncryptionReady } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 
 export function useMetricsHistory(userId: string | null) {
   const [records, setRecords] = useState<OfflineMetric[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const fetchHistory = useCallback(async () => {
-    // never query with an empty/null userId.
     if (!userId) return;
 
     setLoading(true);
 
-    if (navigator.onLine) {
-      try {
-        const { data, error } = await getCachedData<OfflineMetric[]>("health_metrics");
-
-        if (!error && data) {
-          await db.healthMetrics
-            .where("user_id")
-            .equals(userId)
-            .filter((record) => record.pending_sync === 0 && record.pending_delete === 0)
-            .delete();
-
-          const localEntries = data.map((record) => ({
-            id: record.id,
-            user_id: record.user_id,
-            metric_type: record.metric_type,
-            value: record.value,
-            notes: record.notes,
-            recorded_at: record.recorded_at || new Date().toISOString(),
-            pending_sync: 0,
-            pending_delete: 0,
-          }));
-
-          await db.healthMetrics.bulkPut(localEntries);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch from Supabase, falling back to local DB:", err);
-      }
-    }
-
     try {
+      const key = await whenEncryptionReady();
+
+      if (navigator.onLine) {
+        try {
+          const { data, error } = await getCachedData<OfflineMetric[]>("health_metrics");
+
+          if (!error && data) {
+            await db.healthMetrics
+              .where("user_id")
+              .equals(userId)
+              .filter((record) => record.pending_sync === 0 && record.pending_delete === 0)
+              .delete();
+
+            const localEntries = data.map((record) => ({
+              id: record.id,
+              user_id: record.user_id,
+              metric_type: record.metric_type,
+              value: record.value,
+              notes: record.notes,
+              recorded_at: record.recorded_at || new Date().toISOString(),
+              pending_sync: 0,
+              pending_delete: 0,
+            }));
+
+            const encryptedEntries = await Promise.all(
+              localEntries.map((entry) => encryptMetric(entry, key))
+            );
+
+            await db.healthMetrics.bulkPut(encryptedEntries);
+          }
+        } catch (err) {
+          console.warn("Failed to fetch from Supabase, falling back to local DB:", err);
+        }
+      }
+
       const localRecords = await db.healthMetrics
         .where("user_id")
         .equals(userId)
         .filter((record) => record.pending_delete === 0)
         .toArray();
 
-      localRecords.sort(
-          (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+      const decryptedRecords = await Promise.all(
+        localRecords.map((record) => decryptMetric(record, key))
       );
-      setRecords(localRecords);
+
+      const sortedRecords = [...decryptedRecords];
+
+      if (sortOrder === 'newest') {
+        sortedRecords.sort(
+          (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+        );
+      } else {
+        sortedRecords.sort(
+          (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+        );
+      }
+
+      setRecords(sortedRecords);
     } catch (err) {
       console.error("Error loading local metrics:", err);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, sortOrder]);
 
   const deleteRecord = async (id: string) => {
     if (navigator.onLine) {
@@ -83,7 +100,6 @@ export function useMetricsHistory(userId: string | null) {
   };
 
   useEffect(() => {
-    // Only fire when userId is a real non-empty string.
     if (userId) {
       fetchHistory();
     }
@@ -91,9 +107,10 @@ export function useMetricsHistory(userId: string | null) {
 
   return {
     records,
-    //  Still "loading" if userId hasn't resolved yet.
     loading: loading || !userId,
     refresh: fetchHistory,
     deleteRecord,
+    setSortOrder,
+    sortOrder,
   };
 }

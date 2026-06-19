@@ -1,7 +1,17 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Calendar, Clock, BookOpen, Home } from "lucide-react";
 import { getPostBySlug } from "@/data/blogData";
+
+interface Post {
+  title: string;
+  category: string;
+  date: string;
+  updated_at?: string;
+  readTime: string;
+  content: { heading?: string; body: string }[];
+  prevPost?: { slug: string; title: string };
+  nextPost?: { slug: string; title: string };
+}
  
 const categoryColors: Record<string, { border: string; bg: string; text: string; dot: string }> = {
   Wellness:      { border: "border-emerald-500/40", bg: "bg-emerald-900/20", text: "text-emerald-300", dot: "bg-emerald-400" },
@@ -87,17 +97,16 @@ const BlogPostPage = () => {
  
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              {post.date}
-            </span>
+              <span>{post.updated_at || post.date}</span>
+            </div>
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4" />
               {post.readTime}
             </span>
             <span className="text-gray-600">·</span>
-            {/* Fix 1: replaced fragile date string split with safe fallback */}
-            <span className="text-gray-600 text-xs">Last updated: {post.updatedAt || post.date}</span>
+            <span className="text-gray-600 text-xs">Last updated: {post.updated_at || post.date}</span>
           </div>
         </div>
  

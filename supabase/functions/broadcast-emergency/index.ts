@@ -44,45 +44,51 @@ serve(async (req) => {
       );
     }
 
-    // Get the request body (latitude, longitude)
-    let body: { latitude?: number; longitude?: number } = {};
+    // Get the request body (latitude, longitude, sender_name, contact_phone, contact_name)
+    let body: {
+      latitude?: number;
+      longitude?: number;
+      sender_name?: string;
+      contact_phone?: string;
+      contact_name?: string;
+    } = {};
     try {
       body = await req.json();
     } catch (_) {
       // Body can be empty
     }
 
-    const { latitude, longitude } = body;
+    const {
+      latitude,
+      longitude,
+      sender_name: bodySenderName,
+      contact_phone: bodyContactPhone,
+      contact_name: bodyContactName,
+    } = body;
 
-    // Fetch user's profile to get their name and emergency contact details
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("full_name, emergency_contact_name, emergency_contact_phone")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Fetch user's profile to get their name and emergency contact details if not provided
+    let profile = null;
+    if (!bodySenderName || !bodyContactPhone || !bodyContactName) {
+      const { data, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("full_name, emergency_contact_name, emergency_contact_phone")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch user profile" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+      } else {
+        profile = data;
+      }
     }
 
-    if (!profile) {
-      return new Response(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const contactPhone = profile.emergency_contact_phone;
-    const contactName = profile.emergency_contact_name;
-    const senderName = profile.full_name || "A user";
+    const contactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);
+    const contactName = bodyContactName || (profile ? profile.emergency_contact_name : null);
+    const senderName = bodySenderName || (profile ? profile.full_name : null) || "A user";
 
     if (!contactPhone) {
       return new Response(
-        JSON.stringify({ error: "No emergency contact phone configured in your profile" }),
+        JSON.stringify({ error: "No emergency contact phone configured or provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

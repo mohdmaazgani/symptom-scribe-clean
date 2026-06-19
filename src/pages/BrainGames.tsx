@@ -202,15 +202,30 @@ const BrainGames = () => {
 
   const awardXp = async (pointsToGain: number) => {
     if (pointsToGain <= 0) return;
-    setXp((prev) => prev + pointsToGain);
 
     try {
       const { error } = await supabase.rpc("award_user_xp", {
         points_to_add: pointsToGain,
       });
-      if (error) throw error;
+      
+      if (error) {
+        // Handle rate limiting exceptions explicitly
+        const isRateLimit = error.message?.includes("Rate limit") || error.details?.includes("Rate limit");
+        if (isRateLimit) {
+          showWarning(
+            "XP Cap Reached",
+            "You've reached the maximum XP limit (100 XP per 5 minutes). Take a break and play again shortly!"
+          );
+        } else {
+          showError("Sync Error", "Failed to save game progress to server.");
+        }
+        return;
+      }
+
+      setXp((prev) => prev + pointsToGain);
     } catch (err) {
       console.error("Error awarding user XP:", err);
+      showError("Sync Error", "Failed to save game progress to server.");
     }
   };
 
@@ -353,7 +368,66 @@ const BrainGames = () => {
       clearTimeout(wordTimeoutRef.current);
       wordTimeoutRef.current = null;
     }
+    return () => {
+      if (wordTimeoutRef.current) {
+        clearTimeout(wordTimeoutRef.current);
+      }
+    };
   }, [activeGame]);
+
+  // Synchronize game active state with window and history hash for route protection
+  useEffect(() => {
+    const isGameActive = !!(
+      (activeGame === "memory" && memoryCards.length > 0 && !memoryGameWon) ||
+      (activeGame === "math") ||
+      (activeGame === "word" && wordSequence.length > 0) ||
+      (activeGame === "pattern" && currentQuestion !== null && !gameCompleted)
+    );
+
+    window.isGameActive = isGameActive;
+
+    if (isGameActive) {
+      if (!window.location.hash.includes("game-active")) {
+        window.history.pushState(null, "", window.location.pathname + "#game-active");
+      }
+    } else {
+      if (window.location.hash.includes("game-active")) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isGameActive) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    const handlePopState = () => {
+      if (isGameActive && !window.location.hash.includes("game-active")) {
+        const confirmLeave = window.confirm(
+          "Are you sure you want to leave? Your active game progress will be lost."
+        );
+        if (confirmLeave) {
+          window.isGameActive = false;
+          setActiveGame(null);
+          window.history.back();
+        } else {
+          window.history.pushState(null, "", window.location.pathname + "#game-active");
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+      window.isGameActive = false;
+    };
+  }, [activeGame, memoryCards.length, memoryGameWon, wordSequence.length, currentQuestion, gameCompleted]);
 
   // ─── Pattern Recognition Game ──────────────────────────────────────────────
 
@@ -564,6 +638,26 @@ const BrainGames = () => {
         const completionBonus = 50;
         awardXp(completionBonus);
         showSuccess("Game Complete!", `+${completionBonus} XP bonus!`);
+        if ((xp + completionBonus) >= 100 && xp < 100) {
+          showSuccess(
+            "🏆 Achievement Unlocked!",
+            "First 100 XP achieved!"
+          );
+        }
+
+        if ((level + 1) >= 3) {
+          showSuccess(
+           "🎖 Achievement Unlocked!",
+           "Reached Level 3!"
+          );
+        }
+
+        if (percentage >= 90) {
+          showSuccess(
+           "🥇 Achievement Unlocked!",
+           "Perfect Performance Badge Earned!"
+          );
+        }
         return;
       }
 
@@ -583,6 +677,8 @@ const BrainGames = () => {
       questionTimeLeft,
       patternScore,
       patternStreak,
+      level,
+      xp,
       toast,
     ]
   );
@@ -1225,27 +1321,78 @@ const BrainGames = () => {
         </div>
 
         <motion.div
+          key={`lobby-status-${level}`}
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 rounded-[2.5rem] shadow-xl flex items-center gap-8 px-8"
+          animate={{ 
+            opacity: 1, 
+            scale: [0.9, 1.05, 1],
+          }}
+          transition={{ 
+            duration: 0.5, 
+            ease: "easeOut" 
+          }}
+          className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-8 min-w-[280px] sm:min-w-[320px]"
         >
-          <div className="text-center">
-            <p className="text-3xl font-black text-primary">{level}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Global Level
-            </p>
+          <div className="flex items-center gap-8 justify-center">
+            <div className="text-center">
+              <p className="text-3xl font-black text-primary">{level}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Global Level
+              </p>
+            </div>
+            <div className="w-px h-10 bg-border/50" />
+            <div className="text-center">
+              <p className="text-3xl font-black text-primary">{xp}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Total XP
+              </p>
+            </div>
+            <div className="mt-4 text-center">
+              <p className="text-xs font-semibold text-primary">
+               🎯 Next Milestone
+              </p>
+
+              <p className="text-xs text-muted-foreground">
+                Reach Level {level + 1}
+              </p>
+            </div>
+            <div className="w-px h-10 bg-border/50" />
+            <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg shadow-orange-500/20">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
           </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="text-center">
-            <p className="text-3xl font-black text-primary">{xp}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Total XP
+
+          <div className="space-y-1.5 w-full">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span>Progress to Level {level + 1}</span>
+              <span> {Math.round(((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100)}%</span>
+            </div>
+            <div className="flex gap-1 mt-2">
+              {[...Array(10)].map((_, index) => {
+            const progress =
+               ((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 10;
+
+            return (
+              <motion.div
+               key={index}
+               initial={{ opacity: 0.3, scale: 0.8 }}
+               animate={{
+               opacity: index < progress ? 1 : 0.3,
+               scale: index < progress ? 1 : 0.8,
+            }}
+              transition={{ duration: 0.3 }}
+              className={`h-2 flex-1 rounded-full ${
+              index < progress
+              ? "bg-primary shadow-md"
+              : "bg-slate-300 dark:bg-slate-700"
+             }`}
+            />
+          );
+         })}
+       </div>
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              {XP_PER_LEVEL - (xp % XP_PER_LEVEL)} XP remaining to reach Level {level + 1}
             </p>
-          </div>
-          <div className="w-px h-10 bg-border/50" />
-          <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg shadow-orange-500/20">
-            <Trophy className="w-6 h-6 text-white" />
           </div>
         </motion.div>
       </header>
@@ -1458,42 +1605,43 @@ const BrainGames = () => {
                   </CardHeader>
                   <CardContent className="p-8 md:p-12">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                      {memoryCards.map((card, index) => (
-                        <motion.div
-                          key={index}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Memory card ${index + 1}`}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              handleCardClick(index);
-                            }
-                          }}
-                          onClick={() => handleCardClick(index)}
-                          className={`aspect-square rounded-3xl flex items-center justify-center text-5xl cursor-pointer transition-all duration-500 shadow-md ${
-                            flippedCards.includes(index) || matchedCards.includes(index)
-                              ? "bg-gradient-to-br from-primary to-primary-glow text-white [transform:rotateY(180deg)] shadow-xl shadow-primary/20"
-                              : "bg-muted border-2 border-border/50 hover:border-primary/30 hover:bg-accent [transform:rotateY(0deg)]"
-                          }`}
-                        >
-                          <div
-                            className={
-                              flippedCards.includes(index) || matchedCards.includes(index)
-                                ? "[transform:rotateY(180deg)]"
-                                : ""
-                            }
+                      {memoryCards.map((card, index) => {
+                        const isFlipped = flippedCards.includes(index) || matchedCards.includes(index);
+                        return (
+                          <div 
+                            key={index} 
+                            className="[perspective:1000px] w-full aspect-square relative"
                           >
-                            {flippedCards.includes(index) || matchedCards.includes(index) ? (
-                              <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
-                            ) : (
-                              <div className="w-8 h-8 rounded-full border-4 border-muted-foreground/20 opacity-20" />
-                            )}
+                            <motion.div
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Memory card ${index + 1}`}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  handleCardClick(index);
+                                }
+                              }}
+                              onClick={() => handleCardClick(index)}
+                              className={`w-full h-full duration-500 [transform-style:preserve-3d] relative transition-transform ${
+                                isFlipped ? "[transform:rotateY(180deg)]" : ""
+                              }`}
+                            >
+                              {/* Card Back */}
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] bg-muted border-2 border-border/50 rounded-3xl flex items-center justify-center hover:border-primary/30 hover:bg-accent transition-colors shadow-md">
+                                <Brain className="w-10 h-10 text-primary opacity-40 animate-pulse" />
+                              </div>
+
+                              {/* Card Front */}
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-primary to-primary-glow text-white rounded-3xl flex items-center justify-center text-5xl shadow-xl shadow-primary/20">
+                                <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
+                              </div>
+                            </motion.div>
                           </div>
-                        </motion.div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

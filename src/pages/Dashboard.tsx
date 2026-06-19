@@ -8,6 +8,8 @@ import { showError, showInfo } from "@/lib/toast-helpers";
 import CountUp from "react-countup";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { getCachedData } from "@/lib/cached-queries";
+import { decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
+import { whenEncryptionReady } from "@/lib/encryption";
 
 interface Stats {
   totalSymptoms: number;
@@ -57,7 +59,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
   return (
     <div className="relative flex items-center justify-center w-20 h-20 select-none">
       <div className={`absolute inset-1 rounded-full animate-pulse blur-md opacity-20 ${pulseColor}`} />
-      
+
       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 88 88">
         <defs>
           <linearGradient id="wellness-green" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -73,7 +75,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
             <stop offset="100%" stopColor="#e11d48" />
           </linearGradient>
         </defs>
-        
+
         <circle
           cx="44"
           cy="44"
@@ -83,7 +85,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
           className="text-muted/10 dark:text-muted/20"
           strokeWidth="6"
         />
-        
+
         <circle
           cx="44"
           cy="44"
@@ -97,7 +99,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
           className="transition-all duration-1000 ease-out"
         />
       </svg>
-      
+
       <div className="absolute flex flex-col items-center justify-center text-center">
         <span className={`text-base font-black tracking-tight ${textColor}`}>
           {score}%
@@ -132,14 +134,19 @@ const Dashboard = () => {
         return;
       }
 
-      const { data: symptoms, error } = await getCachedData<SymptomHistoryRecord[]>("symptom_history");
+      const { data: rawSymptoms, error } = await getCachedData<SymptomHistoryRecord[]>("symptom_history");
 
       if (error) {
         showError("Error loading dashboard", "Could not fetch your health data");
         console.error("Error fetching symptoms:", error);
       }
 
-      if (symptoms && symptoms.length > 0) {
+      if (rawSymptoms && rawSymptoms.length > 0) {
+        const key = await whenEncryptionReady();
+        const symptoms = await Promise.all(
+          rawSymptoms.map((s) => decryptSymptom(s as unknown as OfflineSymptom, key))
+        );
+
         const unresolved = symptoms.filter(s => !s.resolved).length;
         const avgRisk = symptoms.reduce((sum, s) => sum + (s.risk_score || 0), 0) / symptoms.length;
 
@@ -154,7 +161,7 @@ const Dashboard = () => {
           recentActivity: recent,
         });
 
-        setRecentHistory(symptoms.slice(0, 5));
+        setRecentHistory(symptoms.slice(0, 5) as unknown as SymptomHistoryRecord[]);
       } else {
         setStats({
           totalSymptoms: 0,
@@ -295,7 +302,7 @@ const Dashboard = () => {
       : "bg-green-500/10 border-green-500 text-green-400"
   }`}
 >
-  
+
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.symptoms.substring(0, 60)}...</p>
                     <p className="text-xs text-muted-foreground mt-1">

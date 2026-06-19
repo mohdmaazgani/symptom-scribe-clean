@@ -32,7 +32,7 @@ DECLARE
 BEGIN
   -- Extract authenticated user ID from context
   current_user_id := auth.uid();
-  
+
   IF current_user_id IS NULL THEN
     RAISE EXCEPTION 'User must be authenticated to award XP';
   END IF;
@@ -55,6 +55,6 @@ BEGIN
       level = new_level,
       updated_at = NOW()
   WHERE user_id = current_user_id;
-  
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

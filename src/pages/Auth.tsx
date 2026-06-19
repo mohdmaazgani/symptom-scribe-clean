@@ -57,10 +57,17 @@ const Auth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/dashboard");
+      if (session &&
+        window.location.href.includes("type=recovery")
+      ) {
+      navigate("/reset-password");
+      return;
       }
-    });
+
+      if (session) {
+      navigate("/dashboard");
+      }
+   });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -68,6 +75,7 @@ const Auth = () => {
   useEffect(() => {
     setShowPassword(false);
   }, [authTab]);
+
 
   const validateSignIn = () => {
     try {
@@ -106,6 +114,29 @@ const Auth = () => {
       setRedirecting(true);
     }
   };
+
+const handleForgotPassword= async () => {
+  if (!signInEmail) {
+    showError(
+      "Email Required",
+      "Please enter your email address before resetting your password"
+    );
+    return;
+  }
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    signInEmail,
+    {
+    redirectTo: "https://symptom-scribe-15.lovable.app/reset-password",
+    });
+
+  if (error) {
+    showError("Reset Failed", error.message);
+  } else {
+    showSuccess(
+      "Reset Email Sent","Please check your inbox for the password reset link"
+    );
+  }
+};
 
   return (
     <div className="dark relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,rgba(20,184,166,0.22),transparent_38%),linear-gradient(135deg,#07111f_0%,#0f2433_45%,#12362f_100%)] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -239,6 +270,15 @@ const Auth = () => {
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-cyan-400 hover:underline mt-2">
+                      Forgot Password?
+                    </button>
                   </div>
 
                   <Button

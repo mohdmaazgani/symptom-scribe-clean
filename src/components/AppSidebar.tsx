@@ -26,6 +26,17 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -52,6 +63,20 @@ export function AppSidebar() {
     }
   };
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (typeof window !== "undefined" && window.isGameActive) {
+      const confirmLeave = window.confirm(
+        "Are you sure you want to leave? Your active game progress will be lost."
+      );
+      if (!confirmLeave) {
+        e.preventDefault();
+        return;
+      }
+      window.isGameActive = false;
+    }
+    handleMobileNavClick();
+  };
+
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -71,20 +96,20 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        <NavLink to="/" className="flex items-center" onClick={handleMobileNavClick}>
+        <NavLink to="/" className="flex items-center" onClick={handleNavClick}>
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
               Health Tracker
             </h2>
           )}
         </NavLink>
-
+ 
         {/* ✅ Hidden on mobile, visible on laptop/desktop */}
         <div className="hidden md:block">
           <SidebarTrigger />
         </div>
       </div>
-
+ 
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -93,26 +118,44 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls} onClick={handleMobileNavClick}>
+                    <NavLink to={item.url} end className={getNavCls} onClick={handleNavClick}>
                       <item.icon className="h-5 w-5" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleSignOut}
-                  className="hover:bg-destructive/10 text-destructive"
-                >
-                  <LogOut className="h-5 w-5" />
-                  {!isCollapsed && <span>Sign Out</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  );
+              <AlertDialog>
+               <AlertDialogTrigger asChild>
+               <SidebarMenuButton className="hover:bg-destructive/10 text-destructive">
+               <LogOut className="h-5 w-5" /> {!isCollapsed && <span>Sign Out</span>}
+               </SidebarMenuButton>
+               </AlertDialogTrigger>
+
+              <AlertDialogContent>
+              <AlertDialogHeader>
+              <AlertDialogTitle> Confirm Sign Out</AlertDialogTitle>
+
+               <AlertDialogDescription>Are you sure you want to sign out? You will need to sign in again to access your account.</AlertDialogDescription>
+               </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                <AlertDialogCancel>
+                Cancel
+               </AlertDialogCancel>
+ 
+               <AlertDialogAction
+               onClick={handleSignOut}>
+              Sign Out
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+              
+       </SidebarMenu>
+     </SidebarGroupContent>
+    </SidebarGroup>
+   </SidebarContent>
+ </Sidebar>
+);
 }

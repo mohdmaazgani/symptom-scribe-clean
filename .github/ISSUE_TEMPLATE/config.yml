@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/mohdmaazgani/symptom-scribe-clean
+    about: "Ask questions or share ideas before filing an issue."

@@ -3,6 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { initializeEncryption } from "@/lib/encryption";
+import { supabase } from "@/integrations/supabase/client";
+import { syncOfflineData } from "@/lib/offline-db";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -28,18 +32,56 @@ import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import ScrollToTop from "@/components/ScrollToTop";
 import BlogPostPage from "@/pages/BlogPostPage";
+import ResetPassword from "./pages/ResetPassword.tsx";
 const queryClient = new QueryClient();
+const App = () => {
+  useEffect(() => {
+    const cleanup = initializeEncryption();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <ScrollToTop />
-        <Routes>
+    const syncOnBoot = async () => {
+      if (navigator.onLine) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await syncOfflineData();
+          }
+        } catch (err) {
+          console.error("Failed to sync offline data on boot:", err);
+        }
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+          if (navigator.onLine) {
+            await syncOfflineData().catch((err) =>
+              console.error("Failed to sync offline data on session ready:", err)
+            );
+          }
+        }
+      }
+    );
+
+    syncOnBoot();
+
+    return () => {
+      cleanup?.();
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword/>}/>
           <Route
             path="/dashboard"
             element={
@@ -174,6 +216,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

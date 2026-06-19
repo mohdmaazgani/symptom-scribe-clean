@@ -8,23 +8,23 @@ Symptom Scribe is an AI-powered health and wellness platform designed to help us
 
 # 📑 Table of Contents
 
-* Project Overview
-* Objectives
-* Key Features
-* Technology Stack
-* Screenshots
-* Installation & Setup
-* Environment Variables
-* Supabase Edge Function Setup
-* API & Backend Services
-* Project Structure
-* Usage Guide
-* Troubleshooting
-* FAQ
-* Contributing
-* Future Enhancements
-* License
-* Author
+- [Project Overview](#-project-overview)
+- [Objectives](#-objectives)
+- [Key Features](#-key-features)
+- [Technology Stack](#%EF%B8%8F-technology-stack)
+- [Screenshots](#-screenshots)
+- [Installation & Setup](#-installation--setup)
+- [Environment Variables](#-environment-variables)
+- [Supabase Edge Function Setup](#%EF%B8%8F-supabase-edge-function-setup)
+- [API & Backend Services](#-api--backend-services)
+- [Project Structure](#-project-structure)
+- [Usage Guide](#-usage-guide)
+- [Troubleshooting](#%EF%B8%8F-troubleshooting)
+- [FAQ](#-faq)
+- [Contributing](#-contributing)
+- [Future Enhancements](#-future-enhancements)
+- [License](#-license)
+- [Author](#%E2%80%8D-author)
 
 ---
 
@@ -166,11 +166,12 @@ cd symptom-scribe-clean
    cp .env.example .env.local
    ```
 
-   Add only the `VITE_*` variables to `.env.local`:
+   Add the browser variables to `.env.local`:
 
    - `VITE_SUPABASE_URL` — used by the frontend to build the Supabase client and function URLs.
    - `VITE_SUPABASE_PUBLISHABLE_KEY` — canonical browser key for authentication and API access.
-   - `VITE_SUPABASE_ANON_KEY` — legacy fallback only for older local setups.
+
+   `VITE_SUPABASE_ANON_KEY` is accepted only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new and updated environments.
 
 4. **Install dependencies**
 
@@ -195,9 +196,13 @@ The browser app and Supabase edge functions use different environment surfaces. 
 - `LOVABLE_API_KEY` — required by `supabase/functions/symptom-analyzer` to call the AI gateway.
 - `UPSTASH_REDIS_REST_URL` — optional; enables distributed rate limiting when present.
 - `UPSTASH_REDIS_REST_TOKEN` — optional; used with `UPSTASH_REDIS_REST_URL` for Upstash-backed rate limiting.
-- `SUPABASE_URL` — required by `delete-user-account` auth-admin flows.
-- `SUPABASE_ANON_KEY` — required by `delete-user-account` to validate the caller before using admin privileges.
-- `SUPABASE_SERVICE_ROLE_KEY` — required by `delete-user-account` for server-side account deletion.
+- `SUPABASE_URL` — required by edge functions that validate Supabase users or perform admin operations.
+- `SUPABASE_ANON_KEY` — required by auth-validating edge functions to validate callers.
+- `SUPABASE_SERVICE_ROLE_KEY` — required by account-deletion edge functions for server-side account deletion.
+- `TWILIO_ACCOUNT_SID` — required by `broadcast-emergency` when SMS alerts are used.
+- `TWILIO_AUTH_TOKEN` — required by `broadcast-emergency` when SMS alerts are used.
+- `TWILIO_PHONE_NUMBER` — required by `broadcast-emergency` as the sender phone number.
+- `WEBHOOK_SECRET` — optional; allows webhook-authenticated cache invalidation.
 
 **Configure secrets on your Supabase project:**
 
@@ -206,8 +211,11 @@ supabase login
 supabase link --project-ref <your-project-ref>
 supabase secrets set LOVABLE_API_KEY=<your-key>
 supabase secrets set SUPABASE_URL=<your-url> SUPABASE_ANON_KEY=<your-anon-key> SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
 # Optional rate limiting:
 supabase secrets set UPSTASH_REDIS_REST_URL=<url> UPSTASH_REDIS_REST_TOKEN=<token>
+# Optional webhook cache invalidation:
+supabase secrets set WEBHOOK_SECRET=<secret>
 ```
 
 **Serve edge functions locally (optional):**
@@ -235,8 +243,11 @@ Add:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
+
+Use `.env.local` for local frontend values. Do not put Supabase edge-function secrets such as `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; configure them in Supabase instead.
+
+`VITE_SUPABASE_ANON_KEY` is supported only as a legacy fallback if `VITE_SUPABASE_PUBLISHABLE_KEY` is not set.
 
 ## 5. Start Development Server
 
@@ -275,11 +286,11 @@ symptom-scribe-clean/
 | ----------------------------- | -------------------------- |
 | VITE_SUPABASE_URL             | Supabase Project URL       |
 | VITE_SUPABASE_PUBLISHABLE_KEY | Browser authentication key |
-| VITE_SUPABASE_ANON_KEY        | Legacy fallback key        |
+| VITE_SUPABASE_ANON_KEY        | Legacy fallback if the publishable key is missing |
 
 ### Important
 
-Only variables prefixed with `VITE_` are exposed to the frontend.
+Only variables prefixed with `VITE_` are exposed to the frontend. The app reads `VITE_SUPABASE_PUBLISHABLE_KEY` first and falls back to `VITE_SUPABASE_ANON_KEY` only for older local setups.
 
 ---
 
@@ -287,14 +298,18 @@ Only variables prefixed with `VITE_` are exposed to the frontend.
 
 ## Required Secrets
 
-| Secret                    | Purpose                |
-| ------------------------- | ---------------------- |
-| LOVABLE_API_KEY           | AI gateway access      |
-| SUPABASE_URL              | Supabase project URL   |
-| SUPABASE_ANON_KEY         | Caller validation      |
-| SUPABASE_SERVICE_ROLE_KEY | Admin operations       |
-| UPSTASH_REDIS_REST_URL    | Optional rate limiting |
-| UPSTASH_REDIS_REST_TOKEN  | Optional rate limiting |
+| Secret                    | Purpose                          |
+| ------------------------- | -------------------------------- |
+| LOVABLE_API_KEY           | AI gateway access                |
+| SUPABASE_URL              | Supabase project URL             |
+| SUPABASE_ANON_KEY         | Caller validation                |
+| SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows     |
+| TWILIO_ACCOUNT_SID        | Emergency SMS alerts             |
+| TWILIO_AUTH_TOKEN         | Emergency SMS alerts             |
+| TWILIO_PHONE_NUMBER       | Emergency SMS sender number      |
+| UPSTASH_REDIS_REST_URL    | Optional rate limiting/cache     |
+| UPSTASH_REDIS_REST_TOKEN  | Optional rate limiting/cache     |
+| WEBHOOK_SECRET            | Optional cache webhook auth      |
 
 ## Configure Secrets
 
@@ -310,6 +325,12 @@ supabase secrets set SUPABASE_URL=<url>
 supabase secrets set SUPABASE_ANON_KEY=<anon-key>
 
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+
+supabase secrets set TWILIO_ACCOUNT_SID=<sid>
+
+supabase secrets set TWILIO_AUTH_TOKEN=<token>
+
+supabase secrets set TWILIO_PHONE_NUMBER=<phone>
 ```
 
 Optional:
@@ -318,6 +339,8 @@ Optional:
 supabase secrets set UPSTASH_REDIS_REST_URL=<url>
 
 supabase secrets set UPSTASH_REDIS_REST_TOKEN=<token>
+
+supabase secrets set WEBHOOK_SECRET=<secret>
 ```
 
 ## Local Edge Functions
@@ -349,6 +372,9 @@ Managed via:
 Current Functions:
 
 * `symptom-analyzer`
+* `broadcast-emergency`
+* `get-cached-data`
+* `invalidate-cache`
 * `delete-user-account`
 
 ---
@@ -456,6 +482,13 @@ Contributions are welcome!
 3. Commit your changes.
 4. Push your branch.
 5. Open a Pull Request.
+
+###  Contributors
+
+Thanks to all contributors ❤️
+
+[![Contributors](https://contrib.rocks/image?repo=mohdmaazgani/symptom-scribe-clean)](https://github.com/mohdmaazgani/symptom-scribe-clean/graphs/contributors)
+
 
 ## Pull Request Requirements
 

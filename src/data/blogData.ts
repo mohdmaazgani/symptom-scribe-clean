@@ -9,6 +9,7 @@ export interface BlogPost {
   content: Section[];
   prevPost?: { title: string; slug: string };
   nextPost?: { title: string; slug: string };
+  updated_at?: string;
 }
 
 export interface Section {
