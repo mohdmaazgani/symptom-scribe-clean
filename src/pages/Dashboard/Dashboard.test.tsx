@@ -22,7 +22,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { render } from "@/test/utils";
-import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/Dashboard/";
 
 // ---------------------------------------------------------------------------
 // Mock the Supabase client
