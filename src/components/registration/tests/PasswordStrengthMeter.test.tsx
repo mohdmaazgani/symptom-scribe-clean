@@ -19,8 +19,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { render } from "@/test/utils";
+<<<<<<<< HEAD:src/components/registration/PasswordStrengthMeter.test.tsx
+import { PasswordStrengthMeter } from "@/components/registration/PasswordStrengthMeter";
+========
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
-
+>>>>>>>> baed8ceb78a6055b9496f936c7516f3aaac87615:src/components/registration/tests/PasswordStrengthMeter.test.tsx
 
 // ---------------------------------------------------------------------------
 // Clipboard mock

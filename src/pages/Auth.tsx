@@ -29,7 +29,7 @@ import { z } from "zod";
 
 import { showSuccess, showError } from "@/lib/toast-helpers";
 
-import MultiStepSignUp from "@/components/registration/MultiStepSignUp";
+import MultiStepSignUp from "@/components/registration/forms/MultiStepSignUp";
 
 const emailSchema = z.string().email("Invalid email address");
 const signinPasswordSchema = z.string().min(1, "Password is required");
