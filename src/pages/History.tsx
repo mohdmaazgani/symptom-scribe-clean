@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, X, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
-import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
-import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
+import { db, syncOfflineData } from "@/lib/offline-db";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 import {
   AlertDialog,
@@ -37,12 +36,29 @@ const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
+
+  useEffect(() => {
+    fetchHistory();
+
+    const handleOnline = async () => {
+      setIsOnline(true);
+      const synced = await syncOfflineData();
+      if (synced) fetchHistory();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -59,65 +75,44 @@ const History = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const fetchHistory = useCallback(async (queryText = "") => {
-    setLoading(true);
+  const fetchHistory = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const keys = await whenKeysReady();
-      const searchTokens = queryText ? await generateSearchTokens(queryText, keys.searchKey) : [];
-
       if (navigator.onLine) {
-        let query = supabase.from("symptom_history").select("*").eq("user_id", user.id);
-        
-        if (severityFilter !== "all") {
-          query = query.eq("severity_level", severityFilter);
-        }
+        const { data, error } = await getCachedData<SymptomEntry[]>("symptom_history");
 
-        if (searchTokens.length > 0) {
-          query = query.contains("search_tokens", searchTokens);
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
 
         if (data) {
-          if (!queryText && severityFilter === "all") {
-            await db.symptomHistory
-              .where("user_id")
-              .equals(user.id)
-              .filter(
-                (record) =>
-                  record.pending_sync === 0 &&
-                  record.pending_delete === 0 &&
-                  record.pending_update === 0
-              )
-              .delete();
-          }
+          await db.symptomHistory
+            .where("user_id")
+            .equals(user.id)
+            .filter(
+              (record) =>
+                record.pending_sync === 0 &&
+                record.pending_delete === 0 &&
+                record.pending_update === 0
+            )
+            .delete();
 
-          const localEntries = data.map((record) => ({
+          const localEntries = data.map((record: SymptomEntry) => ({
             id: record.id,
-            user_id: record.user_id,
-            symptoms: record.symptoms || "",
-            severity_level: record.severity_level || "low",
+            user_id: user.id,
+            symptoms: record.symptoms,
+            severity_level: record.severity_level,
             possible_causes: record.possible_causes,
             recommendations: record.recommendations,
             risk_score: record.risk_score,
-            resolved: !!record.resolved,
+            resolved: record.resolved,
             created_at: record.created_at || new Date().toISOString(),
-            ai_analysis: record.ai_analysis,
-            search_tokens: record.search_tokens,
             pending_sync: 0,
             pending_update: 0,
             pending_delete: 0,
           }));
 
-          const encryptedEntries = await Promise.all(
-            localEntries.map((entry) => encryptSymptom(entry, keys.encryptionKey, keys.searchKey))
-          );
-
-          await db.symptomHistory.bulkPut(encryptedEntries);
+          await db.symptomHistory.bulkPut(localEntries);
         }
       }
     } catch (error) {
@@ -127,69 +122,23 @@ const History = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const keys = await whenKeysReady();
-        const searchTokens = queryText ? await generateSearchTokens(queryText, keys.searchKey) : [];
-
-        let localQuery = db.symptomHistory
+        const localRecords = await db.symptomHistory
           .where("user_id")
           .equals(user.id)
-          .filter((record) => record.pending_delete === 0);
+          .filter((record) => record.pending_delete === 0)
+          .toArray();
 
-        if (severityFilter !== "all") {
-          localQuery = localQuery.filter((record) => record.severity_level === severityFilter);
-        }
-
-        if (searchTokens.length > 0) {
-          localQuery = localQuery.filter((record) =>
-            record.search_tokens &&
-            searchTokens.every((token) => record.search_tokens!.includes(token))
-          );
-        }
-
-        const localRecords = await localQuery.toArray();
-
-        const decryptedRecords = await Promise.all(
-          localRecords.map((record) => decryptSymptom(record, keys.encryptionKey))
-        );
-
-        decryptedRecords.sort(
+        localRecords.sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        setHistory(decryptedRecords as unknown as SymptomEntry[]);
+        setHistory(localRecords as unknown as SymptomEntry[]);
       }
     } catch (err) {
       console.error("Error loading local symptoms:", err);
     } finally {
       setLoading(false);
     }
-  }, [severityFilter]);
-
-  useEffect(() => {
-    const handleOnline = async () => {
-      setIsOnline(true);
-      const synced = await syncOfflineData();
-      if (synced) fetchHistory(debouncedQuery);
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [debouncedQuery, fetchHistory]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    fetchHistory(debouncedQuery);
-  }, [debouncedQuery, fetchHistory]);
+  };
 
   const toggleResolved = async (id: string, currentStatus: boolean) => {
     try {
@@ -264,7 +213,7 @@ const History = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getSeverityColor = (severity: string): "default" | "secondary" | "destructive" => {
+  const getSeverityColor = (severity: string): "destructive" | "default" | "secondary" => {
     switch (severity) {
       case "high": return "destructive";
       case "moderate": return "default";
@@ -391,7 +340,6 @@ const History = () => {
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Badge 
                       variant={getSeverityColor(entry.severity_level)} 
-                      className="cursor-help"
                       title={getSeverityTooltip(entry.severity_level)}
                     >
                       {entry.severity_level}
