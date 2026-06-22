@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -10,7 +11,7 @@ const ResetPassword = () => {
 
   const handleReset = async () => {
     if (!password) {
-      alert("Please enter a new password");
+      showError("Missing Password", "Please enter a new password.");
       return;
     }
 
@@ -23,22 +24,22 @@ const ResetPassword = () => {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      showError("Update Failed", error.message);
       return;
     }
 
-    alert("Password updated successfully!");
+   showSuccess("Password Updated!", "You can now sign in with your new password.");
     navigate("/auth");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
-      <div className="w-full max-w-md rounded-2xl bg-slate-900 p-8 shadow-xl border border-slate-800">
-        <h1 className="text-3xl font-bold text-white mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full max-w-md rounded-2xl bg-card p-8 shadow-xl border border-border">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
           Reset Password
         </h1>
 
-        <p className="text-slate-400 mb-6">
+        <p className="text-muted-foreground mb-6">
           Enter your new password below.
         </p>
 
@@ -47,13 +48,13 @@ const ResetPassword = () => {
           placeholder="New Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-800 text-white p-3 mb-4 outline-none"
+          className="w-full rounded-xl border border-border bg-muted text-foreground p-3 mb-4 outline-none"
         />
 
         <button
           onClick={handleReset}
           disabled={loading}
-          className="w-full rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white p-3 font-semibold"
+          className="w-full rounded-xl bg-primary hover:bg-primary/90 text-foreground p-3 font-semibold"
         >
           {loading ? "Updating..." : "Update Password"}
         </button>

@@ -1,43 +1,36 @@
 import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
-import { getSafeLocalStorage, setSafeLocalStorage } from '@/lib/storage';
-import './animated-theme-toggler.css';
+import '../styles/animated-theme-toggler.css';
 
 export function AnimatedThemeToggler({ className = '' }) {
-  const [theme, setTheme] = useState(() => {
-    return getSafeLocalStorage('theme', 'light');
-  });
+  // next-themes is the single source of truth for theme state/persistence.
+  // `resolvedTheme` is what's actually applied (system -> light/dark).
+  const { resolvedTheme, setTheme } = useTheme();
 
-  const isDark = theme === 'dark';
-  const duration = 400;
-
+  // next-themes' inline script sets the `dark` class on <html> before
+  // React mounts (preventing a page-wide flash). Seed local mount state
+  // from that class so the icon itself doesn't flash to the wrong state
+  // during the brief window before `resolvedTheme` is available.
+  const [mounted, setMounted] = useState(false);
+  const [preMountIsDark, setPreMountIsDark] = useState(false);
   useEffect(() => {
-    // Initial theme setup on mount without animation
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.dataset.theme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.dataset.theme = 'light';
-    }
-  }, []); // Run only once to apply existing theme on mount
+    setPreMountIsDark(document.documentElement.classList.contains('dark'));
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted ? resolvedTheme === 'dark' : preMountIsDark;
+  const duration = 400;
 
   const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const button = e.currentTarget;
     const nextTheme = isDark ? 'light' : 'dark';
 
     const applyTheme = () => {
+      // Delegate entirely to next-themes: it updates the `class`
+      // attribute on <html> and writes to localStorage itself.
       setTheme(nextTheme);
-      setSafeLocalStorage('theme', nextTheme);
-
-      if (nextTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.documentElement.dataset.theme = 'dark';
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.dataset.theme = 'light';
-      }
     };
 
     if (!button) {

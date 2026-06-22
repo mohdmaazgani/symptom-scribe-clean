@@ -22,7 +22,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { render } from "@/test/utils";
-import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/Dashboard/";
 
 // ---------------------------------------------------------------------------
 // Mock the Supabase client
@@ -47,12 +47,49 @@ vi.mock("@/lib/cached-queries", () => ({
   getCachedData: vi.fn(),
 }));
 
+// Mock encryption and offline-db to prevent blocking promises in tests
+vi.mock("@/lib/encryption", () => ({
+  whenEncryptionReady: vi.fn().mockResolvedValue({}),
+  whenKeysReady: vi.fn().mockResolvedValue({ encryptionKey: {}, searchKey: {} }),
+  whenSearchReady: vi.fn().mockResolvedValue({}),
+  generateSearchTokens: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/offline-db", () => ({
+  db: {
+    healthMetrics: {
+      clear: vi.fn(),
+      toArray: vi.fn().mockResolvedValue([]),
+      bulkPut: vi.fn(),
+      put: vi.fn(),
+    },
+    symptomHistory: {
+      clear: vi.fn(),
+      toArray: vi.fn().mockResolvedValue([]),
+      bulkPut: vi.fn(),
+      put: vi.fn(),
+    },
+  },
+  decryptSymptom: vi.fn((s) => s),
+  decryptMetric: vi.fn((m) => m),
+  encryptSymptom: vi.fn((s) => s),
+  encryptMetric: vi.fn((m) => m),
+  syncOfflineData: vi.fn().mockResolvedValue(false),
+}));
+
 // Mock react-countup so it renders plain numbers synchronously (avoids
 // animation timers interfering with assertions)
 vi.mock("react-countup", () => ({
   __esModule: true,
   default: ({ end }: { end: number }) => <span>{end}</span>,
 }));
+
+// Mock ResizeObserver for Recharts ResponsiveContainer in JSDOM
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCachedData } from "@/lib/cached-queries";
@@ -118,7 +155,7 @@ describe("Dashboard", () => {
   });
 
   // 2. Empty state
-  it("renders the empty-state prompt when the user has no history", async () => {
+  it("renders the empty-state prompt and chart empty states when the user has no history", async () => {
     mockAuthUser();
     mockCachedSymptoms([]);
 
@@ -128,21 +165,32 @@ describe("Dashboard", () => {
       expect(
         screen.getByText(/No symptom history yet/i)
       ).toBeInTheDocument();
+      // Verify chart empty states
+      expect(
+        screen.getByText(/No data yet — start logging symptoms to see your trend/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Log symptoms to populate your wellness radar/i)
+      ).toBeInTheDocument();
     });
   });
 
-  // 3. Stat cards render correct labels
-  it("renders all four stat card labels", async () => {
+  // 3. Stat cards and chart cards render correctly
+  it("renders all four stat card labels and chart cards when history exists", async () => {
     mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
 
     render(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Total Consultations")).toBeInTheDocument();
-      expect(screen.getByText("Active Issues")).toBeInTheDocument();
-      expect(screen.getByText("Overall Wellness")).toBeInTheDocument();
-      expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Total Consultations/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Active Issues/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Overall Wellness/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Recent Activity/i })).toBeInTheDocument();
+      
+      // Verify chart cards are rendered
+      expect(screen.getByRole("heading", { name: /Symptom Activity — Last 14 Days/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Wellness Dimensions/i })).toBeInTheDocument();
     });
   });
 
@@ -154,10 +202,12 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      // Total consultations = 2
-      expect(screen.getByText("Lifetime symptom checks").parentElement).toHaveTextContent("2");
-      // Unresolved (active issues) = 1
-      expect(screen.getByText("Requiring follow-up").parentElement).toHaveTextContent("1");
+      // Check that "2" appears somewhere near "Lifetime symptom checks"
+      const lifetimeText = screen.getByText(/Lifetime symptom checks/i);
+      expect(lifetimeText.closest("div")).toHaveTextContent("2");
+      
+      const followupText = screen.getByText(/Requiring follow-up/i);
+      expect(followupText.closest("div")).toHaveTextContent("1");
     });
   });
 
@@ -169,9 +219,13 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      // First 60 chars of the first symptom should be visible
+      // Use a function matcher to find text across elements
       expect(
-        screen.getByText(/Persistent headache with nausea/i)
+        screen.getByText((content, element) => {
+          const hasText = element?.textContent?.includes("Persistent headache with nausea") ?? false;
+          const hasChildren = element ? element.children.length === 0 : false;
+          return hasText && hasChildren;
+        })
       ).toBeInTheDocument();
     });
   });
@@ -184,8 +238,10 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      const highBadge = screen.getByText("high");
-      expect(highBadge).toHaveClass("text-destructive");
+      // Find the element containing "high" and check its class
+      const elements = screen.getAllByText(/high/i);
+      const highBadge = elements.find(el => el.classList.contains("text-destructive"));
+      expect(highBadge).toBeInTheDocument();
     });
   });
 
