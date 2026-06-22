@@ -9,15 +9,12 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
+import type { OfflineSymptom } from "@/lib/offline-db";
 
-interface SymptomRecord {
-  created_at: string;
-  risk_score: number | null;
-  severity_level: string;
-  resolved: boolean;
-}
+type SymptomRecord = Pick<OfflineSymptom, "created_at" | "risk_score" | "severity_level" | "resolved">;
 
 interface DayBucket {
   date: string;
@@ -27,14 +24,14 @@ interface DayBucket {
 }
 
 function buildChartData(records: SymptomRecord[], days = 30): DayBucket[] {
-  const buckets: Record<string, { total: number; riskSum: number; resolved: number }> = {};
+  const buckets: Record<string, { total: number; riskSum: number; riskCount: number; resolved: number }> = {};
 
   // Pre-fill the last N days so the axis always shows them
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    buckets[key] = { total: 0, riskSum: 0, resolved: 0 };
+    buckets[key] = { total: 0, riskSum: 0, riskCount: 0, resolved: 0 };
   }
 
   records.forEach((r) => {
@@ -42,7 +39,10 @@ function buildChartData(records: SymptomRecord[], days = 30): DayBucket[] {
     const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     if (buckets[key]) {
       buckets[key].total += 1;
-      buckets[key].riskSum += r.risk_score ?? 0;
+      if (r.risk_score !== null && r.risk_score !== undefined) {
+        buckets[key].riskSum += r.risk_score;
+        buckets[key].riskCount += 1;
+      }
       if (r.resolved) buckets[key].resolved += 1;
     }
   });
@@ -50,7 +50,7 @@ function buildChartData(records: SymptomRecord[], days = 30): DayBucket[] {
   return Object.entries(buckets).map(([date, b]) => ({
     date,
     consultations: b.total,
-    avgRisk: b.total > 0 ? Math.round(b.riskSum / b.total) : 0,
+    avgRisk: b.riskCount > 0 ? Math.round(b.riskSum / b.riskCount) : 0,
     resolved: b.resolved,
   }));
 }
@@ -82,7 +82,7 @@ interface SymptomTrendChartProps {
 }
 
 const SymptomTrendChart = ({ records }: SymptomTrendChartProps) => {
-  const data = buildChartData(records, 14);
+  const data = useMemo(() => buildChartData(records, 14), [records]);
   const hasData = records.length > 0;
 
   return (

@@ -6,15 +6,12 @@ import {
   Radar,
   Tooltip,
 } from "recharts";
+import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "lucide-react";
+import type { OfflineSymptom } from "@/lib/offline-db";
 
-interface SymptomRecord {
-  risk_score: number | null;
-  severity_level: string;
-  resolved: boolean;
-  created_at: string;
-}
+type SymptomRecord = Pick<OfflineSymptom, "created_at" | "risk_score" | "severity_level" | "resolved">;
 
 interface RadarDimension {
   subject: string;
@@ -37,7 +34,7 @@ function buildRadarData(records: SymptomRecord[]): RadarDimension[] {
     records.reduce((sum, r) => sum + (r.risk_score ?? 50), 0) / records.length;
 
   // Low Risk: inverse of avg risk (100 = no risk)
-  const lowRiskScore = Math.round(100 - avgRisk);
+  const lowRiskScore = Math.max(0, Math.min(100, Math.round(100 - avgRisk)));
 
   // Resolution rate: % of symptoms resolved
   const resolvedRate = Math.round(
@@ -98,7 +95,7 @@ interface WellnessRadarChartProps {
 }
 
 const WellnessRadarChart = ({ records }: WellnessRadarChartProps) => {
-  const data = buildRadarData(records);
+  const data = useMemo(() => buildRadarData(records), [records]);
 
   return (
     <Card>
