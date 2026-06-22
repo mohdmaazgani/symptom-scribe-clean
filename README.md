@@ -193,34 +193,45 @@ The browser app and Supabase edge functions use different environment surfaces. 
 
 **Edge function secrets** (configure via Supabase Dashboard or CLI, not in `.env.local`):
 
-- `LOVABLE_API_KEY` — required by `supabase/functions/symptom-analyzer` to call the AI gateway.
+- `GEMINI_API_KEY` — recommended (free); used by `supabase/functions/symptom-analyzer` to call the Gemini API.
+- `OPENAI_API_KEY` — optional; used as an alternative key for OpenAI integration.
+- `LOVABLE_API_KEY` — optional; used as an alternative key for Lovable's AI gateway.
 - `UPSTASH_REDIS_REST_URL` — optional; enables distributed rate limiting when present.
 - `UPSTASH_REDIS_REST_TOKEN` — optional; used with `UPSTASH_REDIS_REST_URL` for Upstash-backed rate limiting.
-- `SUPABASE_URL` — required by edge functions that validate Supabase users or perform admin operations.
-- `SUPABASE_ANON_KEY` — required by auth-validating edge functions to validate callers.
-- `SUPABASE_SERVICE_ROLE_KEY` — required by account-deletion edge functions for server-side account deletion.
 - `TWILIO_ACCOUNT_SID` — required by `broadcast-emergency` when SMS alerts are used.
 - `TWILIO_AUTH_TOKEN` — required by `broadcast-emergency` when SMS alerts are used.
 - `TWILIO_PHONE_NUMBER` — required by `broadcast-emergency` as the sender phone number.
 - `WEBHOOK_SECRET` — optional; allows webhook-authenticated cache invalidation.
 
-**Configure secrets on your Supabase project:**
+**Configure your Supabase project & schema:**
 
 ```bash
+# Log in to your Supabase account
 supabase login
+
+# Link your local repo to your remote project
 supabase link --project-ref <your-project-ref>
-supabase secrets set LOVABLE_API_KEY=<your-key>
-supabase secrets set SUPABASE_URL=<your-url> SUPABASE_ANON_KEY=<your-anon-key> SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# Push the database migrations to build tables, triggers, and functions
+supabase db push
+
+# Set your AI API key (obtain a free Gemini key from Google AI Studio)
+supabase secrets set GEMINI_API_KEY=<your-gemini-key>
+
+# Set emergency contact integration keys (optional)
 supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
-# Optional rate limiting:
-supabase secrets set UPSTASH_REDIS_REST_URL=<url> UPSTASH_REDIS_REST_TOKEN=<token>
-# Optional webhook cache invalidation:
-supabase secrets set WEBHOOK_SECRET=<secret>
+
+# Deploy the Edge Functions
+supabase functions deploy symptom-analyzer
+supabase functions deploy broadcast-emergency
+supabase functions deploy delete-user-account
+supabase functions deploy invalidate-cache
 ```
 
 **Serve edge functions locally (optional):**
 
 ```bash
+# Add secrets to supabase/.env.local first, then serve
 supabase functions serve --env-file supabase/.env.local
 ```
 
