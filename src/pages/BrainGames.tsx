@@ -951,26 +951,26 @@ const BrainGames = () => {
       const percentage = (patternScore / maxScore) * 100;
       return (
         <Card className="border-2 border-primary/20 overflow-hidden">
-          <CardHeader className="bg-gradient-to-br from-primary/5 to-primary-glow/5 border-b border-primary/10">
-            <CardTitle className="text-center text-2xl font-bold flex items-center justify-center gap-2">
+          <CardHeader className="bg-gradient-to-br from-primary/5 to-primary-glow/5 border-b border-primary/10 p-4 sm:p-6">
+            <CardTitle className="text-center text-xl sm:text-2xl font-bold flex items-center justify-center gap-2">
               <Trophy className="w-8 h-8 text-primary animate-bounce" />
               Game Complete!
             </CardTitle>
-            <CardDescription className="text-center text-lg">
+            <CardDescription className="text-center text-sm sm:text-lg">
               Great job spotting the trends!
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-8 p-8 text-center">
-            <div className="relative p-10 bg-gradient-to-br from-primary/10 via-primary-glow/5 to-background rounded-3xl border border-primary/20 shadow-xl overflow-hidden group">
+          <CardContent className="space-y-6 sm:space-y-8 p-4 sm:p-8 text-center">
+            <div className="relative p-4 sm:p-10 bg-gradient-to-br from-primary/10 via-primary-glow/5 to-background rounded-2xl sm:rounded-3xl border border-primary/20 shadow-xl overflow-hidden group">
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors" />
               <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary-glow/10 rounded-full blur-3xl group-hover:bg-primary-glow/20 transition-colors" />
 
-              <Trophy className="w-20 h-20 mx-auto text-primary mb-6 drop-shadow-glow" />
-              <p className="text-5xl font-black mb-2 tracking-tight">
+              <Trophy className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-primary mb-4 sm:mb-6 drop-shadow-glow" />
+              <p className="text-3xl sm:text-5xl font-black mb-2 tracking-tight">
                 {patternScore}{" "}
-                <span className="text-2xl text-muted-foreground font-normal">/ {maxScore}</span>
+                <span className="text-lg sm:text-2xl text-muted-foreground font-normal">/ {maxScore}</span>
               </p>
-              <p className="text-muted-foreground font-medium uppercase tracking-widest text-sm mb-6">
+              <p className="text-muted-foreground font-medium uppercase tracking-widest text-[10px] sm:text-sm mb-4 sm:mb-6">
                 Final Score
               </p>
 
@@ -985,7 +985,7 @@ const BrainGames = () => {
                 </div>
               </div>
 
-              <p className="mt-8 text-lg font-semibold text-foreground max-w-sm mx-auto">
+              <p className="mt-6 sm:mt-8 text-base sm:text-lg font-semibold text-foreground max-w-sm mx-auto">
                 {percentage >= 100
                   ? "🌟 PERFECT! You're a health trend master!"
                   : percentage >= 80
@@ -995,36 +995,36 @@ const BrainGames = () => {
                       : "📚 Keep practicing! Consistency is key to improvement!"}
               </p>
 
-              <div className="mt-10 flex items-center justify-center gap-12">
+              <div className="mt-6 sm:mt-10 flex items-center justify-center gap-6 sm:gap-12">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-primary">{level}</p>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  <p className="text-2xl sm:text-3xl font-bold text-primary">{level}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Level
                   </p>
                 </div>
                 <div className="w-px h-12 bg-border/50" />
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-primary">{xp}</p>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  <p className="text-2xl sm:text-3xl font-bold text-primary">{xp}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Total XP
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-md mx-auto">
               <Button
                 onClick={resetPatternGame}
                 size="lg"
-                className="flex-1 rounded-2xl h-14 font-bold shadow-lg hover:shadow-primary/20 transition-all"
+                className="flex-1 rounded-xl sm:rounded-2xl h-12 sm:h-14 font-bold shadow-lg hover:shadow-primary/20 transition-all text-sm sm:text-base"
               >
-                <RefreshCw className="w-5 h-5 mr-2" /> Play Again
+                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> Play Again
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setActiveGame(null)}
                 size="lg"
-                className="flex-1 rounded-2xl h-14 font-bold border-2"
+                className="flex-1 rounded-xl sm:rounded-2xl h-12 sm:h-14 font-bold border-2 text-sm sm:text-base"
               >
                 Back to Center
               </Button>
@@ -1039,8 +1039,8 @@ const BrainGames = () => {
     const displayOptions = filteredOptions.length > 0 ? filteredOptions : currentQuestion.options;
 
     return (
-      <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-3xl">
-        <CardHeader className="bg-muted/30 border-b border-border/50 pb-6">
+      <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-2xl sm:rounded-3xl">
+        <CardHeader className="bg-muted/30 border-b border-border/50 pb-4 sm:pb-6 p-4 sm:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-bold flex items-center gap-3">
@@ -1061,21 +1061,21 @@ const BrainGames = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 rounded-2xl">
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl">
                 <Trophy className="w-4 h-4 text-primary" />
                 <span className="font-bold text-primary">{patternScore}</span>
               </div>
               <div
-                className={`flex items-center gap-2 border px-4 py-2 rounded-2xl transition-all duration-500 ${patternStreak >= 3 ? "bg-orange-500/20 border-orange-500/30 text-orange-500 animate-pulse" : "bg-secondary/10 border-border"}`}
+                className={`flex items-center gap-2 border px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl transition-all duration-500 ${patternStreak >= 3 ? "bg-orange-500/20 border-orange-500/30 text-orange-500 animate-pulse" : "bg-secondary/10 border-border"}`}
               >
                 <Flame className="w-4 h-4" />
                 <span className="font-bold">{patternStreak}</span>
               </div>
-              <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-2xl">
+              <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl">
                 <Sparkles className="w-4 h-4 text-purple-500" />
                 <span className="font-bold text-purple-500">Lv.{level}</span>
               </div>
-              <div className="flex items-center gap-2 bg-accent/20 border border-accent/30 px-4 py-2 rounded-2xl">
+              <div className="flex items-center gap-2 bg-accent/20 border border-accent/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl">
                 <Brain className="w-4 h-4 text-accent-foreground" />
                 <span className="font-bold">
                   Q{questionsAnswered + 1}/{TOTAL_QUESTIONS}
@@ -1126,7 +1126,7 @@ const BrainGames = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-8 p-8">
+        <CardContent className="space-y-6 sm:space-y-8 p-4 sm:p-8">
           <AnimatePresence mode="wait">
             {timedMode && !showPatternFeedback && (
               <motion.div
@@ -1142,21 +1142,21 @@ const BrainGames = () => {
             )}
           </AnimatePresence>
 
-          <div className="relative p-8 bg-accent/10 border border-border/50 rounded-[2rem] overflow-hidden">
+          <div className="relative p-4 sm:p-8 bg-accent/10 border border-border/50 rounded-2xl sm:rounded-[2rem] overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
               {getMetricIcon(currentQuestion.metricType)}
             </div>
 
-            <div className="flex items-center justify-center gap-3 mb-10">
+            <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
               <div className="p-2.5 bg-background rounded-xl shadow-sm border border-border/50">
                 {getMetricIcon(currentQuestion.metricType)}
               </div>
-              <h3 className="text-xl font-bold tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold tracking-tight">
                 {getMetricTitle(currentQuestion.metricType)}
               </h3>
             </div>
 
-            <div className="flex items-end justify-center gap-4 sm:gap-8 h-56 mb-8 px-4">
+            <div className="flex items-end justify-center gap-2 sm:gap-8 h-56 mb-6 sm:mb-8 px-2 sm:px-4">
               {currentQuestion.values.map((value, index) => {
                 let maxValue = 0;
                 switch (currentQuestion.metricType) {
@@ -1175,7 +1175,7 @@ const BrainGames = () => {
                 }
                 const height = (value / maxValue) * 160;
                 return (
-                  <div key={index} className="flex flex-col items-center gap-4 flex-1 max-w-[80px]">
+                  <div key={index} className="flex flex-col items-center gap-4 flex-1 max-w-[60px] sm:max-w-[80px]">
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${Math.max(40, height)}px` }}
@@ -1186,7 +1186,7 @@ const BrainGames = () => {
                       </div>
                     </motion.div>
                     <div className="text-center">
-                      <p className="text-lg font-black text-foreground">{value}</p>
+                      <p className="text-sm sm:text-lg font-black text-foreground">{value}</p>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                         Day {index + 1}
                       </p>
@@ -1195,14 +1195,14 @@ const BrainGames = () => {
                 );
               })}
 
-              <div className="flex flex-col items-center gap-4 flex-1 max-w-[80px]">
+              <div className="flex flex-col items-center gap-4 flex-1 max-w-[60px] sm:max-w-[80px]">
                 <div className="w-full bg-muted/50 border-2 border-dashed border-muted-foreground/30 rounded-2xl flex items-center justify-center h-40 group-hover:border-primary/50 transition-colors">
-                  <span className="text-4xl font-black text-muted-foreground/30 animate-pulse">
+                  <span className="text-2xl sm:text-4xl font-black text-muted-foreground/30 animate-pulse">
                     ?
                   </span>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg font-black text-muted-foreground/40">???</p>
+                  <p className="text-sm sm:text-lg font-black text-muted-foreground/40">???</p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Day 4
                   </p>
@@ -1215,7 +1215,7 @@ const BrainGames = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {displayOptions.map((option, idx) => (
               <Button
                 key={idx}
@@ -1224,7 +1224,7 @@ const BrainGames = () => {
                     ? "default"
                     : "outline"
                 }
-                className={`text-xl font-bold py-10 rounded-3xl transition-all duration-300 border-2 ${
+                className={`text-lg sm:text-xl font-bold py-6 sm:py-10 rounded-2xl sm:rounded-3xl transition-all duration-300 border-2 ${
                   showPatternFeedback
                     ? option === currentQuestion.correctAnswer
                       ? "bg-primary border-primary scale-105 shadow-xl"
@@ -1247,7 +1247,7 @@ const BrainGames = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-6 rounded-3xl border-2 text-center shadow-lg ${isPatternCorrect ? "bg-green-500/10 border-green-500/20" : "bg-red-500/10 border-red-500/20"}`}
+                className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 text-center shadow-lg ${isPatternCorrect ? "bg-green-500/10 border-green-500/20" : "bg-red-500/10 border-red-500/20"}`}
               >
                 <div className="flex items-center justify-center gap-3 mb-2">
                   {isPatternCorrect ? (
@@ -1260,7 +1260,7 @@ const BrainGames = () => {
                     </div>
                   )}
                   <p
-                    className={`text-xl font-black ${isPatternCorrect ? "text-green-600" : "text-red-600"}`}
+                    className={`text-lg sm:text-xl font-black ${isPatternCorrect ? "text-green-600" : "text-red-600"}`}
                   >
                     {isPatternCorrect ? "BRILLIANT!" : "NOT QUITE!"}
                   </p>
@@ -1331,34 +1331,40 @@ const BrainGames = () => {
             duration: 0.5, 
             ease: "easeOut" 
           }}
-          className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-8 min-w-[280px] sm:min-w-[320px]"
+          className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-6 sm:px-8 w-full sm:w-auto min-w-[280px] sm:min-w-[320px]"
         >
-          <div className="flex items-center gap-8 justify-center">
-            <div className="text-center">
-              <p className="text-3xl font-black text-primary">{level}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Global Level
-              </p>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-8 justify-center">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-black text-primary">{level}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Global Level
+                </p>
+              </div>
+              <div className="w-px h-8 sm:h-10 bg-border/50" />
+              <div className="text-center">
+                <p className="text-2xl sm:text-3xl font-black text-primary">{xp}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Total XP
+                </p>
+              </div>
             </div>
-            <div className="w-px h-10 bg-border/50" />
-            <div className="text-center">
-              <p className="text-3xl font-black text-primary">{xp}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Total XP
-              </p>
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-xs font-semibold text-primary">
-               🎯 Next Milestone
-              </p>
 
-              <p className="text-xs text-muted-foreground">
-                Reach Level {level + 1}
-              </p>
-            </div>
-            <div className="w-px h-10 bg-border/50" />
-            <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg shadow-orange-500/20">
-              <Trophy className="w-6 h-6 text-white" />
+            <div className="w-px h-8 sm:h-10 bg-border/50 hidden sm:block" />
+
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <p className="text-xs font-semibold text-primary">
+                 🎯 Next Milestone
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Reach Level {level + 1}
+                </p>
+              </div>
+              <div className="w-px h-8 sm:h-10 bg-border/50" />
+              <div className="p-2.5 sm:p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl shadow-lg shadow-orange-500/20">
+                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
             </div>
           </div>
 
@@ -1565,7 +1571,7 @@ const BrainGames = () => {
               ) : (
                 // Active game board
                 <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-[2.5rem]">
-                  <CardHeader className="bg-muted/30 border-b border-border/50 pb-8 p-8">
+                  <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 sm:pb-8 p-4 sm:p-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="space-y-2">
                         <CardTitle className="text-3xl font-black tracking-tight">
@@ -1576,9 +1582,9 @@ const BrainGames = () => {
                         </CardDescription>
                       </div>
                       <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-6 py-3 rounded-2xl">
+                        <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl">
                           <Trophy className="w-5 h-5 text-primary" />
-                          <span className="text-xl font-black text-primary">
+                          <span className="text-lg sm:text-xl font-black text-primary">
                             {matchedCards.length / 2} / {memoryCards.length / 2}
                           </span>
                           <span className="text-xs font-bold text-primary uppercase tracking-widest ml-1">
@@ -1589,22 +1595,22 @@ const BrainGames = () => {
                           variant="outline"
                           size="icon"
                           onClick={resetMemoryGame}
-                          className="w-12 h-12 rounded-2xl border-2"
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2"
                         >
                           <RefreshCw className="w-5 h-5" />
                         </Button>
                         <Button
                           variant="ghost"
                           onClick={() => setActiveGame(null)}
-                          className="h-12 px-6 rounded-2xl font-bold text-muted-foreground hover:text-destructive"
+                          className="h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-muted-foreground hover:text-destructive"
                         >
                           Exit
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-8 md:p-12">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                  <CardContent className="p-4 sm:p-8 md:p-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
                       {memoryCards.map((card, index) => {
                         const isFlipped = flippedCards.includes(index) || matchedCards.includes(index);
                         return (
@@ -1630,12 +1636,12 @@ const BrainGames = () => {
                               }`}
                             >
                               {/* Card Back */}
-                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] bg-muted border-2 border-border/50 rounded-3xl flex items-center justify-center hover:border-primary/30 hover:bg-accent transition-colors shadow-md">
-                                <Brain className="w-10 h-10 text-primary opacity-40 animate-pulse" />
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] bg-muted border-2 border-border/50 rounded-2xl sm:rounded-3xl flex items-center justify-center hover:border-primary/30 hover:bg-accent transition-colors shadow-md">
+                                <Brain className="w-6 h-6 sm:w-10 sm:h-10 text-primary opacity-40 animate-pulse" />
                               </div>
 
                               {/* Card Front */}
-                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-primary to-primary-glow text-white rounded-3xl flex items-center justify-center text-5xl shadow-xl shadow-primary/20">
+                              <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-gradient-to-br from-primary to-primary-glow text-white rounded-2xl sm:rounded-3xl flex items-center justify-center text-3xl sm:text-5xl shadow-xl shadow-primary/20">
                                 <span>{["🫀", "🧠", "💊", "🏃"][card]}</span>
                               </div>
                             </motion.div>
@@ -1649,7 +1655,7 @@ const BrainGames = () => {
             ) : activeGame === "math" ? (
               // ── Math Game ──
               <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-[2.5rem]">
-                <CardHeader className="bg-muted/30 border-b border-border/50 pb-8 p-8">
+                <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 sm:pb-8 p-4 sm:p-8">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2">
                       <CardTitle className="text-3xl font-black tracking-tight">
@@ -1660,9 +1666,9 @@ const BrainGames = () => {
                       </CardDescription>
                     </div>
                     <div className="flex flex-wrap gap-3">
-                      <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-6 py-3 rounded-2xl">
+                      <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl">
                         <Trophy className="w-5 h-5 text-primary" />
-                        <span className="text-2xl font-black text-primary">{mathScore}</span>
+                        <span className="text-lg sm:text-2xl font-black text-primary">{mathScore}</span>
                         <span className="text-xs font-bold text-primary uppercase tracking-widest ml-1">
                           Score
                         </span>
@@ -1675,45 +1681,45 @@ const BrainGames = () => {
                           generateMathQuestion(0);
                           showSuccess("Game Reset!", "Score cleared — start fresh!");
                         }}
-                        className="w-12 h-12 rounded-2xl border-2"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2"
                       >
                         <RefreshCw className="w-5 h-5" />
                       </Button>
                       <Button
                         variant="ghost"
                         onClick={() => setActiveGame(null)}
-                        className="h-12 px-6 rounded-2xl font-bold text-muted-foreground hover:text-destructive"
+                        className="h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-muted-foreground hover:text-destructive"
                       >
                         Exit
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-10 md:p-20 space-y-12">
+                <CardContent className="p-4 sm:p-10 md:p-20 space-y-6 sm:space-y-12">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className={`flex items-center justify-center gap-4 p-5 rounded-[2rem] max-w-xs mx-auto border-2 shadow-lg ${mathTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
+                    className={`flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] max-w-xs mx-auto border-2 shadow-lg ${mathTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
                   >
-                    <Timer className={`w-8 h-8 ${mathTimeLeft <= 5 ? "animate-spin-slow" : ""}`} />
-                    <span className="text-4xl font-black tracking-tighter">{mathTimeLeft}</span>
+                    <Timer className={`w-6 h-6 sm:w-8 sm:h-8 ${mathTimeLeft <= 5 ? "animate-spin-slow" : ""}`} />
+                    <span className="text-2xl sm:text-4xl font-black tracking-tighter">{mathTimeLeft}</span>
                     <span className="text-sm font-bold uppercase tracking-widest">Seconds</span>
                   </motion.div>
 
-                  <div className="text-center space-y-12">
+                  <div className="text-center space-y-6 sm:space-y-12">
                     <motion.div
                       key={`${mathQuestion.num1}-${mathQuestion.num2}`}
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="text-6xl md:text-8xl font-black text-foreground tracking-tighter flex items-center justify-center gap-6"
+                      className="text-4xl sm:text-6xl md:text-8xl font-black text-foreground tracking-tighter flex items-center justify-center gap-2 sm:gap-6"
                     >
-                      <span className="bg-muted px-6 py-4 rounded-3xl border border-border shadow-sm">
+                      <span className="bg-muted px-3 py-2 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
                         {mathQuestion.num1}
                       </span>
                       <span className="text-primary">
                         {mathQuestion.operator === "*" ? "×" : mathQuestion.operator}
                       </span>
-                      <span className="bg-muted px-6 py-4 rounded-3xl border border-border shadow-sm">
+                      <span className="bg-muted px-3 py-2 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
                         {mathQuestion.num2}
                       </span>
                       <span className="text-muted-foreground/50">=</span>
@@ -1727,14 +1733,14 @@ const BrainGames = () => {
                           setMathQuestion({ ...mathQuestion, answer: e.target.value })
                         }
                         onKeyDown={(e) => e.key === "Enter" && checkMathAnswer()}
-                        className="flex-1 w-full px-8 h-20 text-4xl font-black text-center border-4 border-border/50 rounded-[2rem] bg-background focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                        className="flex-1 w-full px-4 h-14 sm:px-8 sm:h-20 text-2xl sm:text-4xl font-black text-center border-4 border-border/50 rounded-2xl sm:rounded-[2rem] bg-background focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
                         placeholder="?"
                         autoFocus
                       />
                       <Button
                         onClick={checkMathAnswer}
                         size="lg"
-                        className="h-20 px-12 rounded-[2rem] text-xl font-bold shadow-xl hover:shadow-primary/20 transition-all"
+                        className="w-full sm:w-auto h-14 sm:h-20 px-8 sm:px-12 rounded-2xl sm:rounded-[2rem] text-lg sm:text-xl font-bold shadow-xl hover:shadow-primary/20 transition-all"
                       >
                         Check
                       </Button>
@@ -1745,7 +1751,7 @@ const BrainGames = () => {
             ) : activeGame === "word" ? (
               // ── Word Game ──
               <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-[2.5rem]">
-                <CardHeader className="bg-muted/30 border-b border-border/50 pb-8 p-8">
+                <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 sm:pb-8 p-4 sm:p-8">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2">
                       <CardTitle className="text-3xl font-black tracking-tight">
@@ -1760,26 +1766,26 @@ const BrainGames = () => {
                         variant="outline"
                         size="icon"
                         onClick={startWordGame}
-                        className="w-12 h-12 rounded-2xl border-2"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2"
                       >
                         <RefreshCw className="w-5 h-5" />
                       </Button>
                       <Button
                         variant="ghost"
                         onClick={() => setActiveGame(null)}
-                        className="h-12 px-6 rounded-2xl font-bold text-muted-foreground hover:text-destructive"
+                        className="h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-muted-foreground hover:text-destructive"
                       >
                         Exit
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-8 md:p-12 space-y-10">
-                  <div className="space-y-8">
+                <CardContent className="p-4 sm:p-8 md:p-12 space-y-6 sm:space-y-10">
+                  <div className="space-y-6 sm:space-y-8">
                     <div
-                      className={`p-10 rounded-[2.5rem] border-2 transition-all duration-500 ${wordPhase === "memorize" ? "bg-primary/5 border-primary/20 shadow-inner" : "bg-muted/30 border-dashed border-muted-foreground/20"}`}
+                      className={`p-4 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border-2 transition-all duration-500 ${wordPhase === "memorize" ? "bg-primary/5 border-primary/20 shadow-inner" : "bg-muted/30 border-dashed border-muted-foreground/20"}`}
                     >
-                      <div className="flex items-center justify-between mb-8">
+                      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8">
                         <h3 className="text-xl font-bold flex items-center gap-3">
                           <Lightbulb
                             className={`w-6 h-6 ${wordPhase === "memorize" ? "text-primary" : "text-muted-foreground"}`}
@@ -1787,14 +1793,14 @@ const BrainGames = () => {
                           {wordPhase === "memorize" ? "Memorize these words:" : "Phase Complete"}
                         </h3>
                         {wordPhase === "memorize" && (
-                          <div className="flex items-center gap-3 px-5 py-2 rounded-full bg-primary text-white font-black shadow-lg">
+                          <div className="flex items-center gap-3 px-4 py-1.5 sm:px-5 py-2 rounded-full bg-primary text-white font-black shadow-lg">
                             <Clock className="w-5 h-5" />
-                            <span className="text-lg">{timeLeft}s</span>
+                            <span className="text-base sm:text-lg">{timeLeft}s</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-4 justify-center">
+                      <div className="flex flex-wrap gap-3 sm:gap-4 justify-center">
                         <AnimatePresence mode="popLayout">
                           {wordPhase === "memorize" ? (
                             wordSequence.map((word, idx) => (
@@ -1803,7 +1809,7 @@ const BrainGames = () => {
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay: idx * 0.1 }}
-                                className="px-8 py-4 bg-white dark:bg-card border-2 border-primary/20 text-primary rounded-2xl font-black text-xl shadow-md"
+                                className="px-4 py-2 sm:px-8 sm:py-4 bg-white dark:bg-card border-2 border-primary/20 text-primary rounded-xl sm:rounded-2xl font-black text-base sm:text-xl shadow-md"
                               >
                                 {word}
                               </motion.div>
@@ -1826,12 +1832,12 @@ const BrainGames = () => {
                       </div>
                     </div>
 
-                    <div className="p-10 bg-accent/10 border border-border/60 rounded-[2.5rem] shadow-sm">
-                      <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
+                    <div className="p-4 sm:p-10 bg-accent/10 border border-border/60 rounded-2xl sm:rounded-[2.5rem] shadow-sm">
+                      <h3 className="text-xl font-bold mb-6 sm:mb-8 flex items-center gap-3">
                         <Zap className="w-6 h-6 text-orange-500" />
                         Available Word Bank
                       </h3>
-                      <div className="flex flex-wrap gap-3 justify-center">
+                      <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                         {healthWords.map((word, idx) => {
                           const alreadySelected = userSequence.some((w) => w.word === word);
                           return (
@@ -1839,7 +1845,7 @@ const BrainGames = () => {
                               key={idx}
                               variant="outline"
                               disabled={alreadySelected}
-                              className={`h-14 px-8 rounded-2xl font-bold text-lg border-2 transition-all ${
+                              className={`h-10 sm:h-14 px-4 sm:px-8 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg border-2 transition-all ${
                                 alreadySelected
                                   ? "opacity-20 scale-95 border-transparent bg-muted"
                                   : "hover:scale-105 hover:border-primary/50 hover:bg-primary/5 active:scale-95 shadow-sm"
@@ -1863,7 +1869,7 @@ const BrainGames = () => {
                     </div>
 
                     {/* Reconstruct interface */}
-                    <div className="p-10 bg-card border-2 border-primary/10 rounded-[3rem] shadow-xl relative overflow-hidden">
+                    <div className="p-4 sm:p-10 bg-card border-2 border-primary/10 rounded-2xl sm:rounded-[3rem] shadow-xl relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-8 opacity-5">
                         <Brain className="w-24 h-24 text-primary" />
                       </div>
@@ -1874,16 +1880,16 @@ const BrainGames = () => {
                           {userSequence.length} / {wordSequence.length}
                         </span>
                       </h3>
-                      <p className="text-muted-foreground font-medium mb-10 relative z-10">
+                      <p className="text-muted-foreground font-medium mb-6 sm:mb-10 relative z-10">
                         Drag to reorder words • Tap the "×" to remove
                       </p>
 
                       {userSequence.length === 0 ? (
-                        <div className="h-32 border-2 border-dashed border-border rounded-[2rem] flex items-center justify-center text-muted-foreground font-medium">
+                        <div className="h-32 border-2 border-dashed border-border rounded-[2rem] flex items-center justify-center text-muted-foreground font-medium text-center px-4">
                           Select words from the bank to start building your sequence
                         </div>
                       ) : (
-                        <div className="flex flex-wrap gap-4 justify-center">
+                        <div className="flex flex-wrap gap-3 sm:gap-4 justify-center">
                           {userSequence.map((item, idx) => (
                             <motion.div
                               layout
@@ -1912,13 +1918,13 @@ const BrainGames = () => {
                                 setDragIndex(null);
                                 setDragOverIndex(null);
                               }}
-                              className={`group flex items-center gap-3 pl-5 pr-3 py-4 rounded-2xl font-black text-xl cursor-grab active:cursor-grabbing select-none transition-all shadow-md
+                              className={`group flex items-center gap-2 sm:gap-3 pl-4 pr-2 py-2 sm:pl-5 sm:pr-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-sm sm:text-xl cursor-grab active:cursor-grabbing select-none transition-all shadow-md
                                 ${dragIndex === idx ? "opacity-40 scale-95 ring-4 ring-primary/20" : "bg-primary/5 border border-primary/20 text-primary"}
                                 ${dragOverIndex === idx && dragIndex !== idx ? "ring-4 ring-primary scale-105 bg-primary text-white" : ""}
                               `}
                             >
-                              <span className="text-primary/30 font-serif mr-2">⠿</span>
-                              <span className="text-sm opacity-50 mr-1">{idx + 1}.</span>
+                              <span className="text-primary/30 font-serif mr-1 sm:mr-2">⠿</span>
+                              <span className="text-xs sm:text-sm opacity-50 mr-1">{idx + 1}.</span>
                               {item.word}
                               <button
                                 onClick={(e) => {
@@ -1928,7 +1934,7 @@ const BrainGames = () => {
                                     .map((w, i) => ({ ...w, index: i }));
                                   setUserSequence(updated);
                                 }}
-                                className="ml-3 w-8 h-8 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-white transition-all text-sm"
+                                className="ml-2 sm:ml-3 w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-white transition-all text-xs sm:text-sm"
                               >
                                 ×
                               </button>
@@ -1938,7 +1944,7 @@ const BrainGames = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto pt-6">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-2xl mx-auto pt-4 sm:pt-6">
                       <Button
                         onClick={() => {
                           const correct =
@@ -1963,7 +1969,7 @@ const BrainGames = () => {
                           }
                         }}
                         disabled={userSequence.length !== wordSequence.length}
-                        className="flex-[2] h-16 rounded-2xl text-xl font-black shadow-xl hover:shadow-primary/20 transition-all"
+                        className="flex-[2] h-12 sm:h-16 rounded-xl sm:rounded-2xl text-lg sm:text-xl font-black shadow-xl hover:shadow-primary/20 transition-all"
                       >
                         Check Final Sequence
                       </Button>
@@ -1973,14 +1979,14 @@ const BrainGames = () => {
                           setUserSequence([]);
                           showInfo("Reset", "Sequence cleared");
                         }}
-                        className="flex-1 h-16 rounded-2xl font-bold border-2"
+                        className="flex-1 h-12 sm:h-16 rounded-xl sm:rounded-2xl font-bold border-2 text-sm sm:text-base"
                       >
                         Clear All
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={startWordGame}
-                        className="flex-1 h-16 rounded-2xl font-bold"
+                        className="flex-1 h-12 sm:h-16 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base"
                       >
                         Restart
                       </Button>
