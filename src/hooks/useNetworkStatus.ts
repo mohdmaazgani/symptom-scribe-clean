@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { syncOfflineData } from "@/lib/offline-db";
 import { showSuccess } from "@/lib/toast-helpers";
 
 interface UseNetworkStatusOptions {
   /** If true, automatically syncs offline data when coming back online */
   autoSync?: boolean;
-  /** Called after a successful sync with the number of items synced */
+  /** Called after a successful sync */
   onSynced?: () => void;
 }
 
@@ -20,11 +20,13 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}) {
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
   const [isSyncing, setIsSyncing] = useState(false);
+  const isSyncingRef = useRef(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const triggerSync = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) return;
+    if ((typeof navigator !== "undefined" && !navigator.onLine) || isSyncingRef.current) return;
     setIsSyncing(true);
+    isSyncingRef.current = true;
     try {
       const synced = await syncOfflineData();
       if (synced) {
@@ -39,10 +41,13 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}) {
       console.error("Background sync failed:", err);
     } finally {
       setIsSyncing(false);
+      isSyncingRef.current = false;
     }
-  }, [isSyncing, onSynced]);
+  }, [onSynced]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleOnline = () => {
       setIsOnline(true);
       if (autoSync) {
