@@ -115,7 +115,7 @@ const History = () => {
             resolved: !!record.resolved,
             created_at: record.created_at || new Date().toISOString(),
             ai_analysis: record.ai_analysis,
-            search_tokens: record.search_tokens,
+            search_tokens: (record as any).search_tokens,
             pending_sync: 0,
             pending_update: 0,
             pending_delete: 0,
