@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showInfo, showLoading } from "@/lib/toast-helpers";
 import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
-import { Volume2, VolumeX } from "lucide-react";
+import { whenKeysReady } from "@/lib/encryption";
+import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import { Volume2, VolumeX, Bot, Mic, MicOff, Send } from "lucide-react";
 import { motion } from "framer-motion";
 
 const suggestions = [
@@ -15,7 +17,6 @@ const suggestions = [
   { emoji: "😵‍💫", label: "Feeling tired and dizzy" },
 ];
 
-// ── SpeechRecognition types (not in all TS lib versions) ──────────────────
 interface ISpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
   readonly results: SpeechRecognitionResultList;
@@ -47,10 +48,11 @@ declare global {
     webkitSpeechRecognition?: ISpeechRecognitionConstructor;
   }
 }
-// ──────────────────────────────────────────────────────────────────────────
 
 const AIHealthAssistant = () => {
   const [symptoms, setSymptoms] = useState("");
+  const [charCount, setCharCount] = useState(0);
+  const MAX_CHARS = 500;
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; text: string; time: string }[]
   >([]);
@@ -115,7 +117,6 @@ const AIHealthAssistant = () => {
       return;
     }
 
-    // If already listening, stop
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -136,6 +137,7 @@ const AIHealthAssistant = () => {
         transcript += event.results[i][0].transcript;
       }
       setSymptoms(transcript);
+      setCharCount(transcript.length);
     };
 
     recognition.onerror = (event: ISpeechRecognitionErrorEvent) => {
@@ -152,12 +154,12 @@ const AIHealthAssistant = () => {
     recognition.start();
   };
 
-  // ─── handleAnalyze — UNTOUCHED ────────────────────────────────────────────
   const handleAnalyze = async (text?: string) => {
     const userMessage = (text ?? symptoms).trim();
     if (!userMessage || loading) return;
 
     setSymptoms("");
+    setCharCount(0);
     const time = getTime();
     setMessages((prev) => [...prev, { role: "user", text: userMessage, time }]);
     setLoading(true);
@@ -286,7 +288,9 @@ const AIHealthAssistant = () => {
                 ? Math.floor(Math.random() * 30) + 40
                 : Math.floor(Math.random() * 30) + 10;
 
-          const { error: insertError } = await supabase.from("symptom_history").insert({
+          const recordId = crypto.randomUUID();
+          const record = {
+            id: recordId,
             user_id: user.id,
             symptoms: userMessage,
             ai_analysis: assistantContent,
@@ -294,13 +298,29 @@ const AIHealthAssistant = () => {
             possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
             recommendations: recommendations.length > 0 ? recommendations : null,
             risk_score: riskScore,
-          });
+            resolved: false,
+            created_at: new Date().toISOString(),
+          };
+
+          const keys = await whenKeysReady();
+          const encryptedRecord = await encryptSymptom(record as unknown as OfflineSymptom, keys.encryptionKey, keys.searchKey);
+
+          const { error: insertError } = await supabase.from("symptom_history").insert(encryptedRecord);
 
           if (insertError) {
             console.error("Error saving symptom history:", insertError);
             showError("Save failed", "Could not save to your health history");
           } else {
             await invalidateCache("symptom_history");
+            
+            // Save locally to Dexie immediately
+            await db.symptomHistory.put({
+              ...encryptedRecord,
+              pending_sync: 0,
+              pending_update: 0,
+              pending_delete: 0,
+            } as unknown as OfflineSymptom);
+
             showSuccess("Saved to history", "This analysis has been added to your health records");
           }
         }
@@ -314,7 +334,6 @@ const AIHealthAssistant = () => {
       setLoading(false);
     }
   };
-  // ─────────────────────────────────────────────────────────────────────────
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -326,67 +345,88 @@ const AIHealthAssistant = () => {
   const hasMessages = messages.length > 0 || loading;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-full bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-5 py-3 border-b border-border flex items-center justify-end gap-3">
+      <div className="flex-shrink-0 w-full px-3 sm:px-5 py-3 border-b border-border flex items-center justify-end gap-3">
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs text-muted-foreground font-medium">Online</span>
         </div>
       </div>
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Chat area — must have min-w-0 so it can shrink inside the flex column */}
+      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
         {!hasMessages ? (
-          <div className="flex flex-col items-center justify-center h-full px-6 pb-4 gap-6 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-3xl shadow-lg">
-                🤖
+          /* ── Empty state ── */
+          <div className="flex flex-col items-center justify-center h-full px-4 sm:px-6 pb-4 gap-6 text-center">
+            <div className="flex flex-col items-center gap-3 w-full min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">Hello! I'm your AI Health Assistant 👋</h2>
-                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              <div className="w-full min-w-0 px-2">
+                <h2 className="text-base sm:text-lg font-semibold break-words">
+                  Hello! I'm your AI Health Assistant 👋
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto break-words">
                   I can help you understand your symptoms and provide health insights.{" "}
                   <span className="text-teal-500 font-medium">How can I assist you today?</span>
                 </p>
               </div>
             </div>
 
-            <div className="w-full max-w-lg">
+            {/* Suggestion chips — the tricky part */}
+            {/*
+              The chip row uses overflow-x-auto so chips scroll horizontally on mobile.
+              For that to clip (not overflow the page) every ancestor up to the scroll
+              root needs either overflow-hidden or min-w-0. We give the wrapper
+              overflow-hidden and use negative-margin bleed (-mx-4/px-4) so the
+              scrollable track visually reaches the edges without triggering page overflow.
+            */}
+            <div className="w-full max-w-lg min-w-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground px-2">Try asking</span>
+                <span className="text-xs text-muted-foreground px-2 flex-shrink-0">Try asking</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {suggestions.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => handleAnalyze(s.label)}
-                    className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[90px]"
-                  >
-                    <span className="text-xl">{s.emoji}</span>
-                    <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
-                  </button>
-                ))}
+              <div className="overflow-hidden">
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => handleAnalyze(s.label)}
+                      className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[88px]"
+                    >
+                      <span className="text-xl">{s.emoji}</span>
+                      <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto w-full px-4 py-5 space-y-5">
+          /* ── Messages ── */
+          /*
+            Only one max-w here — max-w-2xl. Putting both max-w-2xl and max-w-full
+            on the same element is a no-op (the smaller wins) and signals confusion.
+            The important additions are min-w-0 so this div can shrink, and
+            overflow-hidden so no child can leak out horizontally.
+          */
+          <div className="max-w-2xl mx-auto w-full min-w-0 overflow-hidden px-3 sm:px-4 py-5 space-y-5">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 sm:gap-3 min-w-0 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 shadow-sm">
-                    🤖
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
-                <div className="flex flex-col gap-1 max-w-[78%] relative group">
+                {/* min-w-0 here is essential — without it max-w-[85%] has nothing to be 85% *of* */}
+                <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[78%] min-w-0 relative group">
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed relative ${
+                    className={`rounded-2xl px-3.5 sm:px-4 py-3 text-sm leading-relaxed relative break-words [overflow-wrap:anywhere] ${
                       msg.role === "user"
                         ? "bg-teal-500 text-white rounded-br-sm ml-auto"
                         : `bg-muted text-foreground rounded-bl-sm border border-border transition-all duration-300 ${
@@ -421,10 +461,10 @@ const AIHealthAssistant = () => {
                               if (listMatch) {
                                 if (!inList) {
                                   html +=
-                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc'>";
+                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc;overflow-wrap:anywhere'>";
                                   inList = true;
                                 }
-                                html += `<li style='margin:2px 0'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
+                                html += `<li style='margin:2px 0;overflow-wrap:anywhere'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
                               } else {
                                 if (inList) {
                                   html += "</ul>";
@@ -433,7 +473,7 @@ const AIHealthAssistant = () => {
                                 if (line.trim() === "") {
                                   html += "<br>";
                                 } else {
-                                  html += `<p style='margin:2px 0'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
+                                  html += `<p style='margin:2px 0;overflow-wrap:anywhere'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
                                 }
                               }
                             }
@@ -454,9 +494,9 @@ const AIHealthAssistant = () => {
             ))}
 
             {loading && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
-                  🤖
+              <div className="flex items-start gap-2 sm:gap-3 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-muted border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
                   <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:0ms]" />
@@ -471,9 +511,9 @@ const AIHealthAssistant = () => {
       </div>
 
       {/* Input — pinned at bottom */}
-      <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-background">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 bg-muted border border-border rounded-2xl px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
+      <div className="flex-shrink-0 w-full border-t border-border px-3 sm:px-4 py-3 bg-background">
+        <div className="max-w-2xl mx-auto w-full min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-muted border border-border rounded-2xl px-3 sm:px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
             {/* Voice button */}
             <button
               onClick={handleVoiceInput}
@@ -486,15 +526,7 @@ const AIHealthAssistant = () => {
               } disabled:opacity-30 disabled:cursor-not-allowed`}
               aria-label={isListening ? "Stop voice input" : "Start voice input"}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
-                <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
-              </svg>
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
 
             {isListening && (
@@ -519,31 +551,30 @@ const AIHealthAssistant = () => {
             <textarea
               ref={textareaRef}
               value={symptoms}
-              onChange={(e) => setSymptoms(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= MAX_CHARS) {
+                  setSymptoms(value);
+                  setCharCount(value.length);
+                }
+              }}
               onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening…" : "Describe your symptoms in detail…"}
+              placeholder={isListening ? "Listening…" : "Describe your symptoms…"}
               rows={1}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed self-center"
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 leading-relaxed self-center"
             />
 
             <button
               onClick={() => handleAnalyze()}
-              disabled={loading || !symptoms.trim()}
+              disabled={loading || !symptoms.trim() || charCount >= MAX_CHARS}
               className="w-8 h-8 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all flex-shrink-0 hover:scale-105 active:scale-95"
               aria-label="Send"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-3.5 h-3.5 text-white"
-              >
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
+              <Send className="w-3.5 h-3.5 text-white" />
             </button>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-1.5">
+          <p className="text-center text-xs text-muted-foreground mt-1.5 px-2 break-words">
             {isListening
               ? "🔴 Listening… click the mic to stop"
               : "AI-generated guidance — always consult a doctor for medical advice"}

@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { render } from "@/test/utils";
-import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
+import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 
 // ---------------------------------------------------------------------------
 // Clipboard mock

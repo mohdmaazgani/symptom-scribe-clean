@@ -237,6 +237,7 @@ const HealthFacts = () => {
   const hasInitialized = useRef(false);
   const [liked, setLiked] = useState<Set<number>>(new Set());
   const [saved, setSaved] = useState<Set<number>>(new Set());
+  const [isFlipped, setIsFlipped] = useState(false);
 
   // Track shown IDs so no fact repeats until all 20 are seen
   const shownIds = useRef<Set<number>>(new Set());
@@ -320,92 +321,75 @@ const HealthFacts = () => {
 
       {/* Current Fact Card */}
       {currentFact && (
-        <Card className={`border-2 bg-gradient-to-br from-background to-accent/20 overflow-hidden`}>
-          {/* Coloured top bar */}
-          <div className={`h-1.5 w-full bg-gradient-to-r ${currentFact.color}`} />
+      <div className="relative flex justify-center py-4">
+      <div className="absolute top-4 w-[650px] h-[450px] rounded-xl bg-card border rotate-[-6deg] opacity-40 scale-95" />
+      <div className="absolute top-2 w-[650px] h-[450px] rounded-xl bg-card border rotate-[6deg] opacity-60 scale-[0.98]" />
 
-          <CardHeader className="pb-2">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1 flex-1">
-                <Badge className={`bg-gradient-to-r ${currentFact.color} text-white border-0 text-xs`}>
-                  {currentFact.emoji} {currentFact.category}
-                </Badge>
-                <CardTitle className="text-xl leading-snug">{currentFact.hook}</CardTitle>
-              </div>
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center flex-shrink-0 text-2xl`}>
-                {currentFact.emoji}
-              </div>
-            </div>
-          </CardHeader>
+      <Card
+        onClick={() => {
+          if (!isFlipped) {
+            setIsFlipped(true);
+          } else {
+            setIsFlipped(false);
+            getNextFact();
+          }
+        }}
+        className= "relative w-[700px] h-[450px] cursor-pointer shadow-xl">
+      <div className="flashcard-container h-full">
 
-          <CardContent className="space-y-4">
-            {/* The fact */}
-            <p className="text-base leading-relaxed text-foreground">{currentFact.fact}</p>
+      <div className={`flashcard ${isFlipped ? "flipped" : ""}`}>
 
-            {/* Mind-blown callout */}
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="text-lg flex-shrink-0">🤯</span>
-              <p className="text-sm text-foreground leading-relaxed">{currentFact.mindBlown}</p>
-            </div>
+    {/* FRONT */}
 
-            {/* Actions row */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                className={`gap-1.5 ${liked.has(currentFact.id) ? "text-red-500 border-red-500" : ""}`}
-                onClick={() => handleLike(currentFact.id)}
-              >
-                <ThumbsUp className="w-4 h-4" />
-                {liked.has(currentFact.id) ? "Liked" : "Like"}
-              </Button>
+    <div className="flashcard-front">
+      <CardContent className="h-full flex flex-col items-center justify-center text-center p-10">
 
-              <Button
-                variant="outline"
-                size="sm"
-                className={`gap-1.5 ${saved.has(currentFact.id) ? "text-primary border-primary" : ""}`}
-                onClick={() => handleSave(currentFact.id)}
-              >
-                <Bookmark className="w-4 h-4" />
-                {saved.has(currentFact.id) ? "Saved" : "Save"}
-              </Button>
+        <Badge className="text-lg px-4 py-2">
+          {currentFact.category}
+        </Badge>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => handleShare(currentFact)}
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </Button>
+        <div className="text-8xl mt-10">
+          {currentFact.emoji}
+        </div>
 
-              <a
-                href={`https://en.wikipedia.org/wiki/${currentFact.wikiTopic}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto"
-              >
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Read more
-                </Button>
-              </a>
-            </div>
+        <h2 className="text-4xl font-bold mt-10">
+          {currentFact.hook}
+        </h2>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{FACTS.length - shownIds.current.size} facts left this round</span>
-              <span>{shownIds.current.size} / {FACTS.length} seen</span>
-            </div>
+        <p className="text-lg text-muted-foreground mt-10">
+          Tap to Flip
+        </p>
 
-            <Button onClick={() => getNextFact(false)} className="w-full gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Next Fact
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      </CardContent>
+    </div>
+    
+    {/* BACK */}
 
+    <div className="flashcard-back h-full">
+      <CardContent className="h-full flex flex-col justify-center p-10">
+
+        <p className="text-xl leading-relaxed">
+          {currentFact.fact}
+        </p>
+
+        <div className="mt-8 p-5 rounded-lg bg-primary/10">
+          <p className="font-medium">
+            🤯 {currentFact.mindBlown}
+          </p>
+        </div>
+
+        <p className="text-center mt-8 text-muted-foreground">
+          Tap again for next fact →
+        </p>
+      </CardContent>
+      </div>
+      </div>
+      </div>
+      </Card>
+    </div>
+    )}
+
+      
       {/* Saved Facts */}
       {savedFacts.length > 0 && (
         <Card>
