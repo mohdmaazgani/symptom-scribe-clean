@@ -253,6 +253,21 @@ const History = () => {
     }
   };
 
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    // Small delay before cleanup so the browser can start the download
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
   const exportCSV = () => {
     const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
     const rows = history.map((entry) => [
@@ -263,13 +278,8 @@ const History = () => {
       entry.resolved ? "Yes" : "No",
     ]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "symptom-history.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    triggerDownload(blob, "symptom-history.csv");
     toast({ title: "Export Successful", description: "Your CSV has been downloaded." });
   };
 
@@ -306,7 +316,8 @@ const History = () => {
       }
     });
 
-    doc.save("symptom-history.pdf");
+    const pdfBlob = doc.output("blob");
+    triggerDownload(pdfBlob, "symptom-history.pdf");
     toast({ title: "Export Successful", description: "Your PDF has been downloaded." });
   };
 
