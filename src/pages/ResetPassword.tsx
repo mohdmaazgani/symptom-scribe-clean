@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -10,7 +11,7 @@ const ResetPassword = () => {
 
   const handleReset = async () => {
     if (!password) {
-      alert("Please enter a new password");
+      showError("Missing Password", "Please enter a new password.");
       return;
     }
 
@@ -23,11 +24,11 @@ const ResetPassword = () => {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      showError("Update Failed", error.message);
       return;
     }
 
-    alert("Password updated successfully!");
+   showSuccess("Password Updated!", "You can now sign in with your new password.");
     navigate("/auth");
   };
 

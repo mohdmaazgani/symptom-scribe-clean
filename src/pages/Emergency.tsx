@@ -8,10 +8,13 @@ import {
   ChevronDown, ChevronUp, CheckCircle2, Copy, Share2,
   ShieldAlert, Flame, Activity, PhoneCall, Volume2, VolumeX,
   Hospital, Pill, Stethoscope, Bell, BookOpen,
-  Navigation, Loader2
+  Navigation, Loader2, Radio, Users, Database, RefreshCw, Lock,
+  WifiOff, Wifi
 } from "lucide-react";
 import { showSuccess, showInfo, showError, showWarning } from "@/lib/toast-helpers";
 import { supabase } from "@/integrations/supabase/client";
+import { meshNetwork, type MeshPeer } from "@/lib/mesh-network";
+import { db, type MeshAlert } from "@/lib/offline-db";
 
 // ─── Mobile Detection ────────────────────────────────────────────────────────
 const isMobile = () =>
@@ -216,6 +219,67 @@ const Emergency = () => {
   const [alertStatus, setAlertStatus] = useState<"idle" | "locating" | "sending" | "success" | "error">("idle");
   const [alertProgressMessage, setAlertProgressMessage] = useState("");
 
+  // P2P Emergency Mesh network states
+  const [peers, setPeers] = useState<MeshPeer[]>([]);
+  const [meshAlerts, setMeshAlerts] = useState<MeshAlert[]>([]);
+  const [isOfflineSim, setIsOfflineSim] = useState(meshNetwork.getOfflineSimulation());
+
+  // Set node name once profile details are loaded
+  useEffect(() => {
+    if (profile?.full_name) {
+      meshNetwork.setNodeName(profile.full_name);
+    }
+  }, [profile]);
+
+  // Sync state with mesh network manager
+  useEffect(() => {
+    const updateMeshState = async () => {
+      setPeers(meshNetwork.getPeers());
+      setIsOfflineSim(meshNetwork.getOfflineSimulation());
+      try {
+        const alerts = await db.pendingEmergencyMesh.toArray();
+        // Sort alerts by timestamp descending
+        alerts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setMeshAlerts(alerts);
+      } catch (err) {
+        console.error("Failed to load mesh alerts:", err);
+      }
+    };
+
+    updateMeshState();
+
+    // Subscribe to mesh manager notifications
+    const unsubscribe = meshNetwork.subscribe(updateMeshState);
+
+    // BroadcastChannel receiver event handlers for real-time notifications
+    const handleAlertReceived = (e: Event) => {
+      const customEvent = e as CustomEvent<MeshAlert>;
+      showInfo(
+        "Mesh Alert Received",
+        `Emergency alert from ${customEvent.detail.sender_name} received via local P2P mesh network.`
+      );
+      updateMeshState();
+    };
+
+    const handleSyncCompleted = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      showSuccess(
+        "Gateway Sync Relay",
+        `Alert ${customEvent.detail.substring(0, 8)}... successfully relayed to the cloud gateway!`
+      );
+      updateMeshState();
+    };
+
+    window.addEventListener("mesh-alert-received", handleAlertReceived);
+    window.addEventListener("mesh-sync-completed", handleSyncCompleted);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("mesh-alert-received", handleAlertReceived);
+      window.removeEventListener("mesh-sync-completed", handleSyncCompleted);
+    };
+  }, []);
+
   // Fetch emergency contact profile info
   useEffect(() => {
     const fetchProfile = async () => {
@@ -247,38 +311,6 @@ const Emergency = () => {
     fetchProfile();
   }, []);
 
-  const sendBroadcast = async (lat: number | null, lon: number | null) => {
-    setAlertStatus("sending");
-    try {
-      const { data, error } = await supabase.functions.invoke("broadcast-emergency", {
-        body: {
-          latitude: lat ?? undefined,
-          longitude: lon ?? undefined,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setAlertStatus("success");
-      showSuccess(
-        "Alert Sent!",
-        `Emergency alert successfully broadcast to ${profile?.emergency_contact_name || "your contact"}.`
-      );
-      setTimeout(() => setAlertStatus("idle"), 5000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred while sending SMS.";
-      console.error("Failed to send broadcast:", err);
-      setAlertStatus("error");
-      showError(
-        "Broadcast Failed",
-        errorMessage
-      );
-      setTimeout(() => setAlertStatus("idle"), 5000);
-    }
-  };
-
   const handleAlertContacts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -298,22 +330,57 @@ const Emergency = () => {
     setAlertStatus("locating");
     setAlertProgressMessage("Acquiring real-time location...");
 
+    const executeMeshAlert = async (lat: number | null, lon: number | null) => {
+      setAlertStatus("sending");
+      setAlertProgressMessage(
+        meshNetwork.isOnline()
+          ? "Broadcasting via cloud gateway..."
+          : "Offline: Caching alert and broadcasting to local P2P mesh..."
+      );
+      try {
+        const contactName = profile.emergency_contact_name || "Emergency Contact";
+        const contactPhone = profile.emergency_contact_phone;
+
+        await meshNetwork.triggerEmergencyAlert(lat, lon, contactName, contactPhone);
+
+        setAlertStatus("success");
+        if (meshNetwork.isOnline()) {
+          showSuccess(
+            "Alert Sent!",
+            `Emergency alert successfully broadcast to ${contactName}.`
+          );
+        } else {
+          showWarning(
+            "Offline Mode: Broadcast Queued",
+            `No connection. Alert signed and broadcast to local P2P mesh peers. It will sync automatically when a peer goes online.`
+          );
+        }
+        setTimeout(() => setAlertStatus("idle"), 5000);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred.";
+        console.error("Failed to broadcast alert:", err);
+        setAlertStatus("error");
+        showError("Broadcast Failed", errorMessage);
+        setTimeout(() => setAlertStatus("idle"), 5000);
+      }
+    };
+
     if (!navigator.geolocation) {
-      setAlertProgressMessage("Location service not supported. Requesting broadcast anyway...");
-      sendBroadcast(null, null);
+      setAlertProgressMessage("Location service not supported. Broadcaster starting...");
+      await executeMeshAlert(null, null);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        setAlertProgressMessage("Location acquired. Sending broadcast...");
-        sendBroadcast(latitude, longitude);
+        setAlertProgressMessage("Location acquired. Starting broadcast...");
+        await executeMeshAlert(latitude, longitude);
       },
-      (error) => {
+      async (error) => {
         console.error("Geolocation failed:", error);
-        setAlertProgressMessage("Unable to get location. Sending broadcast without coordinates...");
-        sendBroadcast(null, null);
+        setAlertProgressMessage("Unable to get location. Starting broadcast without coordinates...");
+        await executeMeshAlert(null, null);
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
@@ -588,6 +655,175 @@ const Emergency = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── P2P Mesh Network Dashboard ─────────────────────────────────────── */}
+      <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Radio className="w-5 h-5 text-primary animate-pulse" />
+              {peers.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-base flex items-center gap-1.5">
+                P2P Emergency Alert Mesh
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Local tab-to-tab peer simulation (BroadcastChannel)
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor="offline-sim-toggle" className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                {isOfflineSim ? <WifiOff className="w-3.5 h-3.5 text-destructive" /> : <Wifi className="w-3.5 h-3.5 text-green-500" />}
+                Simulate Offline
+              </label>
+              <button
+                id="offline-sim-toggle"
+                onClick={() => {
+                  const val = !isOfflineSim;
+                  meshNetwork.setOfflineSimulation(val);
+                  setIsOfflineSim(val);
+                  showInfo(
+                    val ? "Offline Mode Simulated" : "Online Mode Restored",
+                    val
+                      ? "Twilio edge calls will be queued locally. Rebroadcast active."
+                      : "Connecting to Supabase... Relaying queued mesh alerts."
+                  );
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                  ${isOfflineSim ? "bg-destructive" : "bg-muted"}
+                `}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                    ${isOfflineSim ? "translate-x-6" : "translate-x-1"}
+                  `}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Node Information */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-muted/20 p-3.5 rounded-lg border border-border">
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground block font-medium">Local Node ID</span>
+            <span className="font-mono text-xs font-semibold">{meshNetwork.getNodeId()}</span>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground block font-medium">Node Display Name</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={meshNetwork.getNodeName()}
+                onChange={(e) => {
+                  meshNetwork.setNodeName(e.target.value);
+                  // Force state update to re-render
+                  setPeers([...meshNetwork.getPeers()]);
+                }}
+                className="bg-background border border-border rounded px-2 py-0.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Set node name..."
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground block font-medium">Mesh Status</span>
+            <div className="flex items-center gap-1.5 font-semibold">
+              <span className={`h-2.5 w-2.5 rounded-full ${isOfflineSim ? "bg-amber-500 animate-pulse" : "bg-green-500 animate-pulse"}`} />
+              {isOfflineSim ? "Offline Sim (Mesh Active)" : "Online Gateway"}
+            </div>
+          </div>
+        </div>
+
+        {/* Peers List */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" /> Discovered Peers ({peers.length})
+          </h4>
+          {peers.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3 text-center bg-muted/10 border border-dashed rounded-lg">
+              No other active peers discovered. Open another tab or window on this route to simulate peers.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {peers.map((peer) => (
+                <div
+                  key={peer.id}
+                  className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-background shadow-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">{peer.name}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground truncate">{peer.id}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-ping" />
+                    <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">Active</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sync Queue */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Database className="w-3.5 h-3.5" /> Mesh Alert Queue & Relays ({meshAlerts.length})
+          </h4>
+          {meshAlerts.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3 text-center bg-muted/10 border border-dashed rounded-lg">
+              Queue is empty. Broadcast an alert to populate the mesh ledger.
+            </p>
+          ) : (
+            <div className="border border-border rounded-lg overflow-hidden divide-y divide-border">
+              {meshAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="p-3 bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-foreground">{alert.sender_name}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">ID: {alert.sender_id.substring(0, 8)}...</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono bg-primary/10 text-primary border border-primary/20">
+                        <Lock className="w-2.5 h-2.5" /> Signed P-256
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground text-[10px] flex items-center gap-2 flex-wrap">
+                      <span>Coords: {alert.latitude !== null && alert.longitude !== null ? `${alert.latitude.toFixed(4)}, ${alert.longitude.toFixed(4)}` : "None"}</span>
+                      <span>•</span>
+                      <span>Target: {alert.contact_name} ({alert.contact_phone})</span>
+                      <span>•</span>
+                      <span>{new Date(alert.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+                    {alert.pending_sync === 1 ? (
+                      <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-500 bg-amber-500/5 flex items-center gap-1">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Offline Cache
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-500 bg-green-500/5 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Relayed
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Pulsing Alert Strip ───────────────────────────────────────────── */}

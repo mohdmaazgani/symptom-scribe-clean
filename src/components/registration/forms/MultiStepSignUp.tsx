@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/lib/toast-helpers";
-import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
+import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import {
   DEFAULT_PASSWORD_POLICY,
   evaluatePasswordStrength,
