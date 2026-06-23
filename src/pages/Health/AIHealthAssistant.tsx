@@ -6,7 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
-import { Volume2, VolumeX, Bot, Mic, MicOff, Send } from "lucide-react";
+import { Volume2, VolumeX, Bot, Mic, MicOff, Send, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 const suggestions = [
@@ -75,6 +75,14 @@ const AIHealthAssistant = () => {
       window.speechSynthesis?.cancel();
     };
   }, []);
+
+   // Auto-resize textarea as content grows
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [symptoms]);
 
   const handleToggleSpeech = (text: string) => {
     if (currentlyReadingText === text) {
@@ -202,7 +210,15 @@ const AIHealthAssistant = () => {
         }),
       });
 
-      if (!response.ok || !response.body) throw new Error("Failed to start stream");
+      if (!response.ok || !response.body) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("AUTH_ERROR");
+        } else if (response.status >= 500) {
+          throw new Error("SERVER_ERROR");
+        } else {
+          throw new Error("UNKNOWN_ERROR");
+        }
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -328,7 +344,20 @@ const AIHealthAssistant = () => {
     } catch (error) {
       console.error("Chat error:", error);
       dismissLoading();
-      showError("Analysis failed", "Failed to get AI response. Please try again.");
+
+      let errorMessage = "Failed to get AI response. Please try again.";
+
+      if (error instanceof TypeError) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error instanceof Error) {
+        if (error.message === "AUTH_ERROR") {
+          errorMessage = "Session expired. Please log in again.";
+        } else if (error.message === "SERVER_ERROR") {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+
+      showError("Analysis failed", errorMessage);
       setMessages((prev) => prev.filter((m) => !(m.role === "user" && m.text === userMessage)));
     } finally {
       setLoading(false);
@@ -487,7 +516,7 @@ const AIHealthAssistant = () => {
                   <span
                     className={`text-[10px] text-muted-foreground px-1 ${msg.role === "user" ? "text-right" : "text-left"}`}
                   >
-                    {msg.time} {msg.role === "user" && "✓"}
+                    {msg.time} {msg.role === "user" && <Check className="w-3 h-3 inline" />}
                   </span>
                 </div>
               </div>

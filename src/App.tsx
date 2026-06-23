@@ -13,32 +13,32 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard/index.tsx";
-import Chat from "./pages/Chat/index.tsx";
-import Metrics from "./pages/Metrics/index.tsx";
-import History from "./pages/History/index.tsx";
-import Profile from "./pages/Profile/index.tsx";
-import Emergency from "./pages/Emergency";
-import BrainGames from "./pages/BrainGames";
-import HealthFacts from "./pages/HealthFacts";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/layout/ProtectedRoute.tsx";
+import Index from "./pages/Home/Index.tsx";
+import Auth from "./pages/Auth/index.tsx";
+import Dashboard from "./pages/Dashboard";
+import Chat from "./pages/Chat";
+import Metrics from "./pages/Metrics";
+import History from "./pages/History";
+import Profile from "./pages/Profile";
+import Emergency from "./pages/Health/Emergency.tsx";
+import BrainGames from "./pages/Games/BrainGames.tsx";
+import HealthFacts from "./pages/Health/HealthFacts.tsx";
+import Settings from "./pages/User/Settings.tsx";
+import NotFound from "./pages/NotFound/index.tsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import Layout from "./components/layout/Layout.tsx";
-import AIHealthAssistant from "./pages/AIHealthAssistant";
+import AIHealthAssistant from "./pages/Health/AIHealthAssistant.tsx";
 
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Disclaimer from "./pages/Disclaimer";
-import Accessibility from "./pages/Accessibility";
-import HealthLibrary from "./pages/HealthLibrary";
-import Blog from "./pages/Blog";
-import Contact from "./pages/Contact";
-import ScrollToTop from "@/components/common/ScrollToTop.tsx";
-import BlogPostPage from "@/pages/BlogPostPage";
-import ResetPassword from "./pages/ResetPassword.tsx";
+import Privacy from "./pages/Legal/Privacy.tsx";
+import Terms from "./pages/Legal/Terms.tsx";
+import Disclaimer from "./pages/Legal/Disclaimer.tsx";
+import Accessibility from "./pages/Legal/Accessibility.tsx";
+import HealthLibrary from "./pages/Health/HealthLibrary.tsx";
+import Blog from "./pages/Blog/index.tsx";
+import Contact from "./pages/Contact/index.tsx";
+import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
+import BlogPostPage from "@/pages/Blog/BlogPostPage.tsx";
+import ResetPassword from "./pages/User/ResetPassword.tsx";
 const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {

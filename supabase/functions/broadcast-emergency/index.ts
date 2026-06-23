@@ -1,14 +1,34 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:8080",
+  "https://symptom-scribe.vercel.app",
+];
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin":
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+});
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(
+      JSON.stringify({ error: "Origin not allowed" }),
+      {
+        status: 403,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      }
+    );
+  }
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -16,7 +36,7 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "No authorization header provided" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -40,7 +60,7 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "Invalid authorization token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -89,7 +109,7 @@ serve(async (req) => {
     if (!contactPhone) {
       return new Response(
         JSON.stringify({ error: "No emergency contact phone configured or provided" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -102,7 +122,7 @@ serve(async (req) => {
       console.error("Missing Twilio credentials configuration");
       return new Response(
         JSON.stringify({ error: "Twilio credentials are not configured on the server" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -116,7 +136,7 @@ serve(async (req) => {
 
     // Send via Twilio API
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    
+
     // Twilio expects application/x-www-form-urlencoded
     const formData = new URLSearchParams();
     formData.append("From", twilioPhone);
@@ -141,7 +161,7 @@ serve(async (req) => {
       console.error("Twilio SMS failed:", twilioResult);
       return new Response(
         JSON.stringify({ error: `Twilio failed to send message: ${twilioResult.message || "Unknown error"}` }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 502, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -152,7 +172,7 @@ serve(async (req) => {
         message: `Emergency alert successfully broadcast to ${contactName || "emergency contact"}.`,
         sid: twilioResult.sid,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
     );
 
   } catch (err) {
@@ -161,7 +181,7 @@ serve(async (req) => {
       JSON.stringify({
         error: err instanceof Error ? err.message : "Internal server error",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
     );
   }
 });

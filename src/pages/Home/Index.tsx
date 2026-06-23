@@ -5,10 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import Hero from "@/components/Hero";
+import Hero from "@/components/hero/Hero";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
-import { BackToTop } from "@/components/common/BackToTop";
+import { BackToTop } from "@/components/navigation/BackToTop";
 import { 
   Github,
   ExternalLink,

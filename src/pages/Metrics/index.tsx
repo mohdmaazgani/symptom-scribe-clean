@@ -556,7 +556,7 @@ const Metrics = () => {
 
               {historyView === "table" && (
                 <div className="rounded-xl border overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-[600px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
@@ -634,15 +634,15 @@ const Metrics = () => {
                         <XAxis
                           dataKey="recorded_at"
                           tickFormatter={(value) =>
-                            new Date(value).toLocaleString([], {
+                            new Date(value).toLocaleDateString([], {
                               month: "short",
                               day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
                             })
                           }
+                          tick={{ fontSize: 10 }}
+                          minTickGap={25}
                         />
-                        <YAxis />
+                        <YAxis tick={{ fontSize: 10 }} />
                         <Tooltip labelFormatter={(value) => formatDate(value)} />
                         {isBloodPressure ? (
                           <>

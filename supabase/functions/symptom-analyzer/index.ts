@@ -24,48 +24,23 @@ const getCorsHeaders = (origin: string | null) => ({
 serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get("origin");
 
-  if (origin) {
-    if (!ALLOWED_ORIGINS.includes(origin)) {
-      return jsonResponse(
-        { error: "Origin not allowed" },
-        403,
-        getCorsHeaders(origin)
-      );
-    }
-  } else {
-    // Non-browser client request (missing Origin header). Require a valid verified token.
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse(
-        { error: "Authentication required for non-browser requests" },
-        401,
-        getCorsHeaders(null)
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  // 1. Origin allowlist check
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return jsonResponse(
+      { error: "Origin not allowed" },
+      403,
+      getCorsHeaders(origin)
     );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-
-    if (userError || !user) {
-      return jsonResponse(
-        { error: "Invalid or expired authorization token" },
-        401,
-        getCorsHeaders(null)
-      );
-    }
   }
+
+  // 2. CORS preflight — must come before any auth logic
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: getCorsHeaders(origin),
     });
   }
 
-  // Enforce JWT validation for ALL non-preflight requests to prevent token budget exhaustion
+  // 3. Enforce JWT for all non-OPTIONS requests
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return jsonResponse(
@@ -141,27 +116,11 @@ serve(async (req: Request): Promise<Response> => {
     const safetyCheck = detectEmergencySymptoms(messages);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    let apiEndpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
-    let apiKey = LOVABLE_API_KEY;
-    let model = "google/gemini-2.5-flash";
-
-    if (GEMINI_API_KEY) {
-      apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-      apiKey = GEMINI_API_KEY;
-      model = "gemini-2.5-flash";
-    } else if (OPENAI_API_KEY) {
-      apiEndpoint = "https://api.openai.com/v1/chat/completions";
-      apiKey = OPENAI_API_KEY;
-      model = "gpt-4o-mini";
-    }
-
-    if (!apiKey) {
+    if (!LOVABLE_API_KEY) {
       return jsonResponse(
         {
-          error: "API key is not configured. Please set LOVABLE_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY.",
+          error: "LOVABLE_API_KEY is not configured",
         },
         500,
         getCorsHeaders(origin)
@@ -204,15 +163,15 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
 `;
 
     const response = await fetch(
-      apiEndpoint,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
+          model: "google/gemini-2.5-flash",
           messages: [
             {
               role: "system",
