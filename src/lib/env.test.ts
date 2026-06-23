@@ -22,6 +22,11 @@ const VALID_LEGACY = "legacy-anon-key-456";
 async function loadEnv(vars: Record<string, string | undefined>) {
   vi.resetModules();
   vi.unstubAllEnvs();
+  // Baseline-clear every key env.ts reads so a real VITE_SUPABASE_* present in
+  // the developer/CI environment can't leak in and make tests machine-dependent.
+  for (const key of [URL_KEY, PUBLISHABLE_KEY, LEGACY_KEY]) {
+    vi.stubEnv(key, "");
+  }
   for (const [key, value] of Object.entries(vars)) {
     if (value !== undefined) vi.stubEnv(key, value);
   }
