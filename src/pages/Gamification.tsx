@@ -32,8 +32,8 @@ export default function GamificationPage() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "challenges", label: "Challenges", icon: <Flame className="w-4 h-4" /> },
-    { id: "mood", label: "Mood Tracker", icon: <Smile className="w-4 h-4" /> },
-    { id: "badges", label: "My Badges", icon: <Award className="w-4 h-4" /> },
+    { id: "mood",       label: "Mood Tracker", icon: <Smile className="w-4 h-4" /> },
+    { id: "badges",     label: "My Badges",    icon: <Award className="w-4 h-4" /> },
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function GamificationPage() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3 text-foreground">
-            <Trophy className="w-8 h-8 text-yellow-500" />
+            <Trophy className="w-8 h-8 text-primary" />
             Challenges & Rewards
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -51,29 +51,23 @@ export default function GamificationPage() {
           </p>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats Row — same card style as Dashboard */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard
-            icon={<Flame className="w-6 h-6 text-orange-400" />}
-            value={activeCount}
-            label="Active Challenges"
-            bg="bg-orange-500/10 border-orange-500/20"
-            valueColor="text-orange-400"
-          />
-          <StatCard
-            icon={<Award className="w-6 h-6 text-yellow-400" />}
-            value={userBadges.length}
-            label="Badges Earned"
-            bg="bg-yellow-500/10 border-yellow-500/20"
-            valueColor="text-yellow-400"
-          />
-          <StatCard
-            icon={<Smile className="w-6 h-6 text-emerald-400" />}
-            value={bestStreak}
-            label="Best Streak"
-            bg="bg-emerald-500/10 border-emerald-500/20"
-            valueColor="text-emerald-400"
-          />
+          <div className="rounded-xl border border-border bg-card p-5 flex flex-col items-center gap-2">
+            <Flame className="w-6 h-6 text-primary" />
+            <span className="text-3xl font-bold text-foreground">{activeCount}</span>
+            <span className="text-xs text-muted-foreground text-center">Active Challenges</span>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5 flex flex-col items-center gap-2">
+            <Award className="w-6 h-6 text-primary" />
+            <span className="text-3xl font-bold text-foreground">{userBadges.length}</span>
+            <span className="text-xs text-muted-foreground text-center">Badges Earned</span>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5 flex flex-col items-center gap-2">
+            <Smile className="w-6 h-6 text-primary" />
+            <span className="text-3xl font-bold text-foreground">{bestStreak}</span>
+            <span className="text-xs text-muted-foreground text-center">Best Streak</span>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -105,11 +99,13 @@ export default function GamificationPage() {
                   ))}
                 </div>
               ) : challenges.length === 0 ? (
-                <EmptyState
-                  icon="🏆"
-                  title="No challenges available yet"
-                  description="Challenges will appear here once your database is set up. Check back soon!"
-                />
+                <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border bg-muted/10">
+                  <span className="text-5xl mb-4">🏆</span>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">No challenges available yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Challenges will appear here once the database is set up. Check back soon!
+                  </p>
+                </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {challenges.map((challenge) => {
@@ -122,9 +118,7 @@ export default function GamificationPage() {
                         challenge={challenge}
                         userChallenge={userChallenge}
                         onJoin={() => joinChallenge.mutate(challenge.id)}
-                        onCheckIn={() =>
-                          userChallenge && checkIn.mutate(userChallenge.id)
-                        }
+                        onCheckIn={() => userChallenge && checkIn.mutate(userChallenge.id)}
                       />
                     );
                   })}
@@ -141,43 +135,8 @@ export default function GamificationPage() {
             <BadgeDisplay userBadges={userBadges} />
           )}
         </div>
+
       </div>
-    </div>
-  );
-}
-
-/* ── Small reusable components ── */
-
-function StatCard({
-  icon, value, label, bg, valueColor,
-}: {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  bg: string;
-  valueColor: string;
-}) {
-  return (
-    <div className={`rounded-xl border p-5 flex flex-col items-center gap-2 ${bg}`}>
-      {icon}
-      <span className={`text-3xl font-bold ${valueColor}`}>{value}</span>
-      <span className="text-xs text-muted-foreground text-center">{label}</span>
-    </div>
-  );
-}
-
-function EmptyState({
-  icon, title, description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border bg-muted/10">
-      <span className="text-5xl mb-4">{icon}</span>
-      <h3 className="text-lg font-semibold text-foreground mb-1">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-xs">{description}</p>
     </div>
   );
 }

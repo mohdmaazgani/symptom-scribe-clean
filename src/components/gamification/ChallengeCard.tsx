@@ -35,13 +35,9 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
   const today = new Date().toISOString().split("T")[0];
   const checkedInToday = userChallenge?.last_checked_in === today;
 
-  const accentColor = challenge.color ?? "#5DCAA5";
-
   return (
-    <div
-      className="relative rounded-xl border border-border bg-card p-5 flex flex-col gap-4 transition-all hover:shadow-md hover:-translate-y-0.5"
-      style={{ borderLeftColor: accentColor, borderLeftWidth: 3 }}
-    >
+    <div className="relative rounded-xl border border-border bg-card p-5 flex flex-col gap-4 transition-all hover:shadow-md hover:-translate-y-0.5">
+
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -56,7 +52,7 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
           </div>
         </div>
         {isCompleted && (
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         )}
       </div>
 
@@ -72,7 +68,7 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
         </span>
       </div>
 
-      {/* Progress */}
+      {/* Progress bar */}
       {isJoined && (
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -81,8 +77,8 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress}%`, backgroundColor: accentColor }}
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
@@ -92,13 +88,12 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
       {!isJoined ? (
         <button
           onClick={onJoin}
-          className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: accentColor }}
+          className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
         >
           Join Challenge
         </button>
       ) : isCompleted ? (
-        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-primary bg-primary/10 border border-primary/20">
           ✅ Completed!
         </div>
       ) : checkedInToday ? (
@@ -108,8 +103,7 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
       ) : (
         <button
           onClick={onCheckIn}
-          className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: accentColor }}
+          className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
         >
           Check In Today 🔥
         </button>
