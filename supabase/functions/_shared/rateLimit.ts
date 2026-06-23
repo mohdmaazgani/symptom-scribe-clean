@@ -13,9 +13,9 @@ const MAX_REQUESTS = 10;
 function memoryRateLimit(ip: string): { success: boolean } {
   const now = Date.now();
   const existing = requestStore.get(ip);
-
-  // Initialize or reset expired window
+  
   if (!existing || now - existing.timestamp > WINDOW_SIZE_MS) {
+    if (existing) requestStore.delete(ip);
     requestStore.set(ip, { count: 1, timestamp: now });
     return { success: true };
   }
@@ -36,7 +36,6 @@ export async function rateLimit(ip: string): Promise<{ success: boolean }> {
   if (redis) {
     try {
       const key = `ratelimit:${ip}`;
-      // Atomic pipeline: INCR + EXPIRE NX
       const pipeline = redis.pipeline();
       pipeline.incr(key);
       pipeline.expire(key, 60, "NX");
