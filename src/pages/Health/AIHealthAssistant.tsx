@@ -6,15 +6,15 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
-import { Volume2, VolumeX, Bot, Mic, MicOff, Send, Check } from "lucide-react";
+import { Volume2, VolumeX, Bot, Mic, MicOff, Send, Check, Thermometer, Wind, Brain, Utensils, BatteryLow } from "lucide-react";
 import { motion } from "framer-motion";
 
 const suggestions = [
-  { emoji: "🤒", label: "I have a fever" },
-  { emoji: "🤧", label: "Sore throat for 3 days" },
-  { emoji: "🤕", label: "I have headache" },
-  { emoji: "🤢", label: "Stomach pain after eating" },
-  { emoji: "😵‍💫", label: "Feeling tired and dizzy" },
+  { icon: Thermometer, label: "I have a fever" },
+  { icon: Wind, label: "Sore throat for 3 days" },
+  { icon: Brain, label: "I have headache" },
+  { icon: Utensils, label: "Stomach pain after eating" },
+  { icon: BatteryLow, label: "Feeling tired and dizzy" },
 ];
 
 interface ISpeechRecognitionEvent extends Event {
@@ -76,7 +76,7 @@ const AIHealthAssistant = () => {
     };
   }, []);
 
-   // Auto-resize textarea as content grows
+  // Auto-resize textarea as content grows
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -328,7 +328,7 @@ const AIHealthAssistant = () => {
             showError("Save failed", "Could not save to your health history");
           } else {
             await invalidateCache("symptom_history");
-            
+
             // Save locally to Dexie immediately
             await db.symptomHistory.put({
               ...encryptedRecord,
@@ -383,7 +383,7 @@ const AIHealthAssistant = () => {
         </div>
       </div>
 
-      {/* Chat area — must have min-w-0 so it can shrink inside the flex column */}
+      {/* Chat area */}
       <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
         {!hasMessages ? (
           /* ── Empty state ── */
@@ -394,7 +394,7 @@ const AIHealthAssistant = () => {
               </div>
               <div className="w-full min-w-0 px-2">
                 <h2 className="text-base sm:text-lg font-semibold break-words">
-                  Hello! I'm your AI Health Assistant 👋
+                  Hello! I'm your AI Health Assistant 
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto break-words">
                   I can help you understand your symptoms and provide health insights.{" "}
@@ -403,45 +403,30 @@ const AIHealthAssistant = () => {
               </div>
             </div>
 
-            {/* Suggestion chips — the tricky part */}
-            {/*
-              The chip row uses overflow-x-auto so chips scroll horizontally on mobile.
-              For that to clip (not overflow the page) every ancestor up to the scroll
-              root needs either overflow-hidden or min-w-0. We give the wrapper
-              overflow-hidden and use negative-margin bleed (-mx-4/px-4) so the
-              scrollable track visually reaches the edges without triggering page overflow.
-            */}
-            <div className="w-full max-w-lg min-w-0">
+            {/* Suggestion list — vertical stacked, all visible */}
+            <div className="w-full max-w-2xl min-w-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
                 <span className="text-xs text-muted-foreground px-2 flex-shrink-0">Try asking</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="overflow-hidden">
-                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.label}
-                      onClick={() => handleAnalyze(s.label)}
-                      className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-center min-w-[88px]"
-                    >
-                      <span className="text-xl">{s.emoji}</span>
-                      <span className="text-xs text-muted-foreground leading-tight">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.label}
+                    onClick={() => handleAnalyze(s.label)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-muted/50 hover:bg-muted hover:border-teal-500/50 transition-all text-left w-full"
+                  >
+                    <s.icon className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{s.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         ) : (
           /* ── Messages ── */
-          /*
-            Only one max-w here — max-w-2xl. Putting both max-w-2xl and max-w-full
-            on the same element is a no-op (the smaller wins) and signals confusion.
-            The important additions are min-w-0 so this div can shrink, and
-            overflow-hidden so no child can leak out horizontally.
-          */
-          <div className="max-w-2xl mx-auto w-full min-w-0 overflow-hidden px-3 sm:px-4 py-5 space-y-5">
+          <div className="max-w-4xl mx-auto w-full min-w-0 overflow-hidden px-3 sm:px-4 py-5 space-y-5">
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -452,7 +437,6 @@ const AIHealthAssistant = () => {
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
-                {/* min-w-0 here is essential — without it max-w-[85%] has nothing to be 85% *of* */}
                 <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[78%] min-w-0 relative group">
                   <div
                     className={`rounded-2xl px-3.5 sm:px-4 py-3 text-sm leading-relaxed relative break-words [overflow-wrap:anywhere] ${
@@ -541,7 +525,7 @@ const AIHealthAssistant = () => {
 
       {/* Input — pinned at bottom */}
       <div className="flex-shrink-0 w-full border-t border-border px-3 sm:px-4 py-3 bg-background">
-        <div className="max-w-2xl mx-auto w-full min-w-0">
+        <div className="max-w-4xl mx-auto w-full min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 bg-muted border border-border rounded-2xl px-3 sm:px-4 py-2.5 focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 transition-all min-h-[48px]">
             {/* Voice button */}
             <button
