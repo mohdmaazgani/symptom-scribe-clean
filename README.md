@@ -138,54 +138,54 @@ Example:
 
 ```bash
 git clone https://github.com/mohdmaazgani/symptom-scribe-clean.git
-```
-
-## 2. Navigate to Project
-
-```bash
 cd symptom-scribe-clean
 ```
 
-## 3. Install Dependencies
+## 2. Configure Environment Variables
 
-   ```bash
-   git clone https://github.com/mohdmaazgani/symptom-scribe-clean.git
-   ```
+Copy the example env file and add your Supabase browser credentials (Dashboard → Project Settings → API):
 
-2. **Enter the project directory**
+```bash
+cp .env.example .env.local
+```
 
-   ```bash
-   cd symptom-scribe-clean
-   ```
+Add the browser variables to `.env.local`:
 
-3. **Configure environment variables**
+- `VITE_SUPABASE_URL` — used by the frontend to build the Supabase client and function URLs.
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — canonical browser key for authentication and API access.
 
-   Copy the example env file and add your Supabase browser credentials (Dashboard → Project Settings → API):
+> [!NOTE]
+> `VITE_SUPABASE_ANON_KEY` is accepted only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new and updated environments.
 
-   ```bash
-   cp .env.example .env.local
-   ```
+## 3. Link Supabase & Apply Migrations
 
-   Add the browser variables to `.env.local`:
+To ensure your local database contains all the necessary schemas (like `profiles`, `symptom_history`, and custom functions/triggers) so that data can save correctly, link your project and push migrations:
 
-   - `VITE_SUPABASE_URL` — used by the frontend to build the Supabase client and function URLs.
-   - `VITE_SUPABASE_PUBLISHABLE_KEY` — canonical browser key for authentication and API access.
+```bash
+# Log in to Supabase CLI
+npx supabase login
 
-   `VITE_SUPABASE_ANON_KEY` is accepted only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new and updated environments.
+# Link your local repo to your remote project
+npx supabase link --project-ref <your-project-ref>
 
-4. **Install dependencies**
+# Push the schema, triggers, and functions to the linked project
+npx supabase db push
+```
 
-   ```bash
-   npm install
-   ```
+## 4. Install Dependencies
 
-5. **Start the development server**
+```bash
+npm install
+```
 
-   ```bash
-   npm run dev
-   ```
+## 5. Start Development Server
 
-6. Open in your browser → [http://localhost:8080](http://localhost:8080)
+```bash
+npm run dev
+```
+
+Open in your browser → [http://localhost:8080](http://localhost:8080)
+
 
 ### Supabase Edge Function Setup
 
@@ -238,39 +238,9 @@ supabase functions serve --env-file supabase/.env.local
 Keep the service role key out of browser-loaded files and client-side code.
 
 
-```bash
-npm install
-```
-
-## 4. Configure Environment Variables
-
-```bash
-cp .env.example .env.local
-```
-
-
-Add:
-
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-```
-
-Use `.env.local` for local frontend values. Do not put Supabase edge-function secrets such as `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; configure them in Supabase instead.
-
-`VITE_SUPABASE_ANON_KEY` is supported only as a legacy fallback if `VITE_SUPABASE_PUBLISHABLE_KEY` is not set.
-
-## 5. Start Development Server
-
-```bash
-npm run dev
-```
-
-Open:
+## 📂 Project Structure
 
 ```text
-http://localhost:8080
-
 symptom-scribe-clean/
 ├── public/                                           # Static assets
 ├── src/
@@ -428,9 +398,9 @@ Only variables prefixed with `VITE_` are exposed to the frontend. The app reads 
 | Secret                    | Purpose                          |
 | ------------------------- | -------------------------------- |
 | LOVABLE_API_KEY           | AI gateway access                |
-| SUPABASE_URL              | Supabase project URL             |
-| SUPABASE_ANON_KEY         | Caller validation                |
-| SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows     |
+| SUPABASE_URL              | Supabase project URL (System Injected) |
+| SUPABASE_ANON_KEY         | Caller validation (System Injected)    |
+| SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows (System Injected) |
 | TWILIO_ACCOUNT_SID        | Emergency SMS alerts             |
 | TWILIO_AUTH_TOKEN         | Emergency SMS alerts             |
 | TWILIO_PHONE_NUMBER       | Emergency SMS sender number      |
@@ -446,12 +416,6 @@ supabase login
 supabase link --project-ref <project-ref>
 
 supabase secrets set LOVABLE_API_KEY=<key>
-
-supabase secrets set SUPABASE_URL=<url>
-
-supabase secrets set SUPABASE_ANON_KEY=<anon-key>
-
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 
 supabase secrets set TWILIO_ACCOUNT_SID=<sid>
 
