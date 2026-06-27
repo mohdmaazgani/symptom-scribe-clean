@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Mail, MessageSquare, Phone, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Mail, MessageSquare, Phone, CheckCircle, ArrowLeft } from "lucide-react";
+import PageFooter from "@/components/legal/PageFooter";
 
 type ContactForm = {
   name: string;
@@ -64,6 +66,20 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Sticky Header — consistent with other public pages */}
+      <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <Link
+            to="/"
+            aria-label="Back to Home"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+        </div>
+      </div>
+
       <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16 px-6 text-center">
         <div className="max-w-2xl mx-auto">
           <MessageSquare className="mx-auto mb-4 h-12 w-12 text-primary" />
@@ -164,6 +180,8 @@ const Contact = () => {
           )}
         </div>
       </section>
+
+      <PageFooter />
     </div>
   );
 };
