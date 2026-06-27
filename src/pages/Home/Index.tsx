@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Hero from "@/components/hero/Hero";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
 import { 
@@ -27,6 +28,31 @@ const Index = () => {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (isMounted) setSession(data.session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const user = session?.user;
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined)?.trim() || user?.email || "";
+  const userInitial = displayName.charAt(0).toUpperCase() || "U";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,12 +131,27 @@ const Index = () => {
 
           <div className="hidden md:flex items-center gap-4">
             <AnimatedThemeToggler />
-            <Button variant="ghost" onClick={() => navigate("/auth")}>
-              Sign In
-            </Button>
-            <Button onClick={() => navigate("/auth")}>
-              Get Started
-            </Button>
+            {session ? (
+              <Button
+                onClick={() => navigate("/dashboard")}
+                title={displayName}
+                className="gap-2 pl-2"
+              >
+                <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs">
+                  {userInitial}
+                </span>
+                Go to Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+                <Button onClick={() => navigate("/auth")}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
 
           <div className="md:hidden">
@@ -129,12 +170,27 @@ const Index = () => {
               className="absolute top-full left-0 w-full bg-background border-b border-border shadow-lg overflow-hidden md:hidden"
             >
               <div className="p-4 flex flex-col gap-3">
-                <Button variant="outline" className="w-full justify-center" onClick={() => navigate("/auth")}>
-                  Sign In
-                </Button>
-                <Button className="w-full justify-center" onClick={() => navigate("/auth")}>
-                  Get Started
-                </Button>
+                {session ? (
+                  <Button
+                    className="w-full justify-center gap-2 pl-2"
+                    onClick={() => navigate("/dashboard")}
+                    title={displayName}
+                  >
+                    <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs shrink-0">
+                      {userInitial}
+                    </span>
+                    Go to Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="w-full justify-center" onClick={() => navigate("/auth")}>
+                      Sign In
+                    </Button>
+                    <Button className="w-full justify-center" onClick={() => navigate("/auth")}>
+                      Get Started
+                    </Button>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
