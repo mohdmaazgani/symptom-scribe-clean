@@ -6,6 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import { type TablesInsert } from "@/integrations/supabase/types";
 import {
   parseSymptomConsultation,
   shouldPersistConsultation,
@@ -287,7 +288,7 @@ const AIHealthAssistant = () => {
 
           if (shouldPersistConsultation(assistantContent)) {
             const recordId = crypto.randomUUID();
-            const record = {
+            const symptomInsert: TablesInsert<"symptom_history"> = {
               id: recordId,
               user_id: user.id,
               symptoms: userMessage,
@@ -301,7 +302,16 @@ const AIHealthAssistant = () => {
             };
 
             const keys = await whenKeysReady();
-            const encryptedRecord = await encryptSymptom(record as unknown as OfflineSymptom, keys.encryptionKey, keys.searchKey);
+            const encryptedRecord = await encryptSymptom(
+              {
+                ...symptomInsert,
+                pending_sync: 0,
+                pending_update: 0,
+                pending_delete: 0,
+              },
+              keys.encryptionKey,
+              keys.searchKey
+            );
 
             const { error: insertError } = await supabase.from("symptom_history").insert(encryptedRecord);
 
@@ -317,7 +327,7 @@ const AIHealthAssistant = () => {
                 pending_sync: 0,
                 pending_update: 0,
                 pending_delete: 0,
-              } as unknown as OfflineSymptom);
+              });
 
               showSuccess("Saved to history", "This analysis has been added to your health records");
             }
