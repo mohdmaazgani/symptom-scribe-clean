@@ -260,13 +260,18 @@ export function registerEncryptionHooks(callbacks: {
   onTokenRefreshCallback = callbacks.onTokenRefresh;
 }
 
-async function handleSessionChange(session: Session) {  // session carries user.id for per-user salt
+async function handleSessionChange(session: Session) {
   const token = session.access_token;
   if (!token) return;
 
   if (token === lastToken) return;
 
-  const prevToken = lastToken || localStorage.getItem("symptom_scribe_last_token");
+  // FIX: Use only the in-memory lastToken for rotation detection.
+  // Previously fell back to localStorage.getItem("symptom_scribe_last_token"),
+  // which persisted the raw JWT as a plaintext bearer credential in localStorage.
+  // Supabase already restores the session on page reload via onAuthStateChange,
+  // so the localStorage fallback was redundant and a security risk.
+  const prevToken = lastToken;
 
   try {
     const userId = session.user?.id;
@@ -283,12 +288,12 @@ async function handleSessionChange(session: Session) {  // session carries user.
 
     setKeys(newKey, newSearchKey);
     lastToken = token;
-    localStorage.setItem("symptom_scribe_last_token", token);
+    // FIX: Removed localStorage.setItem("symptom_scribe_last_token", token) — JWT must not be stored in localStorage.
   } catch (error) {
     console.error("Failed to derive or rotate encryption keys:", error);
     setKeys(null, null);
     lastToken = null;
-    localStorage.removeItem("symptom_scribe_last_token");
+    // FIX: Removed localStorage.removeItem("symptom_scribe_last_token") — no longer stored there.
   }
 }
 
@@ -300,7 +305,7 @@ async function handleSessionClear() {
 
   setKeys(null, null);
   lastToken = null;
-  localStorage.removeItem("symptom_scribe_last_token");
+  // FIX: Removed localStorage.removeItem("symptom_scribe_last_token") — no longer stored there.
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
@@ -434,61 +439,3 @@ export async function verifyPayload(
     return false;
   }
 }
-
-// ─── Profile Field Encryption / Decryption Helpers ────────────────────────────
-export async function encryptProfileField(
-  value: string | null | undefined,
-  key: CryptoKey
-): Promise<string | null> {
-  if (!value) return null;
-  if (value.startsWith("enc:str:")) return value;
-  const encrypted = await encryptText(value, key);
-  return `enc:str:${encrypted}`;
-}
-
-export async function decryptProfileField(
-  value: string | null | undefined,
-  key: CryptoKey
-): Promise<string> {
-  if (!value) return "";
-  if (value.startsWith("enc:str:")) {
-    try {
-      const rawEnc = value.substring(8);
-      return await decryptText(rawEnc, key);
-    } catch (e) {
-      console.error("Failed to decrypt profile field:", e);
-      return value;
-    }
-  }
-  return value;
-}
-
-export async function encryptProfileArray(
-  value: string[] | null | undefined,
-  key: CryptoKey
-): Promise<string[]> {
-  if (!value || value.length === 0) return [];
-  if (value.length === 1 && value[0].startsWith("enc:json:")) return value;
-  const stringified = JSON.stringify(value);
-  const encrypted = await encryptText(stringified, key);
-  return [`enc:json:${encrypted}`];
-}
-
-export async function decryptProfileArray(
-  value: string[] | null | undefined,
-  key: CryptoKey
-): Promise<string[]> {
-  if (!value || value.length === 0) return [];
-  if (value.length === 1 && value[0].startsWith("enc:json:")) {
-    try {
-      const rawEnc = value[0].substring(9);
-      const decrypted = await decryptText(rawEnc, key);
-      return JSON.parse(decrypted);
-    } catch (e) {
-      console.error("Failed to decrypt profile array:", e);
-      return value;
-    }
-  }
-  return value;
-}
-
