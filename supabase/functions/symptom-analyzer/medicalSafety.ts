@@ -19,9 +19,11 @@ export function detectEmergencySymptoms(messages: Message[]) {
         .map((msg) => msg.content.toLowerCase())
         .join(" ");
 
-    const matchedKeywords = emergencyKeywords.filter((keyword) =>
-        combinedText.includes(keyword)
-    );
+    const matchedKeywords = emergencyKeywords.filter((keyword) => {
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = new RegExp(`\\b${escaped}\\b`, "i");
+        return pattern.test(combinedText);
+    });
 
     return {
         isEmergency: matchedKeywords.length > 0,
