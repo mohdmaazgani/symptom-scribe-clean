@@ -188,7 +188,7 @@ const handleForgotPassword= async () => {
 
             <div className="space-y-2">
               <CardTitle className="text-2xl font-bold tracking-normal text-white sm:text-3xl">
-                Smart Health Tracker
+                Symptom Scribe
               </CardTitle>
               <CardDescription className="text-sm leading-6 text-slate-300">
                 Manage your health with AI-powered insights

@@ -22,7 +22,7 @@ const NotFound = () => {
       {/* Brand */}
       <div className="mb-10">
         <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-primary">
-          Smart Health Tracker
+          Symptom Scribe
         </h1>
         <p className="mt-3 text-base sm:text-lg text-muted-foreground tracking-wide">
           Health • AI • Wellness Platform

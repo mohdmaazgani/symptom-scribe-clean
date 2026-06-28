@@ -333,7 +333,7 @@ const Index = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Smart Health Tracker</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Symptom Scribe</h2>
             <p className="text-muted-foreground text-lg">Powerful features that make health management effortless</p>
           </div>
 
@@ -466,14 +466,14 @@ const Index = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+            <p className="text-muted-foreground text-lg">Everything you need to know about Symptom Scribe</p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
               <AccordionContent>
-                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+                No, Symptom Scribe is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
               </AccordionContent>
             </AccordionItem>
 
@@ -508,7 +508,7 @@ const Index = () => {
             <AccordionItem value="item-6">
               <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
               <AccordionContent>
-                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
+                Symptom Scribe is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -527,7 +527,7 @@ const Index = () => {
           <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Take Control of Your Health?</h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already using Smart Health Tracker to monitor their health, 
+            Join thousands of users who are already using Symptom Scribe to monitor their health, 
             understand their symptoms, and make informed decisions about their wellbeing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

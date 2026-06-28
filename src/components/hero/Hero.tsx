@@ -102,7 +102,7 @@ const Hero = () => {
           <Button
             size="lg"
             onClick={() => {
-              showInfo("Welcome to Smart Health Tracker", "Sign in to start tracking your health");
+              showInfo("Welcome to Symptom Scribe", "Sign in to start tracking your health");
               navigate("/auth");
             }}
             className="font-bold gap-2 px-8 h-14 text-base rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group"

@@ -2006,7 +2006,7 @@ const BrainGames = () => {
           Developed for Cognitive Excellence
         </p>
         <p className="text-xs text-muted-foreground/60">
-          © 2026 Smart Health Tracker • All Rights Reserved
+          © 2026 Symptom Scribe • All Rights Reserved
         </p>
       </footer>
     </div>

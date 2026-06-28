@@ -304,7 +304,7 @@ const HealthFacts = () => {
   };
 
   const handleShare = (fact: HealthFact) => {
-    const text = `🤯 Did you know?\n\n"${fact.hook}"\n\n${fact.fact}\n\nvia Smart Health Tracker`;
+    const text = `🤯 Did you know?\n\n"${fact.hook}"\n\n${fact.fact}\n\nvia Symptom Scribe`;
     if (navigator.share) {
       navigator.share({ title: fact.hook, text });
     } else {
