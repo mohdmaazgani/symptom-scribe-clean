@@ -93,8 +93,13 @@ export function AppSidebar() {
     }
   };
 
+  // ✨ updated: active state now gets a tinted bg + left accent border,
+  // inactive items get a transparent left border (so spacing doesn't jump on hover)
+  // and a softer hover background + smooth transition.
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
+    isActive
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-ring rounded-md transition-colors"
+      : "border-l-2 border-transparent text-sidebar-foreground/80 hover:bg-sidebar-ring/15 hover:border-sidebar-ring hover:text-sidebar-foreground rounded-md transition-colors";
 
   return (
     <Sidebar collapsible="icon">
@@ -106,59 +111,72 @@ export function AppSidebar() {
             </h2>
           )}
         </NavLink>
- 
+
         {/* ✅ Hidden on mobile, visible on laptop/desktop */}
         <div className="hidden md:block">
           <SidebarTrigger />
         </div>
       </div>
- 
+
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          {/* ✨ updated: letter-spacing + slightly smaller weight for section label */}
+          <SidebarGroupLabel className="tracking-wide text-[11px] text-sidebar-foreground/50">
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls} onClick={handleNavClick}>
-                      <item.icon className="h-5 w-5" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+            {/* ✨ updated: small gap between rows so the tinted active state has breathing room */}
+            <SidebarMenu className="gap-1 px-1">
+              {menuItems.map((item, index) => (
+                <>
+                  {/* ✨ new: thin divider before "Brain Games" and before "Settings"
+                      to visually group related items — purely decorative, no logic change */}
+                  {(item.title === "Brain Games" || item.title === "Settings") && (
+                    <div
+                      key={`divider-${item.title}`}
+                      className="my-1 mx-2 border-t border-sidebar-border/60"
+                    />
+                  )}
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild className="py-2">
+                      <NavLink to={item.url} end className={getNavCls} onClick={handleNavClick}>
+                        <item.icon className="h-[17px] w-[17px]" />
+                        {!isCollapsed && <span className="text-[13.5px]">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               ))}
               <AlertDialog>
-               <AlertDialogTrigger asChild>
-               <SidebarMenuButton className="hover:bg-destructive/10 text-destructive">
-               <LogOut className="h-5 w-5" /> {!isCollapsed && <span>Sign Out</span>}
-               </SidebarMenuButton>
-               </AlertDialogTrigger>
+                <AlertDialogTrigger asChild>
+                  {/* ✨ updated: matching rounded-md + transition-colors for consistency with nav items */}
+                  <SidebarMenuButton className="rounded-md transition-colors hover:bg-destructive/10 text-destructive py-2">
+                    <LogOut className="h-[17px] w-[17px]" />{" "}
+                    {!isCollapsed && <span className="text-[13.5px]">Sign Out</span>}
+                  </SidebarMenuButton>
+                </AlertDialogTrigger>
 
-              <AlertDialogContent>
-              <AlertDialogHeader>
-              <AlertDialogTitle> Confirm Sign Out</AlertDialogTitle>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle> Confirm Sign Out</AlertDialogTitle>
 
-               <AlertDialogDescription>Are you sure you want to sign out? You will need to sign in again to access your account.</AlertDialogDescription>
-               </AlertDialogHeader>
+                    <AlertDialogDescription>
+                      Are you sure you want to sign out? You will need to sign in again to access
+                      your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
 
-                <AlertDialogFooter>
-                <AlertDialogCancel>
-                Cancel
-               </AlertDialogCancel>
- 
-               <AlertDialogAction
-               onClick={handleSignOut}>
-              Sign Out
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-              
-       </SidebarMenu>
-     </SidebarGroupContent>
-    </SidebarGroup>
-   </SidebarContent>
- </Sidebar>
-);
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                    <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
 }
