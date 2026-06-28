@@ -134,7 +134,62 @@ const MultiStepSignUp = () => {
 
   const skip = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
 
+  const validateAll = (): boolean => {
+    // 1. Account Step validation
+    try {
+      emailSchema.parse(data.email);
+      signupPasswordSchema.parse(data.password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        showError("Validation Error", error.errors[0].message);
+      }
+      setStep(0);
+      return false;
+    }
+    if (!evaluatePasswordStrength(data.password, DEFAULT_PASSWORD_POLICY).isStrong) {
+      showError(
+        "Weak Password",
+        "Password does not meet all strength requirements."
+      );
+      setStep(0);
+      return false;
+    }
+    if (data.password !== data.confirmPassword) {
+      showError("Passwords Do Not Match", "Please re-enter your password.");
+      setStep(0);
+      return false;
+    }
+
+    // 2. Personal Step validation
+    if (!data.full_name.trim()) {
+      showError("Validation Error", "Full name is required");
+      setStep(1);
+      return false;
+    }
+    if (data.date_of_birth) {
+      const age =
+        new Date().getFullYear() - new Date(data.date_of_birth).getFullYear();
+      if (age < 0 || age > 120) {
+        showError("Invalid Date of Birth", "Please enter a valid date of birth");
+        setStep(1);
+        return false;
+      }
+    }
+
+    // 3. Emergency Step validation
+    if (data.emergency_contact_phone) {
+      if (!/^[\d\s+()-]+$/.test(data.emergency_contact_phone)) {
+        showError("Invalid Phone Number", "Please enter a valid phone number");
+        setStep(3);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleComplete = async () => {
+    if (!validateAll()) return;
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/dashboard`;
