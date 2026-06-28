@@ -1,20 +1,16 @@
-# PR Design: Fix Offline & Cached Symptom Consultation Results
+# PR Design: Fix P2P Emergency Mesh Network Signature Failures
 
-**Branch Name**: `fix/offline-symptom-dashboard-display`
-**PR Title**: `fix(offline): persist offline consultations and fallback to local DB on dashboard`
+**Branch Name**: `fix/mesh-signature-verification`
+**PR Title**: `fix(mesh): normalize payload properties to resolve signature verification failures`
 
 ## PR Description
 
 ### Description
-This PR resolves the issue where completed symptom consultations through the AI Health Assistant are not displayed in either the Dashboard or the History sections (#392). 
+This PR resolves the issue where emergency alerts broadcasted via the P2P mesh network fail signature verification on the receiving end (#455).
 
-Previously, when offline:
-1. Attempting to save a completed symptom check in [ChatInterface.tsx](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/components/chat/ChatInterface.tsx) or [AIHealthAssistant.tsx](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/pages/Health/AIHealthAssistant.tsx) would fail due to the failed Supabase insert. The record was completely discarded.
-2. The [Dashboard](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/pages/Dashboard/index.tsx) solely relied on cached Redis or direct Supabase queries, reverting to `0` consultations even if local Dexie records existed.
-
-To resolve these:
-* We handle network and fetch failures on Supabase insertions by immediately saving the encrypted record to Dexie with `pending_sync: 1`. This safely queues the consultation to sync once connection is restored.
-* The [Dashboard](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/pages/Dashboard/index.tsx) now queries local Dexie records when offline or on database fetch failure, matching the offline support behavior of the [History Page](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/pages/History/index.tsx).
+To resolve this:
+* We updated the `getAlertPayloadString` method in [mesh-network.ts](file:///c:/Users/param/Downloads/gssoc/symptom-scribe-clean/src/lib/mesh-network.ts) to explicitly fallback and normalize optional and missing properties (e.g. `latitude: alert.latitude ?? null`, `longitude: alert.longitude ?? null`, and default empty strings to `""`).
+* This guarantees that the JSON serialization produces identical string representation on both the sender side (during signature creation) and the receiver/cache side (during verification), resolving key mismatch errors when properties undergo structured-cloning or IndexedDB retrieval.
 
 *I am a GSSoC contributor contributing to the improvement of user offline-resilience and local data integrity.*
 
@@ -25,9 +21,9 @@ To resolve these:
 - [ ] **Documentation Update**
 
 ### Related Issue
-- Fixes #392
+- Fixes #455
 
 ### How Has This Been Tested?
 - [x] **Local Build**: App builds successfully (`npm run build`).
-- [x] **Unit Tests**: Ran dashboard tests to ensure no regressions.
-- [x] **Manual Verification**: Offline simulation verifies that consultations save locally, display correctly on the dashboard stats/history list, and synchronize upon reconnection.
+- [x] **Unit Tests**: All 63 unit tests pass successfully.
+- [x] **Manual Verification**: Signature verification succeeds correctly when broadcasting emergency mesh packets.

@@ -261,14 +261,14 @@ class MeshNetworkManager {
   private getAlertPayloadString(alert: Omit<MeshAlert, "pending_sync">): string {
     // Reconstruct normalized string for signature verification
     return JSON.stringify({
-      id: alert.id,
-      sender_id: alert.sender_id,
-      sender_name: alert.sender_name,
-      latitude: alert.latitude,
-      longitude: alert.longitude,
-      timestamp: alert.timestamp,
-      contact_phone: alert.contact_phone,
-      contact_name: alert.contact_name,
+      id: alert.id || "",
+      sender_id: alert.sender_id || "",
+      sender_name: alert.sender_name || "",
+      latitude: alert.latitude ?? null,
+      longitude: alert.longitude ?? null,
+      timestamp: alert.timestamp || "",
+      contact_phone: alert.contact_phone || "",
+      contact_name: alert.contact_name || "",
     });
   }
 
