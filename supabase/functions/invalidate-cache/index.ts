@@ -11,7 +11,7 @@ const ALLOWED_ORIGINS = [
 
 const getCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin":
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-webhook-secret",
 });
