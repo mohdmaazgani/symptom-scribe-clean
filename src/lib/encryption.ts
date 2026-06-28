@@ -266,7 +266,7 @@ async function handleSessionChange(session: Session) {  // session carries user.
 
   if (token === lastToken) return;
 
-  const prevToken = lastToken || localStorage.getItem("symptom_scribe_last_token");
+  const prevToken = lastToken;
 
   try {
     const userId = session.user?.id;
@@ -283,12 +283,10 @@ async function handleSessionChange(session: Session) {  // session carries user.
 
     setKeys(newKey, newSearchKey);
     lastToken = token;
-    localStorage.setItem("symptom_scribe_last_token", token);
   } catch (error) {
     console.error("Failed to derive or rotate encryption keys:", error);
     setKeys(null, null);
     lastToken = null;
-    localStorage.removeItem("symptom_scribe_last_token");
   }
 }
 
@@ -300,7 +298,6 @@ async function handleSessionClear() {
 
   setKeys(null, null);
   lastToken = null;
-  localStorage.removeItem("symptom_scribe_last_token");
   if (onLogoutCallback) {
     await onLogoutCallback();
   }

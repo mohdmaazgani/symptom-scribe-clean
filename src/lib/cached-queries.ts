@@ -13,6 +13,12 @@ export async function getCachedData<T = unknown>(table: CachedTable): Promise<{ 
         body: { table },
       }
     );
+    if (error && typeof error === 'object' && 'context' in error) {
+      try {
+        const body = await (error as any).context.json();
+        return { data: null, error: body.error || body };
+      } catch (_) {}
+    }
     return { data: data as T, error };
   } catch (err) {
     console.error(`Error invoking get-cached-data for table ${table}:`, err);
@@ -31,6 +37,12 @@ export async function invalidateCache(table: CachedTable): Promise<{ success: bo
         body: { table },
       }
     );
+    if (error && typeof error === 'object' && 'context' in error) {
+      try {
+        const body = await (error as any).context.json();
+        return { success: false, error: body.error || body };
+      } catch (_) {}
+    }
     return { success: !error && data?.success, error };
   } catch (err) {
     console.error(`Error invoking invalidate-cache for table ${table}:`, err);

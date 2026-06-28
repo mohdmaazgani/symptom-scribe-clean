@@ -20,7 +20,7 @@ export function detectEmergencySymptoms(messages: Message[]) {
         .join(" ");
 
     const matchedKeywords = emergencyKeywords.filter((keyword) =>
-        combinedText.includes(keyword)
+        new RegExp(`\\b${keyword}\\b`, 'i').test(combinedText)
     );
 
     return {
