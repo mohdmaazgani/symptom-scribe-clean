@@ -8,7 +8,7 @@ import { showError, showInfo } from "@/lib/toast-helpers";
 import CountUp from "react-countup";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { getCachedData } from "@/lib/cached-queries";
-import { decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
+import { db, decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
 import { whenEncryptionReady } from "@/lib/encryption";
 
 interface Stats {
@@ -31,7 +31,26 @@ interface SymptomHistoryRecord {
 
 async function fetchSymptomHistory(
   userId: string
-): Promise<{ data: SymptomHistoryRecord[] | null; source: "cache" | "direct" | "none" }> {
+): Promise<{ data: SymptomHistoryRecord[] | null; source: "cache" | "direct" | "local" | "none" }> {
+  // If currently offline, immediately fetch from local Dexie DB
+  if (!navigator.onLine) {
+    try {
+      const localRecords = await db.symptomHistory
+        .where("user_id")
+        .equals(userId)
+        .filter((record) => record.pending_delete === 0)
+        .toArray();
+
+      if (localRecords && localRecords.length > 0) {
+        return { data: localRecords as unknown as SymptomHistoryRecord[], source: "local" };
+      }
+    } catch (err) {
+      console.error("Failed to fetch offline symptom history:", err);
+    }
+    return { data: [], source: "none" };
+  }
+
+  // Try Redis cache
   const { data: cachedData, error } =
     await getCachedData<SymptomHistoryRecord[]>("symptom_history");
 
@@ -39,21 +58,36 @@ async function fetchSymptomHistory(
     return { data: cachedData, source: "cache" };
   }
 
-  const { data: directData, error: directError } = await supabase
-    .from("symptom_history")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  // Fallback to Supabase direct, with an offline/error fallback to Dexie local DB
+  try {
+    const { data: directData, error: directError } = await supabase
+      .from("symptom_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-  if (directError) {
-    if (error) {
-      console.error("Cached symptom_history fetch failed:", error);
+    if (directError) {
+      throw directError;
     }
-    throw directError;
-  }
 
-  if (directData && directData.length > 0) {
-    return { data: directData as SymptomHistoryRecord[], source: "direct" };
+    if (directData && directData.length > 0) {
+      return { data: directData as SymptomHistoryRecord[], source: "direct" };
+    }
+  } catch (directError) {
+    console.error("Direct fetch failed, falling back to local DB:", directError);
+    try {
+      const localRecords = await db.symptomHistory
+        .where("user_id")
+        .equals(userId)
+        .filter((record) => record.pending_delete === 0)
+        .toArray();
+
+      if (localRecords && localRecords.length > 0) {
+        return { data: localRecords as unknown as SymptomHistoryRecord[], source: "local" };
+      }
+    } catch (err) {
+      console.error("Local DB fallback failed:", err);
+    }
   }
 
   return { data: [], source: "none" };

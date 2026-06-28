@@ -113,9 +113,24 @@ const App = () => {
     );
 
 
+    const handleOnline = () => {
+      syncOfflineData()
+        .then((synced) => {
+          if (synced) {
+            console.log("Successfully synchronized local data upon network reconnection");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to synchronize local data upon reconnection:", err);
+        });
+    };
+
+    window.addEventListener("online", handleOnline);
+
     return () => {
       cleanup?.();
       subscription.unsubscribe();
+      window.removeEventListener("online", handleOnline);
     };
   }, []);
 

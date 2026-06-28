@@ -326,27 +326,52 @@ const AIHealthAssistant = () => {
               ...supabaseRecord
             } = encryptedRecord;
 
-            const { error: insertError } = await supabase
-              .from("symptom_history")
-              .insert(supabaseRecord);
+            let offlineSave = false;
 
-            if (insertError) {
-              console.error("Error saving symptom history:", insertError);
-              showError("Save failed", "Could not save to your health history");
+            if (!navigator.onLine) {
+              offlineSave = true;
             } else {
-              await invalidateCache("symptom_history");
+              const { error: insertError } = await supabase
+                .from("symptom_history")
+                .insert(supabaseRecord);
 
-              // Save locally to Dexie immediately
+              if (insertError) {
+                console.error("Error saving symptom history:", insertError);
+                if (insertError.message?.includes("Failed to fetch") || insertError.status === 0) {
+                  offlineSave = true;
+                } else {
+                  showError("Save failed", "Could not save to your health history");
+                }
+              } else {
+                await invalidateCache("symptom_history");
+
+                // Save locally to Dexie immediately
+                await db.symptomHistory.put({
+                  ...encryptedRecord,
+                  pending_sync: 0,
+                  pending_update: 0,
+                  pending_delete: 0,
+                });
+
+                showSuccess(
+                  "Saved to history",
+                  "This analysis has been added to your health records"
+                );
+              }
+            }
+
+            if (offlineSave) {
+              // Save locally to Dexie immediately as pending sync
               await db.symptomHistory.put({
                 ...encryptedRecord,
-                pending_sync: 0,
+                pending_sync: 1,
                 pending_update: 0,
                 pending_delete: 0,
               });
 
               showSuccess(
-                "Saved to history",
-                "This analysis has been added to your health records"
+                "Saved locally",
+                "Symptom check saved offline. It will sync automatically when you reconnect."
               );
             }
           }

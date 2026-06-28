@@ -68,6 +68,13 @@ vi.mock("@/lib/offline-db", () => ({
       toArray: vi.fn().mockResolvedValue([]),
       bulkPut: vi.fn(),
       put: vi.fn(),
+      where: vi.fn().mockReturnValue({
+        equals: vi.fn().mockReturnValue({
+          filter: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
     },
   },
   decryptSymptom: vi.fn((s) => s),
