@@ -241,10 +241,6 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
 // Callbacks registered by offline-db
 let onLogoutCallback: (() => Promise<void>) | null = null;
 
-// FIX: Wrapped the entire function type in parentheses before `| null`.
-// Previously: `(...) => Promise<void> | null` which TypeScript parses as
-// `(...) => (Promise<void> | null)` — a function returning nullable Promise.
-// Correct: `((...) => Promise<void>) | null` — a nullable function reference.
 let onTokenRefreshCallback: ((
   oldKey: CryptoKey,
   newKey: CryptoKey,
@@ -271,11 +267,6 @@ async function handleSessionChange(session: Session) {
 
   if (token === lastToken) return;
 
-  // FIX (Issue 4): Use only the in-memory lastToken for rotation detection.
-  // Removed localStorage.getItem("symptom_scribe_last_token") fallback —
-  // storing a raw JWT in localStorage is a security risk. Supabase already
-  // restores the session on page reload via onAuthStateChange, so the
-  // localStorage fallback was redundant and dangerous.
   const prevToken = lastToken;
 
   try {
@@ -310,7 +301,6 @@ async function handleSessionClear() {
 
   setKeys(null, null);
   lastToken = null;
-  // Removed: localStorage.removeItem("symptom_scribe_last_token")
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
