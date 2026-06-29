@@ -39,7 +39,7 @@ export { supabaseUrl };
 // ─── Client ───────────────────────────────────────────────────────────────────
 export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
   auth: {
-    storage: typeof window !== "undefined" ? localStorage : undefined,
+    storage: typeof window !== "undefined" ? sessionStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
   },
