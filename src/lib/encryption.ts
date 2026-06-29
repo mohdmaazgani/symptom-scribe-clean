@@ -56,6 +56,7 @@ export async function whenSearchReady(): Promise<CryptoKey> {
   return keys.searchKey;
 }
 
+// Helper functions for Hex conversion
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -239,12 +240,17 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
 
 // Callbacks registered by offline-db
 let onLogoutCallback: (() => Promise<void>) | null = null;
-let onTokenRefreshCallback: (
+
+// FIX: Wrapped the entire function type in parentheses before `| null`.
+// Previously: `(...) => Promise<void> | null` which TypeScript parses as
+// `(...) => (Promise<void> | null)` — a function returning nullable Promise.
+// Correct: `((...) => Promise<void>) | null` — a nullable function reference.
+let onTokenRefreshCallback: ((
   oldKey: CryptoKey,
   newKey: CryptoKey,
   oldSearchKey: CryptoKey,
   newSearchKey: CryptoKey
-) => Promise<void> | null = null;
+) => Promise<void>) | null = null;
 
 export function registerEncryptionHooks(callbacks: {
   onLogout: () => Promise<void>;
@@ -265,7 +271,12 @@ async function handleSessionChange(session: Session) {
 
   if (token === lastToken) return;
 
-   const prevToken = lastToken;
+  // FIX (Issue 4): Use only the in-memory lastToken for rotation detection.
+  // Removed localStorage.getItem("symptom_scribe_last_token") fallback —
+  // storing a raw JWT in localStorage is a security risk. Supabase already
+  // restores the session on page reload via onAuthStateChange, so the
+  // localStorage fallback was redundant and dangerous.
+  const prevToken = lastToken;
 
   try {
     const userId = session.user?.id;
@@ -282,19 +293,24 @@ async function handleSessionChange(session: Session) {
 
     setKeys(newKey, newSearchKey);
     lastToken = token;
+    // Removed: localStorage.setItem("symptom_scribe_last_token", token)
   } catch (error) {
     console.error("Failed to derive or rotate encryption keys:", error);
     setKeys(null, null);
     lastToken = null;
+    // Removed: localStorage.removeItem("symptom_scribe_last_token")
   }
 }
 
 async function handleSessionClear() {
+  // Clear the per-user PBKDF2 salt from localStorage on logout so it does
+  // not persist across sessions. userId must be captured before keys are nulled.
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.id) clearUserSalt(user.id);
 
   setKeys(null, null);
   lastToken = null;
+  // Removed: localStorage.removeItem("symptom_scribe_last_token")
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
