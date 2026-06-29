@@ -267,6 +267,7 @@ async function handleSessionChange(session: Session) {
 
   if (token === lastToken) return;
 
+
   const prevToken = lastToken;
 
   try {
@@ -301,6 +302,7 @@ async function handleSessionClear() {
 
   setKeys(null, null);
   lastToken = null;
+  // Removed: localStorage.removeItem("symptom_scribe_last_token")
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
@@ -332,6 +334,26 @@ export function initializeEncryption() {
     subscription.unsubscribe();
     isInitializing = false;
   };
+}
+
+// ─── Profile Field Encryption Helpers ───────────────────────────────────────
+// Wrapper functions used by App.tsx to encrypt profile data during auth flow.
+
+export async function encryptProfileField(
+  value: string | null | undefined,
+  key: CryptoKey
+): Promise<string | null> {
+  if (!value) return null;
+  return await encryptText(value, key);
+}
+
+export async function encryptProfileArray(
+  values: string[] | null | undefined,
+  key: CryptoKey
+): Promise<string | null> {
+  if (!values || values.length === 0) return null;
+  const jsonString = JSON.stringify(values);
+  return await encryptText(jsonString, key);
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
