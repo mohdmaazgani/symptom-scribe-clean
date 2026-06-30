@@ -242,6 +242,15 @@ Keep the service role key out of browser-loaded files and client-side code.
 
 ```text
 symptom-scribe-clean/
+├── docs/                                             # Project documentation
+│   ├── guides/                                       # User & contributor guides
+│   │   ├── CONTRIBUTING.md
+│   │   ├── TROUBLESHOOT.md
+│   │   └── PASSWORD_STRENGTH_FEATURE.md
+│   └── reference/                                    # Reference documentation
+│       ├── CHANGELOG.md
+│       ├── FAQ.md
+│       └── SECURITY.md 
 ├── public/                                           # Static assets
 ├── src/
 │   ├── components/
@@ -342,13 +351,8 @@ symptom-scribe-clean/
 │   ├── migrations/                                  # Database migrations
 │   └── config.toml                                  # Supabase configuration
 │
-├── CHANGELOG.md                                     # Release history and updates
 ├── CODE_OF_CONDUCT.md                               # Community guidelines
-├── CONTRIBUTING.md                                  # Contribution guide
-├── FAQ.md                                           # Frequently asked questions
 ├── README.md                                        # Project documentation
-├── SECURITY.md                                      # Security policy
-├── TROUBLESHOOT.md                                  # Common issue resolutions
 ├── components.json                                  # UI component configuration
 ├── Dockerfile                                       # Docker container setup
 ├── eslint.config.js                                 # ESLint configuration
