@@ -79,12 +79,9 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 
 * Educational health facts and medical trivia.
 * Daily learning opportunities.
-
+* "Did You Know?" pop-ups with fascinating human body facts and medical trivia.
 
 ## 👨‍⚕️ Doctor Consultation Suggestions
-
-- "Did You Know?" pop-ups with fascinating human body facts and medical trivia.
-
 
 * Intelligent recommendations for professional medical consultation.
 * Supports early decision-making for health concerns.
