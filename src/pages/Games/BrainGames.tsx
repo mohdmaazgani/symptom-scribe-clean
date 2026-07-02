@@ -1412,7 +1412,7 @@ const BrainGames = () => {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-16"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {games.map((game, index) => {
                 const Icon = game.icon;
                 return (
@@ -1452,7 +1452,7 @@ const BrainGames = () => {
 
                       <CardHeader className="pb-4 relative z-10">
                         <div
-                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${game.color} border border-border/50 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ${game.shadow}`}
+                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${game.color} border border-border/50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ${game.shadow}`}
                         >
                           <Icon className={`w-7 h-7 ${game.iconColor}`} />
                         </div>
@@ -1464,7 +1464,7 @@ const BrainGames = () => {
                         </CardDescription>
                       </CardHeader>
 
-                      <div className="mt-auto p-6 pt-2 relative z-10">
+                      <div className="mt-auto p-4 pt-2 relative z-10">
                         <Button
                           className={`w-full h-12 rounded-2xl font-bold text-white bg-gradient-to-r ${game.gradient} shadow-lg group-hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 border-none`}
                         >
