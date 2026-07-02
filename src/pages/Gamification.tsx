@@ -128,7 +128,7 @@ export default function GamificationPage() {
           )}
 
           {activeTab === "mood" && (
-            <MoodCalendarView moodLogs={moodLogs} onLogMood={logMood.mutate} />
+            <MoodCalendarView moodLogs={moodLogs} onLogMood={logMood.mutateAsync} />
           )}
 
           {activeTab === "badges" && (
