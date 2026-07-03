@@ -28,6 +28,14 @@ interface SymptomHistoryRecord {
   resolved: boolean;
   created_at: string;
 }
+const getGreeting = () => {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "🌅 Good Morning";
+  if (hour < 17) return "☀️ Good Afternoon";
+  if (hour < 21) return "🌙 Good Evening";
+  return "🌙 Welcome";
+};
 
 async function fetchSymptomHistory(
   userId: string
@@ -151,6 +159,7 @@ const Dashboard = () => {
   });
   const [recentHistory, setRecentHistory] = useState<SymptomHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     fetchDashboardData();
@@ -161,6 +170,21 @@ const Dashboard = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      if (user) {
+        const name =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.username ||
+          user.email?.split("@")[0] ||
+          "User";
+
+        setUserName(name);
+
+        showInfo(
+          `${getGreeting()}, ${name}!`,
+          "Hope you're doing well today. Let's continue your health journey! 💙"
+        );
+      }
       if (!user) {
         setLoading(false);
         return;
@@ -214,7 +238,12 @@ const Dashboard = () => {
         });
         setRecentHistory([]);
         if (source === "none") {
-          showInfo("Welcome!", "Start by consulting with the AI Assistant");
+         setTimeout(() => {
+            showInfo(
+              "Welcome!",
+              "Start by consulting with the AI Assistant"
+            );
+          }, 5500);
         }
       }
     } catch (error) {

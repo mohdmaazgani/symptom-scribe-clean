@@ -25,6 +25,7 @@ export const showInfo = (title: string, description?: string) => {
     title,
     description,
     variant: "info",
+    duration:5000, // Set duration to 5 seconds for info toasts
   });
 };
 export const showLoading = (title: string = "Processing...", description?: string) => {
