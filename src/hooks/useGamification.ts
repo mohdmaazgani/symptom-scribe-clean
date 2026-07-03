@@ -131,7 +131,6 @@ export function useCheckInChallenge() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (userChallengeId: string) => {
-      // Get current record
       const { data: current, error: fetchErr } = await supabase
         .from("user_challenges")
         .select("*")
@@ -140,29 +139,52 @@ export function useCheckInChallenge() {
       if (fetchErr) throw fetchErr;
 
       const now = new Date();
-      const lastCheckIn = current.last_check_in
-        ? new Date(current.last_check_in)
-        : null;
-      const isConsecutive =
-        lastCheckIn &&
-        now.getTime() - lastCheckIn.getTime() < 48 * 60 * 60 * 1000;
+      const todayDateStr = now.toISOString().split("T")[0]; // e.g. "2026-07-03"
+      const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
 
+      const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;
+      const alreadyCheckedInToday =
+        lastCheckIn !== null && lastCheckIn.toISOString() >= todayStartISO;
+
+      if (alreadyCheckedInToday) {
+        return { streak: current.current_streak, alreadyCheckedInToday: true };
+      }
+
+      const isConsecutive =
+        lastCheckIn !== null && now.getTime() - lastCheckIn.getTime() < 48 * 60 * 60 * 1000;
       const newStreak = isConsecutive ? current.current_streak + 1 : 1;
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("user_challenges")
         .update({
           current_streak: newStreak,
           last_check_in: now.toISOString(),
         })
-        .eq("id", userChallengeId);
+        .eq("id", userChallengeId)
+        // Conditional write: only apply if no check-in has happened yet today.
+        .or(`last_check_in.is.null,last_check_in.lt.${todayStartISO}`)
+        .select()
+        .maybeSingle();
+
       if (error) throw error;
-      return newStreak;
+
+      if (!updated) {
+        // Someone (or another tab/request) already checked in today between
+        // our read and this write — don't double-count the streak.
+        return { streak: current.current_streak, alreadyCheckedInToday: true };
+      }
+
+      return { streak: newStreak, alreadyCheckedInToday: false };
     },
-    onSuccess: (streak) => {
+    onSuccess: ({ streak, alreadyCheckedInToday }) => {
       qc.invalidateQueries({ queryKey: ["user_challenges"] });
-      toast.success(`Day ${streak} checked in! 🔥 Keep it up!`);
+      if (alreadyCheckedInToday) {
+        toast.info("You've already checked in for today. Come back tomorrow!");
+      } else {
+        toast.success(`Day ${streak} checked in! 🔥 Keep it up!`);
+      }
     },
+    onError: () => toast.error("Could not check in. Try again."),
   });
 }
 
