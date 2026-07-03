@@ -10,7 +10,6 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:8080",
   "https://symptom-scribe.vercel.app",
-  "https://symptom-scribe-clean.netlify.app",
 ];
 
 const getCorsHeaders = (origin: string | null) => ({
@@ -154,8 +153,11 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
 
     const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
 
+    // Use the *streaming* Gemini endpoint (alt=sse) instead of generateContent,
+    // so the client can render tokens as they arrive rather than waiting for
+    // the entire response to finish generating before seeing anything.
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -179,8 +181,8 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
       }
     );
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
+    if (!geminiResponse.ok || !geminiResponse.body) {
+      const errorText = await geminiResponse.text().catch(() => "");
 
       console.error("Gemini API error:", geminiResponse.status, errorText);
 
@@ -194,28 +196,50 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
       );
     }
 
-    const geminiData = await geminiResponse.json();
-
-    const aiText =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "Unable to generate analysis.";
-
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
     const stream = new ReadableStream({
-      start(controller) {
-        const payload = `data: ${JSON.stringify({
-          choices: [
-            {
-              delta: {
-                content: aiText,
-              },
-            },
-          ],
-        })}\n\n`;
+      async start(controller) {
+        const reader = geminiResponse.body!.getReader();
+        let buffer = "";
 
-        controller.enqueue(encoder.encode(payload));
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+
+              const jsonStr = trimmed.slice(5).trim();
+              if (!jsonStr || jsonStr === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const chunkText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (chunkText) {
+                  const payload = `data: ${JSON.stringify({
+                    choices: [{ delta: { content: chunkText } }],
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(payload));
+                }
+              } catch (parseErr) {
+                console.error("Failed to parse Gemini SSE chunk:", parseErr, jsonStr);
+              }
+            }
+          }
+        } catch (streamErr) {
+          console.error("Error while relaying Gemini stream:", streamErr);
+        } finally {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
       },
     });
 
