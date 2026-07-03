@@ -34,6 +34,7 @@ import { useMetricsHistory } from "@/hooks/useMetricsHistory";
 import { db, syncOfflineData, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
 import { whenKeysReady } from "@/lib/encryption";
 import { invalidateCache } from "@/lib/cached-queries";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -84,6 +85,58 @@ const metricTypes = [
     unit: "%",
   },
 ];
+
+const MetricsTableSkeleton = () => (
+  <div className="rounded-xl border overflow-x-auto">
+    <Table className="min-w-[600px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+          <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <TableRow key={i}>
+            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+            <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+            <TableCell><Skeleton className="h-8 w-8 rounded" /></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
+
+const MetricsChartSkeleton = () => (
+  <div className="h-[400px] w-full rounded-xl border p-6 flex flex-col justify-between">
+    <div className="flex justify-between items-center">
+      <Skeleton className="h-4 w-28" />
+      <div className="flex gap-2">
+        <Skeleton className="h-4 w-8" />
+        <Skeleton className="h-4 w-8" />
+      </div>
+    </div>
+    <div className="flex-1 my-6 flex flex-col justify-between">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4">
+          <Skeleton className="h-3 w-8" />
+          <div className="flex-1 border-b border-muted border-dashed h-px animate-pulse" />
+        </div>
+      ))}
+    </div>
+    <div className="flex justify-between pl-12 pr-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-3 w-10" />
+      ))}
+    </div>
+  </div>
+);
 
 const Metrics = () => {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -475,9 +528,7 @@ const Metrics = () => {
 
         <CardContent>
           {historyLoading ? (
-            <div className="py-10 text-center text-muted-foreground">
-              Loading health metrics...
-            </div>
+            historyView === "table" ? <MetricsTableSkeleton /> : <MetricsChartSkeleton />
           ) : records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-lg font-medium">No health metrics yet</p>

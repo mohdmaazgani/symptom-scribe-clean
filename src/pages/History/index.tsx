@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, X, Trash2, Search, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +34,44 @@ interface SymptomEntry {
   resolved: boolean;
   created_at: string;
 }
+
+const HistorySkeleton = () => (
+  <div className="space-y-4">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <Card key={i}>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex-1 min-w-0 space-y-2">
+              <Skeleton className="h-6 w-3/4 rounded" />
+              <Skeleton className="h-4 w-1/3 rounded" />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-8 w-20 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-28 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" />
+            <Skeleton className="h-3 w-1/3 rounded" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32 rounded" />
+            <Skeleton className="h-3 w-2/3 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-20 rounded" />
+            <Skeleton className="h-5 w-12 rounded" />
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
 
 const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
@@ -366,7 +405,7 @@ const History = () => {
       )}
 
       {loading ? (
-        <p className="text-center text-muted-foreground">Loading history...</p>
+        <HistorySkeleton />
       ) : history.length === 0 ? (
         /* ── IMPROVED EMPTY STATE ── */
         <Card>
