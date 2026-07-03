@@ -94,7 +94,7 @@ http://localhost:8080
 
 ### What environment variables do the Supabase edge functions need?
 
-The browser app only needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, with `VITE_SUPABASE_ANON_KEY` kept as a legacy fallback. The edge functions use a separate runtime secret set: `LOVABLE_API_KEY` is required for the symptom-analyzer function; `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by auth-validating functions; `SUPABASE_SERVICE_ROLE_KEY` is used by account-deletion functions; `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are required for emergency SMS alerts; `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `WEBHOOK_SECRET` are optional for rate limiting, cache, and webhook flows.
+The browser app only needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, with `VITE_SUPABASE_ANON_KEY` kept as a legacy fallback. The edge functions use a separate runtime secret set: `GEMINI_API_KEY` is required for the symptom-analyzer function; `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by auth-validating functions; `SUPABASE_SERVICE_ROLE_KEY` is used by account-deletion functions; `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are required for emergency SMS alerts; `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `WEBHOOK_SECRET` are optional for rate limiting, cache, and webhook flows.
 
 Browser-loaded variables belong in `.env.local`, while Supabase runtime secrets should be configured in the Supabase dashboard or with the Supabase CLI — **never** place `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
 
@@ -103,7 +103,7 @@ Browser-loaded variables belong in `.env.local`, while Supabase runtime secrets 
 ```bash
 supabase login
 supabase link --project-ref <your-project-ref>
-supabase secrets set LOVABLE_API_KEY=<your-key>
+supabase secrets set GEMINI_API_KEY=<your-key>
 supabase secrets set SUPABASE_URL=<your-url> SUPABASE_ANON_KEY=<your-anon-key> SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
 # Optional rate limiting:
@@ -240,7 +240,7 @@ npm install
 
 ### Edge function fails with missing secret errors
 
-- Verify that `LOVABLE_API_KEY` is configured for the symptom-analyzer edge function
+- Verify that `GEMINI_API_KEY` is configured for the symptom-analyzer edge function
 - Add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` only if you want Upstash-backed distributed rate limiting or cache support; they are optional
 - Confirm that `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set for auth-validating functions, and `SUPABASE_SERVICE_ROLE_KEY` is set for account-deletion functions
 - Confirm that `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are set before using emergency SMS alerts
@@ -248,7 +248,7 @@ npm install
 - Re-run secret setup with the Supabase CLI, then redeploy or re-serve the function:
 
   ```bash
-  supabase secrets set LOVABLE_API_KEY=<your-key>
+  supabase secrets set GEMINI_API_KEY=<your-key>
   supabase secrets set SUPABASE_URL=<your-url> SUPABASE_ANON_KEY=<your-anon-key> SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
   supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
   supabase functions serve --env-file supabase/.env.local

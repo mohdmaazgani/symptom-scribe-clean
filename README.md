@@ -190,9 +190,7 @@ The browser app and Supabase edge functions use different environment surfaces. 
 
 **Edge function secrets** (configure via Supabase Dashboard or CLI, not in `.env.local`):
 
-- `GEMINI_API_KEY` — recommended (free); used by `supabase/functions/symptom-analyzer` to call the Gemini API.
-- `OPENAI_API_KEY` — optional; used as an alternative key for OpenAI integration.
-- `LOVABLE_API_KEY` — optional; used as an alternative key for Lovable's AI gateway.
+- `GEMINI_API_KEY` — required; used by `supabase/functions/symptom-analyzer` to call the Gemini API.
 - `UPSTASH_REDIS_REST_URL` — optional; enables distributed rate limiting when present.
 - `UPSTASH_REDIS_REST_TOKEN` — optional; used with `UPSTASH_REDIS_REST_URL` for Upstash-backed rate limiting.
 - `TWILIO_ACCOUNT_SID` — required by `broadcast-emergency` when SMS alerts are used.
@@ -398,7 +396,7 @@ Only variables prefixed with `VITE_` are exposed to the frontend. The app reads 
 
 | Secret                    | Purpose                          |
 | ------------------------- | -------------------------------- |
-| LOVABLE_API_KEY           | AI gateway access                |
+| GEMINI_API_KEY            | Gemini API Key for symptom analysis |
 | SUPABASE_URL              | Supabase project URL (System Injected) |
 | SUPABASE_ANON_KEY         | Caller validation (System Injected)    |
 | SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows (System Injected) |
@@ -416,7 +414,7 @@ supabase login
 
 supabase link --project-ref <project-ref>
 
-supabase secrets set LOVABLE_API_KEY=<key>
+supabase secrets set GEMINI_API_KEY=<key>
 
 supabase secrets set TWILIO_ACCOUNT_SID=<sid>
 

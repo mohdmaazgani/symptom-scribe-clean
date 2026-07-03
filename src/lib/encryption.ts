@@ -315,24 +315,50 @@ async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
 
-  // Try to load the stable master seed from local storage
-  const savedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
-  if (savedSeed) {
-    if (savedSeed === lastToken) return;
-    try {
-      const newKey = await deriveKeyFromToken(savedSeed, userId);
-      const newSearchKey = await deriveSearchKeyFromToken(savedSeed, userId);
-      setKeys(newKey, newSearchKey);
-      lastToken = savedSeed;
-    } catch (error) {
-      console.error("Failed to derive encryption keys from saved seed:", error);
-    }
-    return;
-  }
-
-  // Fallback to access_token for legacy sessions (backward compatibility)
   const token = session.access_token;
   if (!token) return;
+
+  // Synchronize user salt across devices
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("encryption_salt")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const dbSalt = profile?.encryption_salt;
+    const localSalt = localStorage.getItem(SALT_KEY_PREFIX + userId);
+
+    if (dbSalt) {
+      if (dbSalt !== localSalt) {
+        localStorage.setItem(SALT_KEY_PREFIX + userId, dbSalt);
+      }
+    } else {
+      const activeSalt = localSalt || (() => {
+        const newSalt = crypto.getRandomValues(new Uint8Array(16));
+        return Array.from(newSalt)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      })();
+
+      localStorage.setItem(SALT_KEY_PREFIX + userId, activeSalt);
+
+      // Save salt to both the database profile and user metadata
+      await Promise.all([
+        supabase.from("profiles").upsert({
+          user_id: userId,
+          encryption_salt: activeSalt,
+        }, { onConflict: "user_id" }),
+        supabase.auth.updateUser({
+          data: { encryption_salt: activeSalt }
+        })
+      ]).catch((syncErr) => {
+        console.warn("Failed to sync salt to Supabase profiles or auth metadata:", syncErr);
+      });
+    }
+  } catch (saltErr) {
+    console.error("Failed to sync encryption salt from profiles:", saltErr);
+  }
 
   if (token === lastToken) return;
 

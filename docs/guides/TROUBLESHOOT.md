@@ -342,7 +342,7 @@ Supabase edge functions return missing configuration or server credential errors
 
 Keep browser variables in `.env.local`, and configure edge-function secrets in Supabase instead. Common runtime secrets are:
 
-* `LOVABLE_API_KEY` for symptom analysis
+* `GEMINI_API_KEY` for symptom analysis
 * `SUPABASE_URL` and `SUPABASE_ANON_KEY` for auth-validating functions
 * `SUPABASE_SERVICE_ROLE_KEY` for account-deletion functions
 * `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` for emergency SMS alerts
