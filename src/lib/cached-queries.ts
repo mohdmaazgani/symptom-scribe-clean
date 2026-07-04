@@ -19,7 +19,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
 
 export async function getCachedData<T = unknown>(
   table: CachedTable
-): Promise<{ data: T | null; error: string | null }> {
+): Promise<{ data: T | null; cachedAt: string | null; error: string | null }> {
   try {
     const { data, error } = await supabase.functions.invoke("get-cached-data", {
       body: { table },
@@ -28,20 +28,25 @@ export async function getCachedData<T = unknown>(
     if (error) {
       const message = await extractFunctionError(error);
       console.error(`get-cached-data error for table ${table}:`, message);
-      return { data: null, error: message };
+      return { data: null, cachedAt: null, error: message };
     }
 
-    return { data: data as T, error: null };
+    // get-cached-data now returns { data, cachedAt } so callers can tell
+    // exactly how old a given snapshot is, instead of guessing from a
+    // duplicated TTL constant or the shape of the data itself.
+    const payload = data as { data: T; cachedAt: string } | null;
+    return {
+      data: payload?.data ?? null,
+      cachedAt: payload?.cachedAt ?? null,
+      error: null,
+    };
   } catch (err) {
     const message = await extractFunctionError(err);
     console.error(`Error invoking get-cached-data for table ${table}:`, message);
-    return { data: null, error: message };
+    return { data: null, cachedAt: null, error: message };
   }
 }
 
-/**
- * Invalidates the Redis cache for the current user and the specified table.
- */
 export async function invalidateCache(
   table: CachedTable
 ): Promise<{ success: boolean; error: string | null }> {
