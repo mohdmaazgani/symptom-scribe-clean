@@ -139,7 +139,7 @@ export function useCheckInChallenge() {
       if (fetchErr) throw fetchErr;
 
       const now = new Date();
-      const todayDateStr = now.toISOString().split("T")[0]; // e.g. "2026-07-03"
+      const todayDateStr = now.toISOString().split("T")[0]; 
       const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
 
       const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;
@@ -150,8 +150,16 @@ export function useCheckInChallenge() {
         return { streak: current.current_streak, alreadyCheckedInToday: true };
       }
 
-      const isConsecutive =
-        lastCheckIn !== null && now.getTime() - lastCheckIn.getTime() < 48 * 60 * 60 * 1000;
+      const lastCheckInDateStr = lastCheckIn ? lastCheckIn.toISOString().split("T")[0] : null;
+      const daysSinceLastCheckIn = lastCheckInDateStr
+        ? Math.round(
+            (Date.parse(`${todayDateStr}T00:00:00.000Z`) -
+              Date.parse(`${lastCheckInDateStr}T00:00:00.000Z`)) /
+              (24 * 60 * 60 * 1000)
+          )
+        : null;
+
+      const isConsecutive = daysSinceLastCheckIn === 1;
       const newStreak = isConsecutive ? current.current_streak + 1 : 1;
 
       const { data: updated, error } = await supabase
@@ -169,8 +177,6 @@ export function useCheckInChallenge() {
       if (error) throw error;
 
       if (!updated) {
-        // Someone (or another tab/request) already checked in today between
-        // our read and this write — don't double-count the streak.
         return { streak: current.current_streak, alreadyCheckedInToday: true };
       }
 
