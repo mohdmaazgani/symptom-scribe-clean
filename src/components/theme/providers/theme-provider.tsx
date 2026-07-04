@@ -12,6 +12,15 @@ export function ThemeProvider({
       defaultTheme="system"
       enableSystem
       storageKey="symptom-scribe-theme"
+      themes={[
+        "light",
+        "dark",
+        "cosmic",
+        "deep-blue",
+        "forest",
+        "orange",
+        "pastel-pink",
+      ]}
     >
       {children}
     </NextThemesProvider>

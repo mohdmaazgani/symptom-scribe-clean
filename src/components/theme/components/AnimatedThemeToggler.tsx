@@ -3,6 +3,15 @@ import { flushSync } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 import '../styles/animated-theme-toggler.css';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 
 export function AnimatedThemeToggler({ className = '' }) {
   // next-themes is the single source of truth for theme state/persistence.
@@ -22,6 +31,15 @@ export function AnimatedThemeToggler({ className = '' }) {
 
   const isDark = mounted ? resolvedTheme === 'dark' : preMountIsDark;
   const duration = 400;
+  const themes = [
+  { value: "light", label: "☀️ Light" },
+  { value: "dark", label: "🌙 Dark" },
+  { value: "cosmic", label: "🌌 Cosmic" },
+  { value: "deep-blue", label: "🔵 Deep Blue" },
+  { value: "forest", label: "🌲 Forest Green" },
+  { value: "orange", label: "🌅 Orange Sunset" },
+  { value: "pastel-pink", label: "🌸 Pastel Pink" },
+];
 
   const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const button = e.currentTarget;
@@ -76,20 +94,39 @@ export function AnimatedThemeToggler({ className = '' }) {
   };
 
   return (
-    <button
-      type="button"
-      className={`animated-theme-toggler ${className}`.trim()}
-      onClick={handleToggle}
-      aria-label="Toggle color theme"
-    >
-      <span className="att-icons" aria-hidden="true">
-        <span className={`att-icon att-sun ${isDark ? 'att-show' : ''}`.trim()}>
-          <Sun className="h-5 w-5" />
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button
+        type="button"
+        className={`animated-theme-toggler ${className}`.trim()}
+        aria-label="Select theme"
+      >
+        <span className="att-icons" aria-hidden="true">
+          <span className={`att-icon att-sun ${isDark ? "att-show" : ""}`.trim()}>
+            <Sun className="h-5 w-5" />
+          </span>
+          <span className={`att-icon att-moon ${!isDark ? "att-show" : ""}`.trim()}>
+            <Moon className="h-5 w-5" />
+          </span>
         </span>
-        <span className={`att-icon att-moon ${!isDark ? 'att-show' : ''}`.trim()}>
-          <Moon className="h-5 w-5" />
-        </span>
-      </span>
-    </button>
-  );
+      </button>
+    </DropdownMenuTrigger>
+
+    <DropdownMenuContent align="end" className="w-50">
+      <DropdownMenuLabel>Choose Theme</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+
+      <DropdownMenuRadioGroup
+        value={resolvedTheme ?? "light"}
+        onValueChange={(value) => setTheme(value)}
+      >
+        {themes.map((theme) => (
+          <DropdownMenuRadioItem key={theme.value} value={theme.value}>
+            {theme.label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 }
