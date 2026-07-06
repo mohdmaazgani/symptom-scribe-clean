@@ -393,7 +393,7 @@ const Metrics = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
@@ -409,7 +409,7 @@ const Metrics = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {metricTypes.map((metric) => {
           const Icon = metric.icon;
           const isSelected = metricType === metric.value;
@@ -431,8 +431,8 @@ const Metrics = () => {
                 }
               }}
             >
-              <CardContent className="pt-6 text-center">
-                <Icon className="w-8 h-8 mx-auto mb-2 text-primary" />
+              <CardContent className="pt-4 pb-4 text-center">
+                <Icon className="w-7 h-7 mx-auto mb-1.5 text-primary" />
                 <p className="text-sm font-medium">{metric.label}</p>
               </CardContent>
             </Card>
@@ -440,13 +440,13 @@ const Metrics = () => {
         })}
       </div>
 
-      <Card className="mt-8" ref={recordFormRef}>
-        <CardHeader>
+      <Card className="mt-6" ref={recordFormRef}>
+        <CardHeader className="p-5">
           <CardTitle>Record New Measurement</CardTitle>
           <CardDescription>Enter your latest health metrics</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="p-5 pt-0">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-2">
               <Label>Metric Type</Label>
               <Select value={metricType} onValueChange={setMetricType}>
@@ -529,7 +529,7 @@ const Metrics = () => {
       </Card>
       
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between p-5">
           <div>
             <CardTitle>Metrics History</CardTitle>
             <CardDescription>
@@ -543,11 +543,17 @@ const Metrics = () => {
           )}
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-5 pt-0">
           {historyLoading ? (
+<<<<<<< HEAD
             historyView === "table" ? <MetricsTableSkeleton /> : <MetricsChartSkeleton />
+=======
+            <div className="py-8 text-center text-muted-foreground">
+              Loading health metrics...
+            </div>
+>>>>>>> e1dae54 (feat: optimize spacing on Health Metrics page)
           ) : records.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-lg font-medium">No health metrics yet</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Record your first measurement above to start tracking trends.
@@ -555,7 +561,7 @@ const Metrics = () => {
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap gap-3 mb-4">
+              <div className="flex flex-wrap gap-3 mb-3">
                 <Select
                   value={historyMetricFilter}
                   onValueChange={setHistoryMetricFilter}
@@ -607,7 +613,7 @@ const Metrics = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-3">
                 <Button
                   variant={historyView === "table" ? "default" : "outline"}
                   onClick={() => setHistoryView("table")}
