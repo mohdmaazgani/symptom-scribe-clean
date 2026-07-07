@@ -25,6 +25,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Star,
+  Gamepad2,
+  Palette,
+  Calculator,
+  Gauge,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +98,46 @@ const games = [
     gradient: "from-orange-500 to-red-500",
     shadow: "shadow-orange-500/20",
   },
+  {
+    id: "simon",
+    name: "Simon Says",
+    icon: Gamepad2,
+    description: "Watch and repeat the growing color sequence to test your memory",
+    color: "from-indigo-500/20 to-violet-500/20",
+    iconColor: "text-indigo-500",
+    gradient: "from-indigo-500 to-violet-500",
+    shadow: "shadow-indigo-500/20",
+  },
+  {
+    id: "stroop",
+    name: "Stroop Test",
+    icon: Palette,
+    description: "Tap the ink colour of the word, not what the word says",
+    color: "from-pink-500/20 to-rose-500/20",
+    iconColor: "text-pink-500",
+    gradient: "from-pink-500 to-rose-500",
+    shadow: "shadow-pink-500/20",
+  },
+  {
+    id: "mentalmath",
+    name: "Mental Math Challenge",
+    icon: Calculator,
+    description: "Solve as many arithmetic problems as you can before time runs out",
+    color: "from-teal-500/20 to-emerald-500/20",
+    iconColor: "text-teal-500",
+    gradient: "from-teal-500 to-emerald-500",
+    shadow: "shadow-teal-500/20",
+  },
+  {
+    id: "reaction",
+    name: "Reaction Speed Test",
+    icon: Gauge,
+    description: "Wait for green, then tap as fast as you can to measure your reflexes",
+    color: "from-amber-500/20 to-yellow-500/20",
+    iconColor: "text-amber-500",
+    gradient: "from-amber-500 to-yellow-500",
+    shadow: "shadow-amber-500/20",
+  },
 ];
 
 const benefits = [
@@ -126,6 +170,515 @@ const benefits = [
     bgColor: "bg-green-500/10",
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Self-contained mini-games (Simon Says, Stroop, Mental Math, Reaction)
+// Each manages its own state and reports back via onXp / onCelebrate.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MiniGameProps {
+  onExit: () => void;
+  onXp: (points: number) => void;
+  onCelebrate: () => void;
+}
+
+const GameShell = ({
+  title,
+  subtitle,
+  onExit,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onExit: () => void;
+  children: React.ReactNode;
+}) => (
+  <Card className="relative overflow-hidden border-border/50 bg-card/60 backdrop-blur-xl rounded-[2rem]">
+    <CardHeader className="flex flex-row items-start justify-between gap-4">
+      <div>
+        <CardTitle className="text-2xl font-bold tracking-tight">{title}</CardTitle>
+        {subtitle && (
+          <CardDescription className="text-base font-medium mt-1">{subtitle}</CardDescription>
+        )}
+      </div>
+      <Button
+        variant="ghost"
+        onClick={onExit}
+        className="rounded-2xl shrink-0"
+        aria-label="Back to all games"
+      >
+        ← Back
+      </Button>
+    </CardHeader>
+    <CardContent className="pb-8">{children}</CardContent>
+  </Card>
+);
+
+// ── Simon Says ──────────────────────────────────────────────────────────────
+const SIMON_PADS = [
+  { name: "Green", base: "bg-emerald-700", active: "bg-emerald-300", key: "1" },
+  { name: "Red", base: "bg-rose-700", active: "bg-rose-300", key: "2" },
+  { name: "Yellow", base: "bg-amber-600", active: "bg-amber-200", key: "3" },
+  { name: "Blue", base: "bg-sky-700", active: "bg-sky-300", key: "4" },
+];
+
+const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
+  const [sequence, setSequence] = useState<number[]>([]);
+  const [userStep, setUserStep] = useState(0);
+  const [status, setStatus] = useState<"idle" | "showing" | "input" | "over">("idle");
+  const [activePad, setActivePad] = useState<number | null>(null);
+  const [best, setBest] = useState(0);
+  const [message, setMessage] = useState("Press Start, then repeat the sequence.");
+  const timers = useRef<number[]>([]);
+
+  const clearTimers = () => {
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+  };
+  useEffect(() => () => clearTimers(), []);
+
+  const playSequence = (seq: number[]) => {
+    setStatus("showing");
+    setMessage("Watch carefully…");
+    clearTimers();
+    seq.forEach((pad, i) => {
+      timers.current.push(window.setTimeout(() => setActivePad(pad), 600 * i + 300));
+      timers.current.push(window.setTimeout(() => setActivePad(null), 600 * i + 600));
+    });
+    timers.current.push(
+      window.setTimeout(() => {
+        setStatus("input");
+        setUserStep(0);
+        setMessage("Your turn — repeat it!");
+      }, 600 * seq.length + 300),
+    );
+  };
+
+  const startGame = () => {
+    const first = [Math.floor(Math.random() * 4)];
+    setSequence(first);
+    playSequence(first);
+  };
+
+  const handlePad = (pad: number) => {
+    if (status !== "input") return;
+    setActivePad(pad);
+    window.setTimeout(() => setActivePad(null), 200);
+
+    if (pad === sequence[userStep]) {
+      const nextStep = userStep + 1;
+      if (nextStep === sequence.length) {
+        onXp(5);
+        setBest((b) => Math.max(b, sequence.length));
+        setMessage(`Nice! Round ${sequence.length} cleared.`);
+        setStatus("showing");
+        timers.current.push(
+          window.setTimeout(() => {
+            const next = [...sequence, Math.floor(Math.random() * 4)];
+            setSequence(next);
+            playSequence(next);
+          }, 800),
+        );
+      } else {
+        setUserStep(nextStep);
+      }
+    } else {
+      setStatus("over");
+      setMessage(`Wrong pad! You reached round ${sequence.length}.`);
+      if (sequence.length >= 5) onCelebrate();
+    }
+  };
+
+  useEffect(() => {
+    if (status !== "input") return;
+    const onKey = (e: KeyboardEvent) => {
+      const idx = ["1", "2", "3", "4"].indexOf(e.key);
+      if (idx >= 0) handlePad(idx);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, userStep, sequence]);
+
+  return (
+    <GameShell title="Simon Says" subtitle="Repeat the growing colour sequence" onExit={onExit}>
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-6 text-sm font-semibold">
+          <span>
+            Round: <span className="text-primary">{sequence.length}</span>
+          </span>
+          <span>
+            Best: <span className="text-primary">{best}</span>
+          </span>
+        </div>
+        <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
+          {message}
+        </p>
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+          {SIMON_PADS.map((pad, i) => (
+            <button
+              key={pad.name}
+              type="button"
+              onClick={() => handlePad(i)}
+              disabled={status !== "input"}
+              aria-label={`${pad.name} pad, keyboard key ${pad.key}`}
+              className={`aspect-square rounded-3xl border-4 border-border/40 font-bold text-white flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed ${
+                activePad === i ? `${pad.active} scale-105 ring-4 ring-white/60` : pad.base
+              }`}
+            >
+              <span className="drop-shadow">{pad.name}</span>
+            </button>
+          ))}
+        </div>
+        {(status === "idle" || status === "over") && (
+          <Button onClick={startGame} className="rounded-2xl gap-2">
+            <RefreshCw className="w-4 h-4" /> {status === "over" ? "Play Again" : "Start"}
+          </Button>
+        )}
+      </div>
+    </GameShell>
+  );
+};
+
+// ── Stroop Test ─────────────────────────────────────────────────────────────
+const STROOP_COLORS = [
+  { name: "Red", text: "text-rose-500" },
+  { name: "Green", text: "text-emerald-500" },
+  { name: "Blue", text: "text-sky-500" },
+  { name: "Yellow", text: "text-amber-500" },
+  { name: "Purple", text: "text-violet-500" },
+];
+const STROOP_TIME = 30;
+
+const StroopTestGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
+  const [running, setRunning] = useState(false);
+  const [word, setWord] = useState(STROOP_COLORS[0]);
+  const [ink, setInk] = useState(STROOP_COLORS[1]);
+  const [score, setScore] = useState(0);
+  const [best, setBest] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(STROOP_TIME);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+
+  const nextRound = () => {
+    const w = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+    let ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+    if (Math.random() < 0.75) {
+      while (ik.name === w.name) ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+    }
+    setWord(w);
+    setInk(ik);
+  };
+
+  const start = () => {
+    setScore(0);
+    setTimeLeft(STROOP_TIME);
+    setFeedback(null);
+    setRunning(true);
+    nextRound();
+  };
+
+  useEffect(() => {
+    if (!running) return;
+    if (timeLeft <= 0) {
+      setRunning(false);
+      onXp(score * 2);
+      setBest((b) => Math.max(b, score));
+      if (score >= 15) onCelebrate();
+      return;
+    }
+    const t = window.setTimeout(() => setTimeLeft((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, timeLeft]);
+
+  const answer = (name: string) => {
+    if (!running) return;
+    if (name === ink.name) {
+      setScore((s) => s + 1);
+      setFeedback("correct");
+    } else {
+      setFeedback("wrong");
+    }
+    nextRound();
+    window.setTimeout(() => setFeedback(null), 350);
+  };
+
+  return (
+    <GameShell
+      title="Stroop Test"
+      subtitle="Tap the INK colour of the word — ignore what it spells"
+      onExit={onExit}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
+          <span>
+            Score: <span className="text-primary">{score}</span>
+          </span>
+          <span>
+            Best: <span className="text-primary">{best}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <Timer className="w-4 h-4" /> {timeLeft}s
+          </span>
+        </div>
+
+        {running ? (
+          <>
+            <div
+              className={`text-6xl font-black tracking-tight transition-transform ${ink.text} ${
+                feedback === "correct" ? "scale-110" : feedback === "wrong" ? "scale-90" : ""
+              }`}
+            >
+              {word.name.toUpperCase()}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-md">
+              {STROOP_COLORS.map((c) => (
+                <Button
+                  key={c.name}
+                  variant="outline"
+                  onClick={() => answer(c.name)}
+                  className="rounded-2xl h-12 font-semibold"
+                >
+                  {c.name}
+                </Button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center space-y-4">
+            {timeLeft <= 0 && (
+              <p className="text-lg font-semibold">
+                Time! You scored <span className="text-primary">{score}</span>.
+              </p>
+            )}
+            <Button onClick={start} className="rounded-2xl gap-2">
+              <RefreshCw className="w-4 h-4" /> {timeLeft <= 0 ? "Play Again" : "Start"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </GameShell>
+  );
+};
+
+// ── Mental Math Challenge ───────────────────────────────────────────────────
+const MENTAL_TIME = 30;
+
+const MentalMathGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
+  const [running, setRunning] = useState(false);
+  const [score, setScore] = useState(0);
+  const [best, setBest] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(MENTAL_TIME);
+  const [problem, setProblem] = useState<{ text: string; answer: number }>({ text: "", answer: 0 });
+  const [options, setOptions] = useState<number[]>([]);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+
+  const makeProblem = () => {
+    const ops = ["+", "−", "×"] as const;
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a = 0;
+    let b = 0;
+    let ans = 0;
+    if (op === "×") {
+      a = 2 + Math.floor(Math.random() * 11);
+      b = 2 + Math.floor(Math.random() * 11);
+      ans = a * b;
+    } else if (op === "+") {
+      a = 5 + Math.floor(Math.random() * 45);
+      b = 5 + Math.floor(Math.random() * 45);
+      ans = a + b;
+    } else {
+      a = 10 + Math.floor(Math.random() * 40);
+      b = 1 + Math.floor(Math.random() * a);
+      ans = a - b;
+    }
+    const opts = new Set<number>([ans]);
+    while (opts.size < 4) {
+      const delta = Math.floor(Math.random() * 9) - 4 || 5;
+      const cand = ans + delta;
+      if (cand >= 0) opts.add(cand);
+    }
+    setProblem({ text: `${a} ${op} ${b}`, answer: ans });
+    setOptions(shuffleArray([...opts]));
+  };
+
+  const start = () => {
+    setScore(0);
+    setTimeLeft(MENTAL_TIME);
+    setFeedback(null);
+    setRunning(true);
+    makeProblem();
+  };
+
+  useEffect(() => {
+    if (!running) return;
+    if (timeLeft <= 0) {
+      setRunning(false);
+      onXp(score * 3);
+      setBest((b) => Math.max(b, score));
+      if (score >= 12) onCelebrate();
+      return;
+    }
+    const t = window.setTimeout(() => setTimeLeft((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, timeLeft]);
+
+  const answer = (value: number) => {
+    if (!running) return;
+    if (value === problem.answer) {
+      setScore((s) => s + 1);
+      setFeedback("correct");
+    } else {
+      setFeedback("wrong");
+    }
+    makeProblem();
+    window.setTimeout(() => setFeedback(null), 300);
+  };
+
+  return (
+    <GameShell
+      title="Mental Math Challenge"
+      subtitle="Pick the correct answer before time runs out"
+      onExit={onExit}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
+          <span>
+            Score: <span className="text-primary">{score}</span>
+          </span>
+          <span>
+            Best: <span className="text-primary">{best}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <Timer className="w-4 h-4" /> {timeLeft}s
+          </span>
+        </div>
+
+        {running ? (
+          <>
+            <div
+              className={`text-5xl font-black tracking-tight transition-transform ${
+                feedback === "correct"
+                  ? "text-emerald-500 scale-110"
+                  : feedback === "wrong"
+                    ? "text-rose-500 scale-95"
+                    : ""
+              }`}
+            >
+              {problem.text}
+            </div>
+            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+              {options.map((opt) => (
+                <Button
+                  key={opt}
+                  variant="outline"
+                  onClick={() => answer(opt)}
+                  className="rounded-2xl h-14 text-lg font-bold"
+                >
+                  {opt}
+                </Button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center space-y-4">
+            {timeLeft <= 0 && (
+              <p className="text-lg font-semibold">
+                Time! You solved <span className="text-primary">{score}</span>.
+              </p>
+            )}
+            <Button onClick={start} className="rounded-2xl gap-2">
+              <RefreshCw className="w-4 h-4" /> {timeLeft <= 0 ? "Play Again" : "Start"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </GameShell>
+  );
+};
+
+// ── Reaction Speed Test ─────────────────────────────────────────────────────
+const ReactionGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
+  const [phase, setPhase] = useState<"idle" | "waiting" | "now" | "result" | "tooSoon">("idle");
+  const [lastMs, setLastMs] = useState<number | null>(null);
+  const [bestMs, setBestMs] = useState<number | null>(null);
+  const startRef = useRef(0);
+  const timeoutRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    },
+    [],
+  );
+
+  const begin = () => {
+    setPhase("waiting");
+    setLastMs(null);
+    const delay = 1200 + Math.random() * 2500;
+    timeoutRef.current = window.setTimeout(() => {
+      startRef.current = performance.now();
+      setPhase("now");
+    }, delay);
+  };
+
+  const handleClick = () => {
+    if (phase === "idle" || phase === "result" || phase === "tooSoon") {
+      begin();
+      return;
+    }
+    if (phase === "waiting") {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      setPhase("tooSoon");
+      return;
+    }
+    if (phase === "now") {
+      const ms = Math.round(performance.now() - startRef.current);
+      setLastMs(ms);
+      setBestMs((b) => (b === null ? ms : Math.min(b, ms)));
+      setPhase("result");
+      const xp = ms < 250 ? 15 : ms < 400 ? 10 : ms < 600 ? 6 : 3;
+      onXp(xp);
+      if (ms < 250) onCelebrate();
+    }
+  };
+
+  const zone = {
+    idle: { bg: "bg-muted", label: "Click to start" },
+    waiting: { bg: "bg-rose-600", label: "Wait for GREEN…" },
+    now: { bg: "bg-emerald-500", label: "CLICK NOW!" },
+    result: { bg: "bg-sky-600", label: `${lastMs} ms — click to retry` },
+    tooSoon: { bg: "bg-amber-500", label: "Too soon! Click to retry" },
+  }[phase];
+
+  return (
+    <GameShell
+      title="Reaction Speed Test"
+      subtitle="Wait for the panel to turn green, then tap as fast as you can"
+      onExit={onExit}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
+          <span>
+            Last: <span className="text-primary">{lastMs !== null ? `${lastMs} ms` : "—"}</span>
+          </span>
+          <span>
+            Best: <span className="text-primary">{bestMs !== null ? `${bestMs} ms` : "—"}</span>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleClick}
+          aria-label={zone.label}
+          className={`w-full max-w-md h-56 rounded-[2rem] text-white text-2xl font-black flex items-center justify-center text-center px-6 transition-colors duration-150 ${zone.bg}`}
+        >
+          {zone.label}
+        </button>
+      </div>
+    </GameShell>
+  );
+};
 
 const BrainGames = () => {
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -1433,6 +1986,7 @@ const BrainGames = () => {
                         else if (game.id === "math") startMathGame();
                         else if (game.id === "word") startWordGame();
                         else if (game.id === "pattern") startPatternGame();
+                        else setActiveGame(game.id);
                       }
                     }}
                     onClick={() => {
@@ -1440,6 +1994,7 @@ const BrainGames = () => {
                       else if (game.id === "math") startMathGame();
                       else if (game.id === "word") startWordGame();
                       else if (game.id === "pattern") startPatternGame();
+                      else setActiveGame(game.id);
                     }}
                   >
                     <div
@@ -1995,6 +2550,30 @@ const BrainGames = () => {
               </Card>
             ) : activeGame === "pattern" ? (
               renderPatternGame()
+            ) : activeGame === "simon" ? (
+              <SimonSaysGame
+                onExit={() => setActiveGame(null)}
+                onXp={awardXp}
+                onCelebrate={triggerConfetti}
+              />
+            ) : activeGame === "stroop" ? (
+              <StroopTestGame
+                onExit={() => setActiveGame(null)}
+                onXp={awardXp}
+                onCelebrate={triggerConfetti}
+              />
+            ) : activeGame === "mentalmath" ? (
+              <MentalMathGame
+                onExit={() => setActiveGame(null)}
+                onXp={awardXp}
+                onCelebrate={triggerConfetti}
+              />
+            ) : activeGame === "reaction" ? (
+              <ReactionGame
+                onExit={() => setActiveGame(null)}
+                onXp={awardXp}
+                onCelebrate={triggerConfetti}
+              />
             ) : null}
           </motion.div>
         )}
