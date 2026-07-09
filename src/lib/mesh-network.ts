@@ -338,11 +338,16 @@ class MeshNetworkManager {
       console.log(`Mesh Gateway: Relaying alert ${alert.id} to cloud...`);
       const { data, error } = await supabase.functions.invoke("broadcast-emergency", {
         body: {
-          latitude: alert.latitude ?? undefined,
-          longitude: alert.longitude ?? undefined,
+          id: alert.id,
+          sender_id: alert.sender_id,
           sender_name: alert.sender_name,
-          contact_phone: alert.contact_phone,
+          latitude: alert.latitude ?? null,
+          longitude: alert.longitude ?? null,
+          timestamp: alert.timestamp,
           contact_name: alert.contact_name,
+          contact_phone: alert.contact_phone,
+          signature: alert.signature,
+          publicKeyJwk: alert.publicKeyJwk,
         },
       });
 
