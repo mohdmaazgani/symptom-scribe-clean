@@ -107,16 +107,35 @@ serve(async (req) => {
       }
     }
 
-    const contactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);
-    const contactName = bodyContactName || (profile ? profile.emergency_contact_name : null);
-    const senderName = bodySenderName || (profile ? profile.full_name : null) || "A user";
+    const rawContactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);
+    const rawContactName = bodyContactName || (profile ? profile.emergency_contact_name : null);
+    const rawSenderName = bodySenderName || (profile ? profile.full_name : null) || "A user";
 
-    if (!contactPhone) {
+    if (!rawContactPhone) {
       return new Response(
         JSON.stringify({ error: "No emergency contact phone configured or provided" }),
         { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
+
+    // Validate phone number format (E.164 compliance)
+    const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
+    if (!PHONE_REGEX.test(rawContactPhone)) {
+      console.error(`Invalid phone number: ${rawContactPhone}`);
+      const isEncrypted = rawContactPhone.startsWith("enc:str:");
+      return new Response(
+        JSON.stringify({
+          error: isEncrypted
+            ? "The emergency contact phone number is encrypted client-side and cannot be read by the server. Please ensure it is decrypted before triggering."
+            : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890)."
+        }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
+
+    const contactPhone = rawContactPhone;
+    const contactName = (rawContactName && !rawContactName.startsWith("enc:str:")) ? rawContactName : "Emergency Contact";
+    const senderName = (rawSenderName && !rawSenderName.startsWith("enc:str:")) ? rawSenderName : "A user";
 
     // Check Twilio Secrets
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
