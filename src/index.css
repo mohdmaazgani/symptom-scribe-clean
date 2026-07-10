@@ -53,6 +53,11 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --welcome-bg: linear-gradient(
+      90deg,
+      hsl(var(--primary) / 0.08),
+      hsl(var(--card))
+    );
   }
 
   .dark {
@@ -131,6 +136,11 @@ All colors MUST be HSL.
   --sidebar-accent-foreground: 220 30% 96%;
   --sidebar-border: 232 18% 24%;
   --sidebar-ring: 272 88% 68%;
+  --welcome-bg: linear-gradient(
+  90deg,
+  hsl(var(--primary) / 0.08),
+  hsl(var(--card))
+);
 }
 .deep-blue {
   --background: 216 26% 10%;
@@ -170,6 +180,11 @@ All colors MUST be HSL.
   --sidebar-accent-foreground: 214 32% 96%;
   --sidebar-border: 216 18% 24%;
   --sidebar-ring: 213 94% 62%;
+  --welcome-bg: linear-gradient(
+  90deg,
+  hsl(var(--primary) / 0.08),
+  hsl(var(--card))
+);
 }
 .forest {
   --background: 145 30% 88%;
@@ -206,6 +221,11 @@ All colors MUST be HSL.
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-border: 145 20% 74%;
   --sidebar-ring: 145 52% 38%;
+--welcome-bg: linear-gradient(
+  90deg,
+  hsl(var(--primary) / 0.08),
+  hsl(var(--card))
+);
 }
 .orange {
   --background: 34 85% 89%;
@@ -242,6 +262,11 @@ All colors MUST be HSL.
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-border: 30 55% 76%;
   --sidebar-ring: 28 90% 52%;
+  --welcome-bg: linear-gradient(
+  90deg,
+  hsl(var(--primary) / 0.08),
+  hsl(var(--card))
+);
 }
 .pastel-pink {
   --background: 334 55% 91%;
@@ -277,6 +302,11 @@ All colors MUST be HSL.
   --sidebar-primary: 334 74% 64%;
   --sidebar-border: 334 35% 80%;
   --sidebar-ring: 334 70% 58%;
+  --welcome-bg: linear-gradient(
+  90deg,
+  hsl(var(--primary) / 0.08),
+  hsl(var(--card))
+);
 }
 }
 html,

@@ -283,19 +283,20 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="border bg-gradient-to-r from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+      <Card className="border"
+            style={{ background: "var(--welcome-bg)" }}>
         <CardContent className="flex items-center justify-between py-6">
           <div>
             <h2 className="text-3xl font-bold">
-              Welcome, <span className="text-blue-600">{userName}</span>
+             Welcome, <span className="text-primary">{userName}</span>
             </h2>
             <p className="text-muted-foreground mt-1">
               Advanced analytics & personalized health insights
             </p>
           </div>
 
-          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
-            <Activity className="h-7 w-7 text-blue-600" />
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <Activity className="h-7 w-7 text-primary" />
           </div>
         </CardContent>
       </Card>
