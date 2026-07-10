@@ -14,6 +14,11 @@ const getCorsHeaders = (origin: string | null) => ({
     "authorization, x-client-info, apikey, content-type",
 });
 
+function hexToUint8Array(hex: string): Uint8Array {
+  const match = hex.match(/[\da-f]{2}/gi) || [];
+  return new Uint8Array(match.map((h) => parseInt(h, 16)));
+}
+
 serve(async (req) => {
   const origin = req.headers.get("origin");
 
@@ -52,10 +57,6 @@ serve(async (req) => {
     );
 
     // Get the current user
-    // NOTE: auth.getUser() with no argument relies on a client-side session
-    // (e.g. set via signIn/setSession) which never exists on the server.
-    // We must explicitly pass the bearer token extracted from the request,
-    // the same way every other edge function in this project does.
     const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
@@ -69,42 +70,106 @@ serve(async (req) => {
       );
     }
 
-    // Get the request body (latitude, longitude, sender_name, contact_phone, contact_name)
+    // Get the request body
     let body: {
-      latitude?: number;
-      longitude?: number;
+      id?: string;
+      sender_id?: string;
       sender_name?: string;
-      contact_phone?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+      timestamp?: string;
       contact_name?: string;
+      contact_phone?: string;
+      signature?: string;
+      publicKeyJwk?: JsonWebKey;
     } = {};
+
     try {
       body = await req.json();
     } catch (_) {
-      // Body can be empty
+      return new Response(
+        JSON.stringify({ error: "Invalid or empty JSON request body" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     const {
+      id,
+      sender_id,
+      sender_name,
       latitude,
       longitude,
-      sender_name: bodySenderName,
-      contact_phone: bodyContactPhone,
-      contact_name: bodyContactName,
+      timestamp,
+      contact_name,
+      contact_phone,
+      signature,
+      publicKeyJwk,
     } = body;
 
-    // Fetch user's profile to get their name and emergency contact details if not provided
-    let profile = null;
-    if (!bodySenderName || !bodyContactPhone || !bodyContactName) {
-      const { data, error: profileError } = await supabaseClient
-        .from("profiles")
-        .select("full_name, emergency_contact_name, emergency_contact_phone")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    // Validate that all cryptographic parameters and metadata are present
+    if (
+      !id ||
+      !sender_id ||
+      !sender_name ||
+      !timestamp ||
+      !contact_name ||
+      !contact_phone ||
+      !signature ||
+      !publicKeyJwk
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Missing required emergency alert metadata or cryptographic signature block" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-      } else {
-        profile = data;
+    // Verify Cryptographic Signature
+    try {
+      const publicKey = await crypto.subtle.importKey(
+        "jwk",
+        publicKeyJwk,
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["verify"]
+      );
+
+      const payloadString = JSON.stringify({
+        id,
+        sender_id,
+        sender_name,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        timestamp,
+        contact_phone,
+        contact_name,
+      });
+
+      const encoder = new TextEncoder();
+      const dataBytes = encoder.encode(payloadString);
+      const signatureBytes = hexToUint8Array(signature);
+
+      const isValid = await crypto.subtle.verify(
+        {
+          name: "ECDSA",
+          hash: { name: "SHA-256" },
+        },
+        publicKey,
+        signatureBytes,
+        dataBytes
+      );
+
+      if (!isValid) {
+        return new Response(
+          JSON.stringify({ error: "Cryptographic signature verification failed: unauthorized alert packet" }),
+          { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+        );
       }
+    } catch (verifyErr) {
+      console.error("Signature verification error:", verifyErr);
+      return new Response(
+        JSON.stringify({ error: "Cryptographic signature verification failed with error" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     const rawContactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);

@@ -29,6 +29,7 @@ import {
   Palette,
   Calculator,
   Gauge,
+  LayoutGrid,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +138,16 @@ const games = [
     iconColor: "text-amber-500",
     gradient: "from-amber-500 to-yellow-500",
     shadow: "shadow-amber-500/20",
+  },
+  {
+    id: "colorseq",
+    name: "Color Sequence Memory",
+    icon: LayoutGrid,
+    description: "Watch the tiles light up, then tap them back in the exact same order",
+    color: "from-fuchsia-500/20 to-purple-500/20",
+    iconColor: "text-fuchsia-500",
+    gradient: "from-fuchsia-500 to-purple-500",
+    shadow: "shadow-fuchsia-500/20",
   },
 ];
 
@@ -675,6 +686,149 @@ const ReactionGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
         >
           {zone.label}
         </button>
+      </div>
+    </GameShell>
+  );
+};
+
+// ── Color Sequence Memory ───────────────────────────────────────────────────
+const COLOR_TILES = [
+  { name: "Rose", base: "bg-rose-700", active: "bg-rose-300" },
+  { name: "Amber", base: "bg-amber-600", active: "bg-amber-200" },
+  { name: "Emerald", base: "bg-emerald-700", active: "bg-emerald-300" },
+  { name: "Sky", base: "bg-sky-700", active: "bg-sky-300" },
+  { name: "Violet", base: "bg-violet-700", active: "bg-violet-300" },
+  { name: "Fuchsia", base: "bg-fuchsia-700", active: "bg-fuchsia-300" },
+  { name: "Teal", base: "bg-teal-700", active: "bg-teal-300" },
+  { name: "Orange", base: "bg-orange-700", active: "bg-orange-300" },
+  { name: "Indigo", base: "bg-indigo-700", active: "bg-indigo-300" },
+];
+const COLOR_SEQ_START_LENGTH = 3;
+const COLOR_SEQ_FLASH_MS = 550;
+
+const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
+  const [sequence, setSequence] = useState<number[]>([]);
+  const [userTaps, setUserTaps] = useState<number[]>([]);
+  const [status, setStatus] = useState<"idle" | "showing" | "recall" | "over">("idle");
+  const [activeTile, setActiveTile] = useState<number | null>(null);
+  const [round, setRound] = useState(0);
+  const [best, setBest] = useState(0);
+  const [message, setMessage] = useState("Press Start, then watch the tiles closely.");
+  const timers = useRef<number[]>([]);
+
+  const clearTimers = () => {
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+  };
+  useEffect(() => () => clearTimers(), []);
+
+  const flashSequence = (seq: number[]) => {
+    setStatus("showing");
+    setUserTaps([]);
+    setMessage("Watch the sequence…");
+    clearTimers();
+    seq.forEach((tile, i) => {
+      timers.current.push(
+        window.setTimeout(() => setActiveTile(tile), COLOR_SEQ_FLASH_MS * i + 300),
+      );
+      timers.current.push(
+        window.setTimeout(() => setActiveTile(null), COLOR_SEQ_FLASH_MS * i + COLOR_SEQ_FLASH_MS - 100),
+      );
+    });
+    timers.current.push(
+      window.setTimeout(() => {
+        setStatus("recall");
+        setMessage("Now tap the tiles in the same order.");
+      }, COLOR_SEQ_FLASH_MS * seq.length + 300),
+    );
+  };
+
+  const startGame = () => {
+    const first = Array.from({ length: COLOR_SEQ_START_LENGTH }, () =>
+      Math.floor(Math.random() * COLOR_TILES.length),
+    );
+    setRound(1);
+    setSequence(first);
+    flashSequence(first);
+  };
+
+  const handleTileTap = (tile: number) => {
+    if (status !== "recall") return;
+    setActiveTile(tile);
+    window.setTimeout(() => setActiveTile(null), 200);
+
+    const expected = sequence[userTaps.length];
+    if (tile !== expected) {
+      setStatus("over");
+      setMessage(`Not quite! You reached round ${round} (sequence of ${sequence.length}).`);
+      if (round >= 5) onCelebrate();
+      return;
+    }
+
+    const nextTaps = [...userTaps, tile];
+    setUserTaps(nextTaps);
+
+    if (nextTaps.length === sequence.length) {
+      onXp(6);
+      setBest((b) => Math.max(b, round));
+      setMessage(`Correct! Round ${round} cleared.`);
+      setStatus("showing");
+      timers.current.push(
+        window.setTimeout(() => {
+          const next = [...sequence, Math.floor(Math.random() * COLOR_TILES.length)];
+          setRound((r) => r + 1);
+          setSequence(next);
+          flashSequence(next);
+        }, 900),
+      );
+    }
+  };
+
+  return (
+    <GameShell
+      title="Color Sequence Memory"
+      subtitle="Watch the tiles light up, then recall the exact order"
+      onExit={onExit}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
+          <span>
+            Round: <span className="text-primary">{round}</span>
+          </span>
+          <span>
+            Best: <span className="text-primary">{best}</span>
+          </span>
+        </div>
+        <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
+          {message}
+        </p>
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-sm">
+          {COLOR_TILES.map((tile, i) => (
+            <button
+              key={tile.name}
+              type="button"
+              onClick={() => handleTileTap(i)}
+              disabled={status !== "recall"}
+              aria-label={`${tile.name} tile`}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && status === "recall") {
+                  e.preventDefault();
+                  handleTileTap(i);
+                }
+              }}
+              className={`aspect-square rounded-2xl border-2 border-border/40 font-semibold text-white text-xs sm:text-sm flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                activeTile === i ? `${tile.active} scale-105 ring-4 ring-white/60` : tile.base
+              }`}
+            >
+              <span className="drop-shadow sr-only sm:not-sr-only">{tile.name}</span>
+            </button>
+          ))}
+        </div>
+        {(status === "idle" || status === "over") && (
+          <Button onClick={startGame} className="rounded-2xl gap-2">
+            <RefreshCw className="w-4 h-4" /> {status === "over" ? "Play Again" : "Start"}
+          </Button>
+        )}
       </div>
     </GameShell>
   );
@@ -2570,6 +2724,12 @@ const BrainGames = () => {
               />
             ) : activeGame === "reaction" ? (
               <ReactionGame
+                onExit={() => setActiveGame(null)}
+                onXp={awardXp}
+                onCelebrate={triggerConfetti}
+              />
+            ) : activeGame === "colorseq" ? (
+              <ColorSequenceGame
                 onExit={() => setActiveGame(null)}
                 onXp={awardXp}
                 onCelebrate={triggerConfetti}

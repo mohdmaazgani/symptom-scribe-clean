@@ -319,12 +319,11 @@ const AIHealthAssistant = () => {
               keys.searchKey
             );
 
-            // Strip offline-only fields and search_tokens so we match the Supabase table schema
+            // Strip offline-only fields so we match the Supabase table schema
             const {
               pending_sync,
               pending_update,
               pending_delete,
-              search_tokens,
               ...supabaseRecord
             } = encryptedRecord;
 
