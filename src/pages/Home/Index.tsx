@@ -122,13 +122,21 @@ const Index = () => {
         }`}
       >
         <div className="container mx-auto flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold text-primary cursor-pointer transition-opacity hover:opacity-80"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            Symptom Scribe🩺
-          </h1>
+          <div
+  className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+>
+  <img
+    src="/3.png"
+    alt="Symptom Scribe Logo"
+    className="h-12 w-12 object-contain shrink-0"
+  />
 
+  <span className="text-2xl font-bold text-primary">
+    Symptom Scribe
+
+  </span>
+</div>
           <div className="hidden md:flex items-center gap-4">
             <AnimatedThemeToggler />
             {session ? (
