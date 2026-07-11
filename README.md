@@ -1,747 +1,464 @@
-# 🩺 Symptom Scribe — Smart Health & MedTech Platform
+# Symptom Scribe
 
-Symptom Scribe is an AI-powered health and wellness platform designed to help users track health metrics, analyze symptoms, receive personalized recommendations, and improve overall well-being through intelligent insights and interactive experiences.
+Smart health tracking, AI-assisted symptom guidance, wellness metrics, and interactive learning in one modern web platform.
 
-🌐 **Live Demo:** https://symptom-scribe-clean.netlify.app/
-
----
-
-# 📑 Table of Contents
-
-- [Project Overview](#-project-overview)
-- [Objectives](#-objectives)
-- [Key Features](#-key-features)
-- [Technology Stack](#%EF%B8%8F-technology-stack)
-- [Screenshots](#-screenshots)
-- [Installation & Setup](#-installation--setup)
-- [Environment Variables](#-environment-variables)
-- [Supabase Edge Function Setup](#%EF%B8%8F-supabase-edge-function-setup)
-- [API & Backend Services](#-api--backend-services)
-- [Project Structure](#-project-structure)
-- [Usage Guide](#-usage-guide)
-- [Troubleshooting](#%EF%B8%8F-troubleshooting)
-- [FAQ](#-faq)
-- [Contributing](#-contributing)
-- [Future Enhancements](#-future-enhancements)
-- [License](#-license)
-- [Author](#%E2%80%8D-author)
+[Live Demo](https://symptom-scribe-clean.netlify.app/) | [Repository](https://github.com/mohdmaazgani/symptom-scribe-clean)
 
 ---
 
-# 📖 Project Overview
+## Overview
 
-Symptom Scribe provides a centralized health management experience that combines:
+Symptom Scribe is a full-stack MedTech and wellness application built to help users record health signals, understand symptoms, review personal history, and build healthier habits through guided insights and gamified experiences.
 
-* Health tracking
-* Symptom analysis
-* AI-powered recommendations
-* Brain-training activities
-* Medical education
-* Doctor consultation guidance
+The platform combines a React dashboard, Supabase authentication and database services, serverless edge functions, AI-powered symptom analysis, emergency workflows, and educational health content.
 
-The goal is to make healthcare monitoring more accessible, engaging, and personalized.
+> Medical disclaimer: Symptom Scribe is designed for wellness support and informational guidance only. It does not replace professional medical diagnosis, treatment, or emergency care.
 
 ---
 
-# 🎯 Objectives
+## Key Features
 
-* Help users monitor daily health metrics.
-* Enable symptom tracking and analysis.
-* Provide educational health insights.
-* Encourage healthier lifestyles through gamification.
-* Support informed healthcare decisions.
-
----
-
-# 🌟 Key Features
-
-## 🧠 Health & Wellness Tracking
-
-* Track hydration, nutrition, activity levels, and wellness goals.
-* View health progress over time.
-* Personalized wellness recommendations.
-
-## 🩻 Symptom Analysis
-
-* Log and manage symptoms.
-* AI-assisted symptom evaluation.
-* Health recommendations based on reported symptoms.
-
-## 🎮 Brain Games
-
-* Interactive games designed to improve:
-
-  * Memory
-  * Focus
-  * Cognitive performance
-
-## 💡 Health Facts
-
-* Educational health facts and medical trivia.
-* Daily learning opportunities.
-* "Did You Know?" pop-ups with fascinating human body facts and medical trivia.
-
-## 👨‍⚕️ Doctor Consultation Suggestions
-
-* Intelligent recommendations for professional medical consultation.
-* Supports early decision-making for health concerns.
-
-## 📊 Health History & Metrics
-
-* Store historical health records.
-* Visualize health trends and patterns.
+- AI-assisted symptom analysis with safety-aware recommendations
+- Secure user authentication with Supabase Auth
+- Personal health dashboard for metrics, history, and wellness tracking
+- Health facts, medical learning content, and educational resources
+- Brain games and gamification features for engagement
+- Emergency assistance flow with optional SMS support
+- Profile, settings, legal, privacy, and accessibility pages
+- Password strength validation during registration
+- Offline-friendly local storage helpers
+- Supabase Row Level Security and database migrations
+- Responsive UI built with React, Tailwind CSS, and shadcn/ui-style components
 
 ---
 
-# ⚙️ Technology Stack
+## Tech Stack
 
-| Category        | Technologies              |
-| --------------- | ------------------------- |
-| Frontend        | React + Vite + TypeScript |
-| Styling         | Tailwind CSS + ShadCN UI  |
-| Backend         | Supabase                  |
-| Authentication  | Supabase Auth             |
-| Database        | PostgreSQL (Supabase)     |
-| Edge Functions  | Supabase Functions        |
-| Deployment      | Netlify                   |
-| Version Control | Git & GitHub              |
+| Area | Technology |
+| --- | --- |
+| Frontend | React 18, Vite, TypeScript |
+| Styling | Tailwind CSS, Radix UI, shadcn/ui-style components |
+| State/Data | TanStack Query, React Hook Form, Zod |
+| Backend | Supabase |
+| Database | PostgreSQL through Supabase |
+| Authentication | Supabase Auth |
+| Serverless | Supabase Edge Functions |
+| AI Integration | Edge-function based AI symptom analyzer |
+| Testing | Vitest, Testing Library |
+| Deployment | Netlify |
 
 ---
 
-# 📸 Screenshots
+## App Modules
 
-> Add screenshots of the following sections:
+- Home: product entry point and core value proposition
+- Auth: sign up, login, reset password, protected route handling
+- Dashboard: health overview and user activity
+- Metrics: personal health metrics and progress views
+- History: saved symptom and activity records
+- Chat: conversational health assistant interface
+- Health: AI assistant, health library, health facts, and emergency guide
+- Games: cognitive and engagement-focused brain games
+- Profile and Settings: user account management
+- Legal: privacy, terms, disclaimer, and accessibility pages
 
-* Dashboard
-* Symptom Analyzer
-* Health Metrics
-* Brain Games
-* Settings Page
-* Mobile Responsive View
+---
 
+## Project Structure
 
-Example:
-
-```md
-![Dashboard](screenshots/dashboard.png)
-![Symptom Analyzer](screenshots/analyzer.png)
+```text
+symptom-scribe-clean/
++-- docs/
+|   +-- guides/
+|   |   +-- CONTRIBUTING.md
+|   |   +-- PASSWORD_STRENGTH_FEATURE.md
+|   |   +-- TROUBLESHOOT.md
+|   +-- reference/
+|       +-- CHANGELOG.md
+|       +-- FAQ.md
+|       +-- SECURITY.md
++-- public/
+|   +-- favicon.svg
+|   +-- pwa-192x192.png
+|   +-- pwa-512x512.png
++-- src/
+|   +-- components/
+|   |   +-- auth/
+|   |   +-- chat/
+|   |   +-- common/
+|   |   +-- diagnostics/
+|   |   +-- hero/
+|   |   +-- layout/
+|   |   +-- legal/
+|   |   +-- navigation/
+|   |   +-- registration/
+|   |   +-- theme/
+|   |   +-- ui/
+|   +-- data/
+|   +-- hooks/
+|   +-- integrations/
+|   |   +-- supabase/
+|   +-- lib/
+|   +-- pages/
+|   |   +-- Auth/
+|   |   +-- Blog/
+|   |   +-- Chat/
+|   |   +-- Contact/
+|   |   +-- Dashboard/
+|   |   +-- Games/
+|   |   +-- Health/
+|   |   +-- History/
+|   |   +-- Home/
+|   |   +-- Legal/
+|   |   +-- Metrics/
+|   |   +-- Profile/
+|   |   +-- User/
+|   +-- test/
++-- supabase/
+|   +-- functions/
+|   |   +-- broadcast-emergency/
+|   |   +-- delete-account/
+|   |   +-- delete-user-account/
+|   |   +-- get-cached-data/
+|   |   +-- invalidate-cache/
+|   |   +-- symptom-analyzer/
+|   +-- migrations/
+|   +-- config.toml
++-- Dockerfile
++-- nginx.conf
++-- package.json
++-- tailwind.config.ts
++-- tsconfig.json
++-- vite.config.ts
 ```
 
 ---
 
-# 🚀 Installation & Setup
+## Getting Started
 
-## 1. Clone Repository
+### Prerequisites
+
+- Node.js 20 or compatible LTS version
+- npm
+- Supabase account and project
+- Supabase CLI for database migrations and edge functions
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/mohdmaazgani/symptom-scribe-clean.git
 cd symptom-scribe-clean
 ```
 
-## 2. Configure Environment Variables
-
-Copy the example env file and add your Supabase browser credentials (Dashboard → Project Settings → API):
-
-```bash
-cp .env.example .env.local
-```
-
-Add the browser variables to `.env.local`:
-
-- `VITE_SUPABASE_URL` — used by the frontend to build the Supabase client and function URLs.
-- `VITE_SUPABASE_PUBLISHABLE_KEY` — canonical browser key for authentication and API access.
-
-> [!NOTE]
-> `VITE_SUPABASE_ANON_KEY` is accepted only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new and updated environments.
-
-## 3. Link Supabase & Apply Migrations
-
-To ensure your local database contains all the necessary schemas (like `profiles`, `symptom_history`, and custom functions/triggers) so that data can save correctly, link your project and push migrations:
-
-```bash
-# Log in to Supabase CLI
-npx supabase login
-
-# Link your local repo to your remote project
-npx supabase link --project-ref <your-project-ref>
-
-# Push the schema, triggers, and functions to the linked project
-npx supabase db push
-```
-
-## 4. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-## 5. Start Development Server
+### 3. Configure environment variables
+
+Copy the example file:
+
+```bash
+cp .env.example .env.local
+```
+
+Add your frontend Supabase values:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+`VITE_SUPABASE_ANON_KEY` is supported only as a legacy fallback. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new setups.
+
+### 4. Link Supabase and apply migrations
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push
+```
+
+### 5. Start the development server
 
 ```bash
 npm run dev
 ```
 
-Open in your browser → [http://localhost:8080](http://localhost:8080)
-
-
-### Supabase Edge Function Setup
-
-The browser app and Supabase edge functions use different environment surfaces. Browser variables are loaded into Vite at build time and live in `.env.local`. Edge-function runtime secrets are read by deployed functions or by the Supabase CLI when you serve them locally — **never** place `SUPABASE_SERVICE_ROLE_KEY` or other edge secrets in `.env.local`.
-
-**Edge function secrets** (configure via Supabase Dashboard or CLI, not in `.env.local`):
-
-- `GEMINI_API_KEY` — required; used by `supabase/functions/symptom-analyzer` to call the Gemini API.
-- `UPSTASH_REDIS_REST_URL` — optional; enables distributed rate limiting when present.
-- `UPSTASH_REDIS_REST_TOKEN` — optional; used with `UPSTASH_REDIS_REST_URL` for Upstash-backed rate limiting.
-- `TWILIO_ACCOUNT_SID` — required by `broadcast-emergency` when SMS alerts are used.
-- `TWILIO_AUTH_TOKEN` — required by `broadcast-emergency` when SMS alerts are used.
-- `TWILIO_PHONE_NUMBER` — required by `broadcast-emergency` as the sender phone number.
-- `WEBHOOK_SECRET` — optional; allows webhook-authenticated cache invalidation.
-
-**Configure your Supabase project & schema:**
-
-```bash
-# Log in to your Supabase account
-supabase login
-
-# Link your local repo to your remote project
-supabase link --project-ref <your-project-ref>
-
-# Push the database migrations to build tables, triggers, and functions
-supabase db push
-
-# Set your AI API key (obtain a free Gemini key from Google AI Studio)
-supabase secrets set GEMINI_API_KEY=<your-gemini-key>
-
-# Set emergency contact integration keys (optional)
-supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
-
-# Deploy the Edge Functions
-supabase functions deploy symptom-analyzer
-supabase functions deploy broadcast-emergency
-supabase functions deploy delete-user-account
-supabase functions deploy invalidate-cache
-```
-
-**Serve edge functions locally (optional):**
-
-```bash
-# Add secrets to supabase/.env.local first, then serve
-supabase functions serve --env-file supabase/.env.local
-```
-
-Keep the service role key out of browser-loaded files and client-side code.
-
-
-## 📂 Project Structure
+Open the app at the local URL printed by Vite, usually:
 
 ```text
-symptom-scribe-clean/
-├── docs/                                             # Project documentation
-│   ├── guides/                                       # User & contributor guides
-│   │   ├── CONTRIBUTING.md
-│   │   ├── TROUBLESHOOT.md
-│   │   └── PASSWORD_STRENGTH_FEATURE.md
-│   └── reference/                                    # Reference documentation
-│       ├── CHANGELOG.md
-│       ├── FAQ.md
-│       └── SECURITY.md 
-├── public/                                           # Static assets
-├── src/
-│   ├── components/
-│   │   ├── auth/
-│   │   │   └── ProtectedRoute.tsx                    # Route protection
-│   │   ├── chat/
-│   │   │   ├── ChatInterface.tsx                     # Main chat interface
-│   │   │   ├── ChatLoading.tsx                       # Loading state
-│   │   │   └── ChatMessage.tsx                       # Individual message
-│   │   ├── common/
-│   │   │   └── ErrorBoundary.tsx                     # Error handling
-│   │   ├── diagnostics/
-│   │   │   └── StartupDiagnostics.tsx                # Startup checks
-│   │   ├── hero/
-│   │   │   └── Hero.tsx                              # Landing page hero
-│   │   ├── layout/
-│   │   │   ├── AppSidebar.tsx                        # Sidebar navigation
-│   │   │   └── Layout.tsx                            # Shared layout
-│   │   ├── legal/
-│   │   │   ├── LegalPageLayout.tsx                   # Legal page wrapper
-│   │   │   ├── PageFooter.tsx                        # Footer component
-│   │   │   └── Section.tsx                           # Legal sections
-│   │   ├── navigation/
-│   │   │   ├── BackToTop.tsx                         # Back to top button
-│   │   │   └── ScrollToTop.tsx                       # Scroll manager
-│   │   ├── registration/
-│   │   │   ├── forms/
-│   │   │   │   └── MultiStepSignUp.tsx               # Registration form
-│   │   │   ├── shared/
-│   │   │   │   └── PasswordStrengthMeter.tsx         # Password strength indicator
-│   │   │   └── tests/
-│   │   │       └── PasswordStrengthMeter.test.tsx    # Registration tests
-│   │   ├── theme/
-│   │   │   ├── components/
-│   │   │   │   └── AnimatedThemeToggler.tsx          # Theme switcher
-│   │   │   ├── providers/
-│   │   │   │   └── theme-provider.tsx                # Theme provider
-│   │   │   └── styles/
-│   │   │       └── animated-theme-toggler.css        # Theme styles
-│   │   └── ui/                                       # Shared UI components
-│   ├── data/                                         # Static datasets
-│   ├── hooks/                                        # Custom React hooks
-│   ├── integrations/                                 # External integrations
-│   ├── lib/                                          # Utility functions
-│   ├── pages/
-│   │   ├── Auth/
-│   │   │   └── Index.tsx                             # Authentication page
-│   │   ├── Blog/
-│   │   │   ├── BlogPostPage.tsx                      # Blog details
-│   │   │   └── Index.tsx                             # Blog listin
-│   │   ├── Chat/
-│   │   │   └── Index.tsx                             # Chat page
-│   │   ├── Contact/
-│   │   │   └── Index.tsx                             # Contact page
-│   │   ├── Dashboard/
-│   │   │   ├── Dashboard.test.tsx                    # Dashboard tests
-│   │   │   └── Index.tsx                             # Dashboard page
-│   │   ├── Games/
-│   │   │   └── BrainGames.tsx                        # Brain games
-│   │   ├── Health/
-│   │   │   ├── AIHealthAssistant.tsx                 # AI assistant
-│   │   │   ├── Emergency.tsx                         # Emergency guide
-│   │   │   ├── HealthFacts.tsx                       # Health facts
-│   │   │   └── HealthLibrary.tsx                     # Health library
-│   │   ├── History/
-│   │   │   └── Index.tsx                             # User history
-│   │   ├── Home/
-│   │   │   └── Index.tsx                             # Home page
-│   │   ├── Legal/
-│   │   │   ├── Accessibility.tsx
-│   │   │   ├── Disclaimer.tsx
-│   │   │   ├── Privacy.tsx
-│   │   │   └── Terms.tsx
-│   │   ├── Metrics/
-│   │   │   └── Index.tsx                            # Metrics dashboard
-│   │   ├── NotFound/
-│   │   │   └── Index.tsx                            # 404 page
-│   │   ├── Profile/
-│   │   │   └── Index.tsx                            # Profile page
-│   │   └── User/
-│   │       ├── ResetPassword.tsx                    # Password reset
-│   │       └── Settings.tsx                         # User settings
-│   ├── test/
-│   │   ├── AllProviders.tsx                         # Test providers
-│   │   ├── setup.ts                                 # Test setup
-│   │   └── utils.tsx                                # Test utilities
-│   │
-│   ├── App.css                                      # Global styles
-│   ├── App.tsx                                      # Root component
-│   ├── index.css                                    # Base styles
-│   ├── main.tsx                                     # Entry point
-│   └── vite-env.d.ts                                # Vite typings
-│
-├── supabase/
-│   ├── .branches/                                   # Branch metadata
-│   ├── .temp/                                       # Temporary files
-│   ├── functions/                                   # Edge functions
-│   ├── migrations/                                  # Database migrations
-│   └── config.toml                                  # Supabase configuration
-│
-├── CODE_OF_CONDUCT.md                               # Community guidelines
-├── README.md                                        # Project documentation
-├── components.json                                  # UI component configuration
-├── Dockerfile                                       # Docker container setup
-├── eslint.config.js                                 # ESLint configuration
-├── index.html                                       # Main HTML entry file
-├── nginx.conf                                       # Nginx server configuration
-├── package.json                                     # Project dependencies and scripts
-├── package-lock.json                                # Locked dependency versions
-├── postcss.config.js                                # PostCSS configuration
-├── tailwind.config.ts                               # Tailwind CSS configuration
-├── tsconfig.json                                    # TypeScript configuration
-├── tsconfig.app.json                                # App TypeScript settings
-├── tsconfig.node.json                               # Node TypeScript settings
-├── vite.config.ts                                   # Vite configuration
-├── .env.example                                     # Example environment variables
-├── .env.local                                       # Local environment variables
-├── .gitignore                                       # Git ignored files
-├── .dockerignore                                    # Docker ignored files
-├── .editorconfig                                    # Editor formatting rules
-├── .nvmrc                                           # Node.js version
-├── .prettierignore                                  # Prettier ignored files
-├── .prettierrc                                      # Prettier configuration
-└── bun.lockb                                        # Bun lock file
+http://localhost:8080
 ```
 
 ---
 
-# 🔐 Environment Variables
+## Environment Variables
 
-## Frontend Variables
+### Browser variables
 
-| Variable                      | Description                |
-| ----------------------------- | -------------------------- |
-| VITE_SUPABASE_URL             | Supabase Project URL       |
-| VITE_SUPABASE_PUBLISHABLE_KEY | Browser authentication key |
-| VITE_SUPABASE_ANON_KEY        | Legacy fallback if the publishable key is missing |
+These are loaded by Vite and are safe for frontend use.
 
-### Important
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Browser-safe Supabase key |
+| `VITE_SUPABASE_ANON_KEY` | No | Legacy fallback key |
 
-Only variables prefixed with `VITE_` are exposed to the frontend. The app reads `VITE_SUPABASE_PUBLISHABLE_KEY` first and falls back to `VITE_SUPABASE_ANON_KEY` only for older local setups.
+### Edge function secrets
+
+Do not place these in `.env.local`. Configure them in Supabase Dashboard or with `supabase secrets set`.
+
+| Secret | Required | Purpose |
+| --- | --- | --- |
+| `LOVABLE_API_KEY` | Yes | AI gateway key for symptom analysis |
+| `SUPABASE_URL` | Usually injected | Supabase project URL for functions |
+| `SUPABASE_ANON_KEY` | Usually injected | Request/auth validation |
+| `SUPABASE_SERVICE_ROLE_KEY` | For admin flows | Admin-only account deletion and service tasks |
+| `TWILIO_ACCOUNT_SID` | For SMS alerts | Twilio account identifier |
+| `TWILIO_AUTH_TOKEN` | For SMS alerts | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | For SMS alerts | Sender phone number |
+| `UPSTASH_REDIS_REST_URL` | Optional | Distributed rate limiting/cache |
+| `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash REST token |
+| `WEBHOOK_SECRET` | Optional | Webhook-protected cache invalidation |
 
 ---
 
-# ☁️ Supabase Edge Function Setup
+## Supabase Edge Functions
 
-## Required Secrets
+Available functions:
 
-| Secret                    | Purpose                          |
-| ------------------------- | -------------------------------- |
-| GEMINI_API_KEY            | Gemini API Key for symptom analysis |
-| SUPABASE_URL              | Supabase project URL (System Injected) |
-| SUPABASE_ANON_KEY         | Caller validation (System Injected)    |
-| SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows (System Injected) |
-| TWILIO_ACCOUNT_SID        | Emergency SMS alerts             |
-| TWILIO_AUTH_TOKEN         | Emergency SMS alerts             |
-| TWILIO_PHONE_NUMBER       | Emergency SMS sender number      |
-| UPSTASH_REDIS_REST_URL    | Optional rate limiting/cache     |
-| UPSTASH_REDIS_REST_TOKEN  | Optional rate limiting/cache     |
-| WEBHOOK_SECRET            | Optional cache webhook auth      |
+- `symptom-analyzer`
+- `broadcast-emergency`
+- `get-cached-data`
+- `invalidate-cache`
+- `delete-account`
+- `delete-user-account`
 
-## Configure Secrets
+Set secrets:
 
 ```bash
-supabase login
-
-supabase link --project-ref <project-ref>
-
-supabase secrets set GEMINI_API_KEY=<key>
-
-supabase secrets set TWILIO_ACCOUNT_SID=<sid>
-
-supabase secrets set TWILIO_AUTH_TOKEN=<token>
-
-supabase secrets set TWILIO_PHONE_NUMBER=<phone>
+npx supabase secrets set LOVABLE_API_KEY=<your-ai-key>
+npx supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> TWILIO_PHONE_NUMBER=<phone>
+npx supabase secrets set UPSTASH_REDIS_REST_URL=<url> UPSTASH_REDIS_REST_TOKEN=<token>
+npx supabase secrets set WEBHOOK_SECRET=<secret>
 ```
 
-Optional:
+Deploy functions:
 
 ```bash
-supabase secrets set UPSTASH_REDIS_REST_URL=<url>
-
-supabase secrets set UPSTASH_REDIS_REST_TOKEN=<token>
-
-supabase secrets set WEBHOOK_SECRET=<secret>
+npx supabase functions deploy symptom-analyzer
+npx supabase functions deploy broadcast-emergency
+npx supabase functions deploy get-cached-data
+npx supabase functions deploy invalidate-cache
+npx supabase functions deploy delete-account
+npx supabase functions deploy delete-user-account
 ```
 
-## Local Edge Functions
+Serve functions locally:
 
 ```bash
-supabase functions serve --env-file supabase/.env.local
+npx supabase functions serve --env-file supabase/.env.local
 ```
 
 ---
 
-# 🔌 API & Backend Services
+## Available Scripts
 
-## Authentication
-
-Handled through:
-
-* Supabase Auth
-* JWT Session Management
-
-## Database
-
-Managed via:
-
-* PostgreSQL
-* Supabase Migrations
-
-## Edge Functions
-
-Current Functions:
-
-* `symptom-analyzer`
-* `broadcast-emergency`
-* `get-cached-data`
-* `invalidate-cache`
-* `delete-user-account`
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start local development server |
+| `npm run build` | Create production build |
+| `npm run build:dev` | Create development-mode build |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format files with Prettier |
+| `npm run format:check` | Check formatting |
+| `npm run test` | Run tests once |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage |
 
 ---
 
-# 🧩 Project Structure
+## Testing
+
+Run the test suite:
+
+```bash
+npm run test
+```
+
+Run lint checks:
+
+```bash
+npm run lint
+```
+
+Build production assets:
+
+```bash
+npm run build
+```
+
+---
+
+## Deployment
+
+The app is deployed as a Vite frontend and uses Supabase for backend services.
+
+### Netlify
+
+Recommended settings:
 
 ```text
-symptom-scribe-clean/
-├── public/                                           # Static assets
-├── src/
-│   ├── components/
-│   │   ├── auth/
-│   │   │   └── ProtectedRoute.tsx                    # Route protection
-│   │   ├── chat/
-│   │   │   ├── ChatInterface.tsx                     # Main chat interface
-│   │   │   ├── ChatLoading.tsx                       # Loading state
-│   │   │   └── ChatMessage.tsx                       # Individual message
-│   │   ├── common/
-│   │   │   └── ErrorBoundary.tsx                     # Error handling
-│   │   ├── diagnostics/
-│   │   │   └── StartupDiagnostics.tsx                # Startup checks
-│   │   ├── hero/
-│   │   │   └── Hero.tsx                              # Landing page hero
-│   │   ├── layout/
-│   │   │   ├── AppSidebar.tsx                        # Sidebar navigation
-│   │   │   └── Layout.tsx                            # Shared layout
-│   │   ├── legal/
-│   │   │   ├── LegalPageLayout.tsx                   # Legal page wrapper
-│   │   │   ├── PageFooter.tsx                        # Footer component
-│   │   │   └── Section.tsx                           # Legal sections
-│   │   ├── navigation/
-│   │   │   ├── BackToTop.tsx                         # Back to top button
-│   │   │   └── ScrollToTop.tsx                       # Scroll manager
-│   │   ├── registration/
-│   │   │   ├── forms/
-│   │   │   │   └── MultiStepSignUp.tsx               # Registration form
-│   │   │   ├── shared/
-│   │   │   │   └── PasswordStrengthMeter.tsx         # Password strength indicator
-│   │   │   └── tests/
-│   │   │       └── PasswordStrengthMeter.test.tsx    # Registration tests
-│   │   ├── theme/
-│   │   │   ├── components/
-│   │   │   │   └── AnimatedThemeToggler.tsx          # Theme switcher
-│   │   │   ├── providers/
-│   │   │   │   └── theme-provider.tsx                # Theme provider
-│   │   │   └── styles/
-│   │   │       └── animated-theme-toggler.css        # Theme styles
-│   │   └── ui/                                       # Shared UI components
-│   ├── data/                                         # Static datasets
-│   ├── hooks/                                        # Custom React hooks
-│   ├── integrations/                                 # External integrations
-│   ├── lib/                                          # Utility functions
-│   ├── pages/
-│   │   ├── Auth/
-│   │   │   └── Index.tsx                             # Authentication page
-│   │   ├── Blog/
-│   │   │   ├── BlogPostPage.tsx                      # Blog details
-│   │   │   └── Index.tsx                             # Blog listin
-│   │   ├── Chat/
-│   │   │   └── Index.tsx                             # Chat page
-│   │   ├── Contact/
-│   │   │   └── Index.tsx                             # Contact page
-│   │   ├── Dashboard/
-│   │   │   ├── Dashboard.test.tsx                    # Dashboard tests
-│   │   │   └── Index.tsx                             # Dashboard page
-│   │   ├── Games/
-│   │   │   └── BrainGames.tsx                        # Brain games
-│   │   ├── Health/
-│   │   │   ├── AIHealthAssistant.tsx                 # AI assistant
-│   │   │   ├── Emergency.tsx                         # Emergency guide
-│   │   │   ├── HealthFacts.tsx                       # Health facts
-│   │   │   └── HealthLibrary.tsx                     # Health library
-│   │   ├── History/
-│   │   │   └── Index.tsx                             # User history
-│   │   ├── Home/
-│   │   │   └── Index.tsx                             # Home page
-│   │   ├── Legal/
-│   │   │   ├── Accessibility.tsx
-│   │   │   ├── Disclaimer.tsx
-│   │   │   ├── Privacy.tsx
-│   │   │   └── Terms.tsx
-│   │   ├── Metrics/
-│   │   │   └── Index.tsx                            # Metrics dashboard
-│   │   ├── NotFound/
-│   │   │   └── Index.tsx                            # 404 page
-│   │   ├── Profile/
-│   │   │   └── Index.tsx                            # Profile page
-│   │   └── User/
-│   │       ├── ResetPassword.tsx                    # Password reset
-│   │       └── Settings.tsx                         # User settings
-│   ├── test/
-│   │   ├── AllProviders.tsx                         # Test providers
-│   │   ├── setup.ts                                 # Test setup
-│   │   └── utils.tsx                                # Test utilities
-│   │
-│   ├── App.css                                      # Global styles
-│   ├── App.tsx                                      # Root component
-│   ├── index.css                                    # Base styles
-│   ├── main.tsx                                     # Entry point
-│   └── vite-env.d.ts                                # Vite typings
-│
-├── supabase/
-│   ├── .branches/                                   # Branch metadata
-│   ├── .temp/                                       # Temporary files
-│   ├── functions/                                   # Edge functions
-│   ├── migrations/                                  # Database migrations
-│   └── config.toml                                  # Supabase configuration
-│
-├── CHANGELOG.md                                     # Release history and updates
-├── CODE_OF_CONDUCT.md                               # Community guidelines
-├── CONTRIBUTING.md                                  # Contribution guide
-├── FAQ.md                                           # Frequently asked questions
-├── README.md                                        # Project documentation
-├── SECURITY.md                                      # Security policy
-├── TROUBLESHOOT.md                                  # Common issue resolutions
-├── components.json                                  # UI component configuration
-├── Dockerfile                                       # Docker container setup
-├── eslint.config.js                                 # ESLint configuration
-├── index.html                                       # Main HTML entry file
-├── nginx.conf                                       # Nginx server configuration
-├── package.json                                     # Project dependencies and scripts
-├── package-lock.json                                # Locked dependency versions
-├── postcss.config.js                                # PostCSS configuration
-├── tailwind.config.ts                               # Tailwind CSS configuration
-├── tsconfig.json                                    # TypeScript configuration
-├── tsconfig.app.json                                # App TypeScript settings
-├── tsconfig.node.json                               # Node TypeScript settings
-├── vite.config.ts                                   # Vite configuration
-├── .env.example                                     # Example environment variables
-├── .env.local                                       # Local environment variables
-├── .gitignore                                       # Git ignored files
-├── .dockerignore                                    # Docker ignored files
-├── .editorconfig                                    # Editor formatting rules
-├── .nvmrc                                           # Node.js version
-├── .prettierignore                                  # Prettier ignored files
-├── .prettierrc                                      # Prettier configuration
-└── bun.lockb                                        # Bun lock file
+Build command: npm run build
+Publish directory: dist
 ```
 
----
-
-# 📘 Usage Guide
-
-### 1. Create Account
-
-Register using email authentication.
-
-### 2. Track Metrics
-
-Add health records and wellness metrics.
-
-### 3. Analyze Symptoms
-
-Use AI-assisted symptom analysis.
-
-### 4. Explore Health Facts
-
-Learn through interactive educational content.
-
-### 5. Improve Cognitive Skills
-
-Play brain-training games.
-
----
-
-# 🛠️ Troubleshooting
-
-For detailed troubleshooting instructions, see:
-
-```text
-TROUBLESHOOTING.md
-```
-
-Common issues include:
-
-* Missing environment variables
-* Supabase authentication failures
-* Dependency installation errors
-* Port conflicts
-* Build failures
-
----
-
-# ❓ FAQ
-
-### Why are my environment variables undefined?
-
-Ensure all client-side variables begin with:
+Add these environment variables in Netlify:
 
 ```env
-VITE_
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
 
-### Why can't I log in?
+### Supabase
 
-Verify:
+Before production use:
 
-* Supabase credentials
-* User account status
-* Environment variables
+```bash
+npx supabase db push
+npx supabase functions deploy symptom-analyzer
+npx supabase functions deploy broadcast-emergency
+npx supabase functions deploy get-cached-data
+npx supabase functions deploy invalidate-cache
+npx supabase functions deploy delete-account
+npx supabase functions deploy delete-user-account
+```
 
-### Why does the app fail to build?
+Make sure all required edge-function secrets are configured before deploying functions.
+
+---
+
+## Security Notes
+
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` in frontend code.
+- Keep only `VITE_*` variables in browser-loaded environment files.
+- Use Supabase Row Level Security policies for user-owned data.
+- Keep API keys and webhook secrets in Supabase function secrets.
+- Do not commit `.env.local` or private credential files.
+- Review `docs/reference/SECURITY.md` for security guidance.
+
+---
+
+## Screenshots
+
+Add screenshots inside a `screenshots/` folder and reference them like this:
+
+```md
+![Dashboard](screenshots/dashboard.png)
+![Symptom Analyzer](screenshots/symptom-analyzer.png)
+![Metrics](screenshots/metrics.png)
+![Brain Games](screenshots/brain-games.png)
+```
+
+Suggested screenshots:
+
+- Home page
+- Dashboard
+- AI health assistant
+- Metrics page
+- Symptom history
+- Brain games
+- Mobile responsive view
+
+---
+
+## Troubleshooting
+
+### Environment variables are undefined
+
+Confirm that browser variables start with `VITE_` and that the dev server was restarted after editing `.env.local`.
+
+### Supabase login or data saving fails
 
 Check:
 
-* Dependency installation
-* TypeScript errors
-* Environment configuration
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- Supabase Auth settings
+- Database migrations
+- Row Level Security policies
+
+### Edge function returns an error
+
+Check:
+
+- Required secrets are configured in Supabase
+- The function is deployed
+- The local function server uses the right env file
+- Supabase project is linked with the correct project ref
+
+### Build fails
+
+Run:
+
+```bash
+npm install
+npm run lint
+npm run test
+npm run build
+```
+
+Fix TypeScript, lint, or missing environment issues reported by the command output.
 
 ---
 
-# 🤝 Contributing
+## Roadmap
 
-Contributions are welcome!
+- Wearable device integrations
+- Medication reminders
+- More advanced health analytics
+- Doctor-patient collaboration workflows
+- Personalized wellness forecasting
+- Expanded symptom safety checks
+- Multi-language health content
 
-## Contribution Steps
+---
+
+## Contributing
+
+Contributions are welcome.
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Commit your changes.
-4. Push your branch.
-5. Open a Pull Request.
+3. Make a focused change.
+4. Run tests and lint checks.
+5. Commit your work.
+6. Open a pull request.
 
-###  Contributors
+Pull request checklist:
 
-Thanks to all contributors ❤️
+- [ ] The change is tested locally
+- [ ] No unrelated files are included
+- [ ] Lint and formatting pass
+- [ ] Environment changes are documented
+- [ ] Any linked issue is referenced
 
-[![Contributors](https://contrib.rocks/image?repo=mohdmaazgani/symptom-scribe-clean)](https://github.com/mohdmaazgani/symptom-scribe-clean/graphs/contributors)
-
-
-## Pull Request Requirements
-
-### Related Issue
-
-```text
-Closes #<issue-number>
-```
-
-### Checklist
-
-* [ ] Tested locally
-* [ ] No unrelated files changed
-* [ ] Code style followed
-* [ ] Issue linked
-* [ ] No console errors
-* [ ] Issue assigned before work began
+See `docs/guides/CONTRIBUTING.md` for more details.
 
 ---
 
-# 🚀 Future Enhancements
-
-* Wearable device integration
-* AI-powered conversational diagnosis
-* Medication reminders
-* Advanced analytics dashboards
-* Doctor-patient collaboration portal
-* Personalized health forecasting
-
----
-
-# 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-You are free to:
-
-* Use
-* Modify
-* Distribute
-
-the software under the terms of the MIT License.
-
 ---
 
-# 👨‍💻 Author
+## Author
 
-Developed by **@mohdmaazgani**
+Developed by [@mohdmaazgani](https://github.com/mohdmaazgani).
 
-✨ Passionate about building intelligent, user-centric healthcare solutions.
-
+Built with a focus on accessible, intelligent, and user-friendly digital health experiences.
