@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Grid3X3,
   Brain,
   Award,
   Trophy,
@@ -25,11 +27,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Star,
-  Gamepad2,
-  Palette,
-  Calculator,
-  Gauge,
-  LayoutGrid,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,54 +97,14 @@ const games = [
     shadow: "shadow-orange-500/20",
   },
   {
-    id: "simon",
-    name: "Simon Says",
-    icon: Gamepad2,
-    description: "Watch and repeat the growing color sequence to test your memory",
-    color: "from-indigo-500/20 to-violet-500/20",
-    iconColor: "text-indigo-500",
-    gradient: "from-indigo-500 to-violet-500",
-    shadow: "shadow-indigo-500/20",
-  },
-  {
-    id: "stroop",
-    name: "Stroop Test",
-    icon: Palette,
-    description: "Tap the ink colour of the word, not what the word says",
-    color: "from-pink-500/20 to-rose-500/20",
-    iconColor: "text-pink-500",
-    gradient: "from-pink-500 to-rose-500",
-    shadow: "shadow-pink-500/20",
-  },
-  {
-    id: "mentalmath",
-    name: "Mental Math Challenge",
-    icon: Calculator,
-    description: "Solve as many arithmetic problems as you can before time runs out",
-    color: "from-teal-500/20 to-emerald-500/20",
-    iconColor: "text-teal-500",
-    gradient: "from-teal-500 to-emerald-500",
-    shadow: "shadow-teal-500/20",
-  },
-  {
-    id: "reaction",
-    name: "Reaction Speed Test",
-    icon: Gauge,
-    description: "Wait for green, then tap as fast as you can to measure your reflexes",
-    color: "from-amber-500/20 to-yellow-500/20",
-    iconColor: "text-amber-500",
-    gradient: "from-amber-500 to-yellow-500",
-    shadow: "shadow-amber-500/20",
-  },
-  {
-    id: "colorseq",
-    name: "Color Sequence Memory",
-    icon: LayoutGrid,
-    description: "Watch the tiles light up, then tap them back in the exact same order",
-    color: "from-fuchsia-500/20 to-purple-500/20",
-    iconColor: "text-fuchsia-500",
-    gradient: "from-fuchsia-500 to-purple-500",
-    shadow: "shadow-fuchsia-500/20",
+    id: "2048",
+    name: "2048",
+    icon: Grid3X3,
+    description: "Combine matching tiles to reach 2048.",
+    color: "from-orange-500/20 to-yellow-500/20",
+    iconColor: "text-orange-500",
+    gradient: "from-orange-500 to-yellow-500",
+    shadow: "shadow-orange-500/20",
   },
 ];
 
@@ -180,659 +137,7 @@ const benefits = [
     color: "text-green-500",
     bgColor: "bg-green-500/10",
   },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Self-contained mini-games (Simon Says, Stroop, Mental Math, Reaction)
-// Each manages its own state and reports back via onXp / onCelebrate.
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface MiniGameProps {
-  onExit: () => void;
-  onXp: (points: number) => void;
-  onCelebrate: () => void;
-}
-
-const GameShell = ({
-  title,
-  subtitle,
-  onExit,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onExit: () => void;
-  children: React.ReactNode;
-}) => (
-  <Card className="relative overflow-hidden border-border/50 bg-card/60 backdrop-blur-xl rounded-[2rem]">
-    <CardHeader className="flex flex-row items-start justify-between gap-4">
-      <div>
-        <CardTitle className="text-2xl font-bold tracking-tight">{title}</CardTitle>
-        {subtitle && (
-          <CardDescription className="text-base font-medium mt-1">{subtitle}</CardDescription>
-        )}
-      </div>
-      <Button
-        variant="ghost"
-        onClick={onExit}
-        className="rounded-2xl shrink-0"
-        aria-label="Back to all games"
-      >
-        ← Back
-      </Button>
-    </CardHeader>
-    <CardContent className="pb-8">{children}</CardContent>
-  </Card>
-);
-
-// ── Simon Says ──────────────────────────────────────────────────────────────
-const SIMON_PADS = [
-  { name: "Green", base: "bg-emerald-700", active: "bg-emerald-300", key: "1" },
-  { name: "Red", base: "bg-rose-700", active: "bg-rose-300", key: "2" },
-  { name: "Yellow", base: "bg-amber-600", active: "bg-amber-200", key: "3" },
-  { name: "Blue", base: "bg-sky-700", active: "bg-sky-300", key: "4" },
-];
-
-const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
-  const [sequence, setSequence] = useState<number[]>([]);
-  const [userStep, setUserStep] = useState(0);
-  const [status, setStatus] = useState<"idle" | "showing" | "input" | "over">("idle");
-  const [activePad, setActivePad] = useState<number | null>(null);
-  const [best, setBest] = useState(0);
-  const [message, setMessage] = useState("Press Start, then repeat the sequence.");
-  const timers = useRef<number[]>([]);
-
-  const clearTimers = () => {
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
-  };
-  useEffect(() => () => clearTimers(), []);
-
-  const playSequence = (seq: number[]) => {
-    setStatus("showing");
-    setMessage("Watch carefully…");
-    clearTimers();
-    seq.forEach((pad, i) => {
-      timers.current.push(window.setTimeout(() => setActivePad(pad), 600 * i + 300));
-      timers.current.push(window.setTimeout(() => setActivePad(null), 600 * i + 600));
-    });
-    timers.current.push(
-      window.setTimeout(() => {
-        setStatus("input");
-        setUserStep(0);
-        setMessage("Your turn — repeat it!");
-      }, 600 * seq.length + 300),
-    );
-  };
-
-  const startGame = () => {
-    const first = [Math.floor(Math.random() * 4)];
-    setSequence(first);
-    playSequence(first);
-  };
-
-  const handlePad = (pad: number) => {
-    if (status !== "input") return;
-    setActivePad(pad);
-    window.setTimeout(() => setActivePad(null), 200);
-
-    if (pad === sequence[userStep]) {
-      const nextStep = userStep + 1;
-      if (nextStep === sequence.length) {
-        onXp(5);
-        setBest((b) => Math.max(b, sequence.length));
-        setMessage(`Nice! Round ${sequence.length} cleared.`);
-        setStatus("showing");
-        timers.current.push(
-          window.setTimeout(() => {
-            const next = [...sequence, Math.floor(Math.random() * 4)];
-            setSequence(next);
-            playSequence(next);
-          }, 800),
-        );
-      } else {
-        setUserStep(nextStep);
-      }
-    } else {
-      setStatus("over");
-      setMessage(`Wrong pad! You reached round ${sequence.length}.`);
-      if (sequence.length >= 5) onCelebrate();
-    }
-  };
-
-  useEffect(() => {
-    if (status !== "input") return;
-    const onKey = (e: KeyboardEvent) => {
-      const idx = ["1", "2", "3", "4"].indexOf(e.key);
-      if (idx >= 0) handlePad(idx);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, userStep, sequence]);
-
-  return (
-    <GameShell title="Simon Says" subtitle="Repeat the growing colour sequence" onExit={onExit}>
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-6 text-sm font-semibold">
-          <span>
-            Round: <span className="text-primary">{sequence.length}</span>
-          </span>
-          <span>
-            Best: <span className="text-primary">{best}</span>
-          </span>
-        </div>
-        <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
-          {message}
-        </p>
-        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-          {SIMON_PADS.map((pad, i) => (
-            <button
-              key={pad.name}
-              type="button"
-              onClick={() => handlePad(i)}
-              disabled={status !== "input"}
-              aria-label={`${pad.name} pad, keyboard key ${pad.key}`}
-              className={`aspect-square rounded-3xl border-4 border-border/40 font-bold text-white flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed ${
-                activePad === i ? `${pad.active} scale-105 ring-4 ring-white/60` : pad.base
-              }`}
-            >
-              <span className="drop-shadow">{pad.name}</span>
-            </button>
-          ))}
-        </div>
-        {(status === "idle" || status === "over") && (
-          <Button onClick={startGame} className="rounded-2xl gap-2">
-            <RefreshCw className="w-4 h-4" /> {status === "over" ? "Play Again" : "Start"}
-          </Button>
-        )}
-      </div>
-    </GameShell>
-  );
-};
-
-// ── Stroop Test ─────────────────────────────────────────────────────────────
-const STROOP_COLORS = [
-  { name: "Red", text: "text-rose-500" },
-  { name: "Green", text: "text-emerald-500" },
-  { name: "Blue", text: "text-sky-500" },
-  { name: "Yellow", text: "text-amber-500" },
-  { name: "Purple", text: "text-violet-500" },
-];
-const STROOP_TIME = 30;
-
-const StroopTestGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
-  const [running, setRunning] = useState(false);
-  const [word, setWord] = useState(STROOP_COLORS[0]);
-  const [ink, setInk] = useState(STROOP_COLORS[1]);
-  const [score, setScore] = useState(0);
-  const [best, setBest] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(STROOP_TIME);
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-
-  const nextRound = () => {
-    const w = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
-    let ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
-    if (Math.random() < 0.75) {
-      while (ik.name === w.name) ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
-    }
-    setWord(w);
-    setInk(ik);
-  };
-
-  const start = () => {
-    setScore(0);
-    setTimeLeft(STROOP_TIME);
-    setFeedback(null);
-    setRunning(true);
-    nextRound();
-  };
-
-  useEffect(() => {
-    if (!running) return;
-    if (timeLeft <= 0) {
-      setRunning(false);
-      onXp(score * 2);
-      setBest((b) => Math.max(b, score));
-      if (score >= 15) onCelebrate();
-      return;
-    }
-    const t = window.setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, timeLeft]);
-
-  const answer = (name: string) => {
-    if (!running) return;
-    if (name === ink.name) {
-      setScore((s) => s + 1);
-      setFeedback("correct");
-    } else {
-      setFeedback("wrong");
-    }
-    nextRound();
-    window.setTimeout(() => setFeedback(null), 350);
-  };
-
-  return (
-    <GameShell
-      title="Stroop Test"
-      subtitle="Tap the INK colour of the word — ignore what it spells"
-      onExit={onExit}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
-          <span>
-            Score: <span className="text-primary">{score}</span>
-          </span>
-          <span>
-            Best: <span className="text-primary">{best}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Timer className="w-4 h-4" /> {timeLeft}s
-          </span>
-        </div>
-
-        {running ? (
-          <>
-            <div
-              className={`text-6xl font-black tracking-tight transition-transform ${ink.text} ${
-                feedback === "correct" ? "scale-110" : feedback === "wrong" ? "scale-90" : ""
-              }`}
-            >
-              {word.name.toUpperCase()}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-md">
-              {STROOP_COLORS.map((c) => (
-                <Button
-                  key={c.name}
-                  variant="outline"
-                  onClick={() => answer(c.name)}
-                  className="rounded-2xl h-12 font-semibold"
-                >
-                  {c.name}
-                </Button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center space-y-4">
-            {timeLeft <= 0 && (
-              <p className="text-lg font-semibold">
-                Time! You scored <span className="text-primary">{score}</span>.
-              </p>
-            )}
-            <Button onClick={start} className="rounded-2xl gap-2">
-              <RefreshCw className="w-4 h-4" /> {timeLeft <= 0 ? "Play Again" : "Start"}
-            </Button>
-          </div>
-        )}
-      </div>
-    </GameShell>
-  );
-};
-
-// ── Mental Math Challenge ───────────────────────────────────────────────────
-const MENTAL_TIME = 30;
-
-const MentalMathGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
-  const [running, setRunning] = useState(false);
-  const [score, setScore] = useState(0);
-  const [best, setBest] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(MENTAL_TIME);
-  const [problem, setProblem] = useState<{ text: string; answer: number }>({ text: "", answer: 0 });
-  const [options, setOptions] = useState<number[]>([]);
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-
-  const makeProblem = () => {
-    const ops = ["+", "−", "×"] as const;
-    const op = ops[Math.floor(Math.random() * ops.length)];
-    let a = 0;
-    let b = 0;
-    let ans = 0;
-    if (op === "×") {
-      a = 2 + Math.floor(Math.random() * 11);
-      b = 2 + Math.floor(Math.random() * 11);
-      ans = a * b;
-    } else if (op === "+") {
-      a = 5 + Math.floor(Math.random() * 45);
-      b = 5 + Math.floor(Math.random() * 45);
-      ans = a + b;
-    } else {
-      a = 10 + Math.floor(Math.random() * 40);
-      b = 1 + Math.floor(Math.random() * a);
-      ans = a - b;
-    }
-    const opts = new Set<number>([ans]);
-    while (opts.size < 4) {
-      const delta = Math.floor(Math.random() * 9) - 4 || 5;
-      const cand = ans + delta;
-      if (cand >= 0) opts.add(cand);
-    }
-    setProblem({ text: `${a} ${op} ${b}`, answer: ans });
-    setOptions(shuffleArray([...opts]));
-  };
-
-  const start = () => {
-    setScore(0);
-    setTimeLeft(MENTAL_TIME);
-    setFeedback(null);
-    setRunning(true);
-    makeProblem();
-  };
-
-  useEffect(() => {
-    if (!running) return;
-    if (timeLeft <= 0) {
-      setRunning(false);
-      onXp(score * 3);
-      setBest((b) => Math.max(b, score));
-      if (score >= 12) onCelebrate();
-      return;
-    }
-    const t = window.setTimeout(() => setTimeLeft((s) => s - 1), 1000);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, timeLeft]);
-
-  const answer = (value: number) => {
-    if (!running) return;
-    if (value === problem.answer) {
-      setScore((s) => s + 1);
-      setFeedback("correct");
-    } else {
-      setFeedback("wrong");
-    }
-    makeProblem();
-    window.setTimeout(() => setFeedback(null), 300);
-  };
-
-  return (
-    <GameShell
-      title="Mental Math Challenge"
-      subtitle="Pick the correct answer before time runs out"
-      onExit={onExit}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
-          <span>
-            Score: <span className="text-primary">{score}</span>
-          </span>
-          <span>
-            Best: <span className="text-primary">{best}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Timer className="w-4 h-4" /> {timeLeft}s
-          </span>
-        </div>
-
-        {running ? (
-          <>
-            <div
-              className={`text-5xl font-black tracking-tight transition-transform ${
-                feedback === "correct"
-                  ? "text-emerald-500 scale-110"
-                  : feedback === "wrong"
-                    ? "text-rose-500 scale-95"
-                    : ""
-              }`}
-            >
-              {problem.text}
-            </div>
-            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-              {options.map((opt) => (
-                <Button
-                  key={opt}
-                  variant="outline"
-                  onClick={() => answer(opt)}
-                  className="rounded-2xl h-14 text-lg font-bold"
-                >
-                  {opt}
-                </Button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center space-y-4">
-            {timeLeft <= 0 && (
-              <p className="text-lg font-semibold">
-                Time! You solved <span className="text-primary">{score}</span>.
-              </p>
-            )}
-            <Button onClick={start} className="rounded-2xl gap-2">
-              <RefreshCw className="w-4 h-4" /> {timeLeft <= 0 ? "Play Again" : "Start"}
-            </Button>
-          </div>
-        )}
-      </div>
-    </GameShell>
-  );
-};
-
-// ── Reaction Speed Test ─────────────────────────────────────────────────────
-const ReactionGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
-  const [phase, setPhase] = useState<"idle" | "waiting" | "now" | "result" | "tooSoon">("idle");
-  const [lastMs, setLastMs] = useState<number | null>(null);
-  const [bestMs, setBestMs] = useState<number | null>(null);
-  const startRef = useRef(0);
-  const timeoutRef = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    },
-    [],
-  );
-
-  const begin = () => {
-    setPhase("waiting");
-    setLastMs(null);
-    const delay = 1200 + Math.random() * 2500;
-    timeoutRef.current = window.setTimeout(() => {
-      startRef.current = performance.now();
-      setPhase("now");
-    }, delay);
-  };
-
-  const handleClick = () => {
-    if (phase === "idle" || phase === "result" || phase === "tooSoon") {
-      begin();
-      return;
-    }
-    if (phase === "waiting") {
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-      setPhase("tooSoon");
-      return;
-    }
-    if (phase === "now") {
-      const ms = Math.round(performance.now() - startRef.current);
-      setLastMs(ms);
-      setBestMs((b) => (b === null ? ms : Math.min(b, ms)));
-      setPhase("result");
-      const xp = ms < 250 ? 15 : ms < 400 ? 10 : ms < 600 ? 6 : 3;
-      onXp(xp);
-      if (ms < 250) onCelebrate();
-    }
-  };
-
-  const zone = {
-    idle: { bg: "bg-muted", label: "Click to start" },
-    waiting: { bg: "bg-rose-600", label: "Wait for GREEN…" },
-    now: { bg: "bg-emerald-500", label: "CLICK NOW!" },
-    result: { bg: "bg-sky-600", label: `${lastMs} ms — click to retry` },
-    tooSoon: { bg: "bg-amber-500", label: "Too soon! Click to retry" },
-  }[phase];
-
-  return (
-    <GameShell
-      title="Reaction Speed Test"
-      subtitle="Wait for the panel to turn green, then tap as fast as you can"
-      onExit={onExit}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
-          <span>
-            Last: <span className="text-primary">{lastMs !== null ? `${lastMs} ms` : "—"}</span>
-          </span>
-          <span>
-            Best: <span className="text-primary">{bestMs !== null ? `${bestMs} ms` : "—"}</span>
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={handleClick}
-          aria-label={zone.label}
-          className={`w-full max-w-md h-56 rounded-[2rem] text-white text-2xl font-black flex items-center justify-center text-center px-6 transition-colors duration-150 ${zone.bg}`}
-        >
-          {zone.label}
-        </button>
-      </div>
-    </GameShell>
-  );
-};
-
-// ── Color Sequence Memory ───────────────────────────────────────────────────
-const COLOR_TILES = [
-  { name: "Rose", base: "bg-rose-700", active: "bg-rose-300" },
-  { name: "Amber", base: "bg-amber-600", active: "bg-amber-200" },
-  { name: "Emerald", base: "bg-emerald-700", active: "bg-emerald-300" },
-  { name: "Sky", base: "bg-sky-700", active: "bg-sky-300" },
-  { name: "Violet", base: "bg-violet-700", active: "bg-violet-300" },
-  { name: "Fuchsia", base: "bg-fuchsia-700", active: "bg-fuchsia-300" },
-  { name: "Teal", base: "bg-teal-700", active: "bg-teal-300" },
-  { name: "Orange", base: "bg-orange-700", active: "bg-orange-300" },
-  { name: "Indigo", base: "bg-indigo-700", active: "bg-indigo-300" },
-];
-const COLOR_SEQ_START_LENGTH = 3;
-const COLOR_SEQ_FLASH_MS = 550;
-
-const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
-  const [sequence, setSequence] = useState<number[]>([]);
-  const [userTaps, setUserTaps] = useState<number[]>([]);
-  const [status, setStatus] = useState<"idle" | "showing" | "recall" | "over">("idle");
-  const [activeTile, setActiveTile] = useState<number | null>(null);
-  const [round, setRound] = useState(0);
-  const [best, setBest] = useState(0);
-  const [message, setMessage] = useState("Press Start, then watch the tiles closely.");
-  const timers = useRef<number[]>([]);
-
-  const clearTimers = () => {
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
-  };
-  useEffect(() => () => clearTimers(), []);
-
-  const flashSequence = (seq: number[]) => {
-    setStatus("showing");
-    setUserTaps([]);
-    setMessage("Watch the sequence…");
-    clearTimers();
-    seq.forEach((tile, i) => {
-      timers.current.push(
-        window.setTimeout(() => setActiveTile(tile), COLOR_SEQ_FLASH_MS * i + 300),
-      );
-      timers.current.push(
-        window.setTimeout(() => setActiveTile(null), COLOR_SEQ_FLASH_MS * i + COLOR_SEQ_FLASH_MS - 100),
-      );
-    });
-    timers.current.push(
-      window.setTimeout(() => {
-        setStatus("recall");
-        setMessage("Now tap the tiles in the same order.");
-      }, COLOR_SEQ_FLASH_MS * seq.length + 300),
-    );
-  };
-
-  const startGame = () => {
-    const first = Array.from({ length: COLOR_SEQ_START_LENGTH }, () =>
-      Math.floor(Math.random() * COLOR_TILES.length),
-    );
-    setRound(1);
-    setSequence(first);
-    flashSequence(first);
-  };
-
-  const handleTileTap = (tile: number) => {
-    if (status !== "recall") return;
-    setActiveTile(tile);
-    window.setTimeout(() => setActiveTile(null), 200);
-
-    const expected = sequence[userTaps.length];
-    if (tile !== expected) {
-      setStatus("over");
-      setMessage(`Not quite! You reached round ${round} (sequence of ${sequence.length}).`);
-      if (round >= 5) onCelebrate();
-      return;
-    }
-
-    const nextTaps = [...userTaps, tile];
-    setUserTaps(nextTaps);
-
-    if (nextTaps.length === sequence.length) {
-      onXp(6);
-      setBest((b) => Math.max(b, round));
-      setMessage(`Correct! Round ${round} cleared.`);
-      setStatus("showing");
-      timers.current.push(
-        window.setTimeout(() => {
-          const next = [...sequence, Math.floor(Math.random() * COLOR_TILES.length)];
-          setRound((r) => r + 1);
-          setSequence(next);
-          flashSequence(next);
-        }, 900),
-      );
-    }
-  };
-
-  return (
-    <GameShell
-      title="Color Sequence Memory"
-      subtitle="Watch the tiles light up, then recall the exact order"
-      onExit={onExit}
-    >
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex items-center gap-6 text-sm font-semibold" aria-live="polite">
-          <span>
-            Round: <span className="text-primary">{round}</span>
-          </span>
-          <span>
-            Best: <span className="text-primary">{best}</span>
-          </span>
-        </div>
-        <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
-          {message}
-        </p>
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-sm">
-          {COLOR_TILES.map((tile, i) => (
-            <button
-              key={tile.name}
-              type="button"
-              onClick={() => handleTileTap(i)}
-              disabled={status !== "recall"}
-              aria-label={`${tile.name} tile`}
-              onKeyDown={(e) => {
-                if ((e.key === "Enter" || e.key === " ") && status === "recall") {
-                  e.preventDefault();
-                  handleTileTap(i);
-                }
-              }}
-              className={`aspect-square rounded-2xl border-2 border-border/40 font-semibold text-white text-xs sm:text-sm flex items-center justify-center transition-all duration-150 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-                activeTile === i ? `${tile.active} scale-105 ring-4 ring-white/60` : tile.base
-              }`}
-            >
-              <span className="drop-shadow sr-only sm:not-sr-only">{tile.name}</span>
-            </button>
-          ))}
-        </div>
-        {(status === "idle" || status === "over") && (
-          <Button onClick={startGame} className="rounded-2xl gap-2">
-            <RefreshCw className="w-4 h-4" /> {status === "over" ? "Play Again" : "Start"}
-          </Button>
-        )}
-      </div>
-    </GameShell>
-  );
-};
+]; 
 
 const BrainGames = () => {
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -865,11 +170,31 @@ const BrainGames = () => {
   const [timedMode, setTimedMode] = useState(false);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(15);
   const [showFireStreak, setShowFireStreak] = useState(false);
+  const [grid2048, setGrid2048] = useState<number[][]>([]);
+  const [score2048, setScore2048] = useState(0);
+  const [gameOver2048, setGameOver2048] = useState(false);
+  const [won2048, setWon2048] = useState(false);
   const timerRef = useRef<number | null>(null);
   const wordTimeoutRef = useRef<number | null>(null);
   const TOTAL_QUESTIONS = 10;
   const XP_PER_QUESTION = 10;
   const XP_PER_LEVEL = 100;
+  const GRID_SIZE = 4;
+
+  const TILE_COLORS: Record<number, string> = {
+    0: "bg-muted",
+    2: "bg-slate-200 dark:bg-slate-700",
+    4: "bg-sky-200 dark:bg-sky-700",
+    8: "bg-cyan-300 dark:bg-cyan-700",
+    16: "bg-emerald-300 dark:bg-emerald-700",
+    32: "bg-yellow-300 dark:bg-yellow-700",
+    64: "bg-orange-300 dark:bg-orange-700",
+    128: "bg-red-300 dark:bg-red-700",
+    256: "bg-purple-300 dark:bg-purple-700",
+    512: "bg-pink-300 dark:bg-pink-700",
+    1024: "bg-indigo-400 dark:bg-indigo-700",
+    2048: "bg-green-400 dark:bg-green-700",
+  };
 
   // Calculate level dynamically from XP
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
@@ -1055,6 +380,111 @@ const BrainGames = () => {
     showSuccess("New Game!", "Cards reshuffled — good luck!");
   };
 
+  const createEmptyGrid = () =>
+    Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+
+  const addRandomTile = (grid: number[][]) => {
+    const empty: [number, number][] = [];
+
+    grid.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        if (cell === 0) empty.push([r, c]);
+      })
+    );
+
+    if (!empty.length) return grid;
+
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    return grid;
+  };
+
+  const initialize2048 = () => {
+    const board = addRandomTile(addRandomTile(createEmptyGrid()));
+
+    setGrid2048(board.map((row) => [...row]));
+    setScore2048(0);
+    setWon2048(false);
+    setGameOver2048(false);
+  };
+
+  const slideAndMerge = (line: number[]) => {
+    const compact = line.filter(Boolean);
+    const merged: number[] = [];
+    let gain = 0;
+
+    for (let i = 0; i < compact.length; i++) {
+      if (compact[i] === compact[i + 1]) {
+        const value = compact[i] * 2;
+        merged.push(value);
+        gain += value;
+        i += 1;
+      } else {
+        merged.push(compact[i]);
+      }
+    }
+
+    while (merged.length < GRID_SIZE) merged.push(0);
+    return { line: merged, gain };
+  };
+
+  const move = useCallback((direction: "left" | "right" | "up" | "down") => {
+    setGrid2048((prevGrid) => {
+      const board = prevGrid.map((row) => [...row]);
+      let moved = false;
+      let gained = 0;
+
+      const processLine = (line: number[], reverse = false) => {
+        const normalized = reverse ? [...line].reverse() : line;
+        const result = slideAndMerge(normalized);
+        if (JSON.stringify(result.line) !== JSON.stringify(normalized)) moved = true;
+        gained += result.gain;
+        return reverse ? result.line.reverse() : result.line;
+      };
+
+      const nextBoard = (() => {
+        switch (direction) {
+          case "left":
+            return board.map((row) => processLine(row));
+          case "right":
+            return board.map((row) => processLine(row, true));
+          case "up": {
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const mergedCols = cols.map((col) => processLine(col));
+            return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
+          }
+          case "down": {
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const mergedCols = cols.map((col) => processLine(col, true));
+            return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
+          }
+          default:
+            return board;
+        }
+      })();
+
+      if (!moved) return prevGrid;
+
+      const updatedBoard = addRandomTile(nextBoard);
+      setScore2048((score) => score + gained);
+      return updatedBoard.map((row) => [...row]);
+    });
+  }, []);
+
+  const canMove = (grid: number[][]) => {
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (grid[r][c] === 0) return true;
+
+        if (c < GRID_SIZE - 1 && grid[r][c] === grid[r][c + 1]) return true;
+
+        if (r < GRID_SIZE - 1 && grid[r][c] === grid[r + 1][c]) return true;
+      }
+    }
+
+    return false;
+  };
+
   // ─── Math Game ─────────────────────────────────────────────────────────────
 
   // ─── Word Game ─────────────────────────────────────────────────────────────
@@ -1068,6 +498,49 @@ const BrainGames = () => {
 
     return () => clearInterval(timer);
   }, [wordPhase, timeLeft]);
+
+  useEffect(() => {
+    if (activeGame !== "2048") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          move("left");
+          break;
+
+        case "ArrowRight":
+          e.preventDefault();
+          move("right");
+          break;
+
+        case "ArrowUp":
+          e.preventDefault();
+          move("up");
+          break;
+
+        case "ArrowDown":
+          e.preventDefault();
+          move("down");
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeGame, move]);
+
+  useEffect(() => {
+    if (activeGame !== "2048") return;
+
+    if (grid2048.flat().includes(2048)) {
+      setWon2048(true);
+    }
+
+    if (!canMove(grid2048)) {
+      setGameOver2048(true);
+    }
+  }, [activeGame, grid2048]);
 
   // Cleanup timeout when leaving Word game or unmounting
   useEffect(() => {
@@ -1088,7 +561,8 @@ const BrainGames = () => {
       (activeGame === "memory" && memoryCards.length > 0 && !memoryGameWon) ||
       (activeGame === "math") ||
       (activeGame === "word" && wordSequence.length > 0) ||
-      (activeGame === "pattern" && currentQuestion !== null && !gameCompleted)
+      (activeGame === "pattern" && currentQuestion !== null && !gameCompleted) ||
+      (activeGame === "2048" && grid2048.length > 0 && !gameOver2048)
     );
 
     window.isGameActive = isGameActive;
@@ -1134,7 +608,7 @@ const BrainGames = () => {
       window.removeEventListener("popstate", handlePopState);
       window.isGameActive = false;
     };
-  }, [activeGame, memoryCards.length, memoryGameWon, wordSequence.length, currentQuestion, gameCompleted]);
+  }, [activeGame, memoryCards.length, memoryGameWon, wordSequence.length, currentQuestion, gameCompleted, grid2048.length, gameOver2048]);
 
   // ─── Pattern Recognition Game ──────────────────────────────────────────────
 
@@ -1487,6 +961,12 @@ const BrainGames = () => {
     }, 10000);
   };
 
+  const start2048Game = () => {
+    initialize2048();
+    setActiveGame("2048");
+    showSuccess("2048 Started!", "Merge tiles to reach 2048.");
+  };
+
   useEffect(() => {
     if (wordPhase !== "memorize" || timeLeft <= 0) return;
 
@@ -1649,6 +1129,70 @@ const BrainGames = () => {
       generateMathQuestion();
     }
   };
+
+  const render2048Game = () => (
+    <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-[2.5rem]">
+      <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 sm:pb-8 p-4 sm:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-black tracking-tight">2048</CardTitle>
+            <CardDescription className="text-base font-bold text-primary">
+              Combine matching tiles to reach 2048.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Badge className="h-10 rounded-2xl px-4 text-base font-bold">
+              Score: {score2048}
+            </Badge>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={initialize2048}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setActiveGame(null)}
+              className="h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-muted-foreground hover:text-destructive"
+            >
+              Exit
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-8 md:p-12 space-y-6">
+        {won2048 && (
+          <div className="mx-auto max-w-sm rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm font-semibold text-green-700 dark:text-green-300">
+            🎉 Congratulations! You reached 2048!
+          </div>
+        )}
+
+        {gameOver2048 && (
+          <div className="mx-auto max-w-sm rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm font-semibold text-red-700 dark:text-red-300">
+            Game Over!
+          </div>
+        )}
+
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm mx-auto">
+          {grid2048.flat().map((tile, index) => (
+            <div
+              key={index}
+              className={`aspect-square rounded-2xl flex items-center justify-center text-lg sm:text-2xl font-black ${
+                TILE_COLORS[tile] ?? "bg-background"
+              }`}
+            >
+              {tile || ""}
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Matching tiles will merge and grow your score. The board is ready for the next step.
+        </p>
+      </CardContent>
+    </Card>
+  );
 
   // ─── Pattern game renderer ─────────────────────────────────────────────────
 
@@ -2140,7 +1684,7 @@ const BrainGames = () => {
                         else if (game.id === "math") startMathGame();
                         else if (game.id === "word") startWordGame();
                         else if (game.id === "pattern") startPatternGame();
-                        else setActiveGame(game.id);
+                        else if (game.id === "2048") start2048Game();
                       }
                     }}
                     onClick={() => {
@@ -2148,7 +1692,7 @@ const BrainGames = () => {
                       else if (game.id === "math") startMathGame();
                       else if (game.id === "word") startWordGame();
                       else if (game.id === "pattern") startPatternGame();
-                      else setActiveGame(game.id);
+                      else if (game.id === "2048") start2048Game();
                     }}
                   >
                     <div
@@ -2702,38 +2246,10 @@ const BrainGames = () => {
                   </div>
                 </CardContent>
               </Card>
+            ) : activeGame === "2048" ? (
+              render2048Game()
             ) : activeGame === "pattern" ? (
               renderPatternGame()
-            ) : activeGame === "simon" ? (
-              <SimonSaysGame
-                onExit={() => setActiveGame(null)}
-                onXp={awardXp}
-                onCelebrate={triggerConfetti}
-              />
-            ) : activeGame === "stroop" ? (
-              <StroopTestGame
-                onExit={() => setActiveGame(null)}
-                onXp={awardXp}
-                onCelebrate={triggerConfetti}
-              />
-            ) : activeGame === "mentalmath" ? (
-              <MentalMathGame
-                onExit={() => setActiveGame(null)}
-                onXp={awardXp}
-                onCelebrate={triggerConfetti}
-              />
-            ) : activeGame === "reaction" ? (
-              <ReactionGame
-                onExit={() => setActiveGame(null)}
-                onXp={awardXp}
-                onCelebrate={triggerConfetti}
-              />
-            ) : activeGame === "colorseq" ? (
-              <ColorSequenceGame
-                onExit={() => setActiveGame(null)}
-                onXp={awardXp}
-                onCelebrate={triggerConfetti}
-              />
             ) : null}
           </motion.div>
         )}
