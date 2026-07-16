@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 import {
-  Activity,
   Loader2,
   Mail,
   Lock,
@@ -190,13 +189,17 @@ const handleForgotPassword= async () => {
 
         <Card className="w-full border border-white/15 bg-slate-950/55 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-2xl">
           <CardHeader className="space-y-5 px-6 pb-4 pt-7 text-center sm:px-8">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-300/10 shadow-inner shadow-cyan-200/10">
-              <Activity className="h-8 w-8 text-cyan-200" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl shadow-inner shadow-cyan-200/10">
+              <img
+                src="/brand/icon-light.svg"
+                alt="Symptom Scribe"
+                className="h-full w-full object-contain"
+              />
             </div>
 
             <div className="space-y-2">
               <CardTitle className="text-2xl font-bold tracking-normal text-white sm:text-3xl">
-                Smart Health Tracker
+                Symptom Scribe
               </CardTitle>
               <CardDescription className="text-sm leading-6 text-slate-300">
                 Manage your health with AI-powered insights

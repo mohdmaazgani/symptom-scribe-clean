@@ -93,21 +93,18 @@ export function AppSidebar() {
     }
   };
 
-  // ✨ updated: active state now gets a tinted bg + left accent border,
-  // inactive items get a transparent left border (so spacing doesn't jump on hover)
-  // and a softer hover background + smooth transition.
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive
-      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-ring rounded-md transition-colors"
-      : "border-l-2 border-transparent text-sidebar-foreground/80 hover:bg-sidebar-ring/15 hover:border-sidebar-ring hover:text-sidebar-foreground rounded-md transition-colors";
-
   return (
     <Sidebar collapsible="icon">
       <div className="flex h-14 items-center justify-between px-4 border-b border-border">
-        <NavLink to="/" className="flex items-center" onClick={handleNavClick}>
+        <NavLink to="/" className="flex items-center gap-2" onClick={handleNavClick}>
+          <img
+            src="/brand/icon-light.svg"
+            alt="Symptom Scribe"
+            className="h-7 w-7 object-contain shrink-0 rounded-md"
+          />
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
-              Health Tracker
+              Symptom Scribe
             </h2>
           )}
         </NavLink>
@@ -127,22 +124,29 @@ export function AppSidebar() {
           <SidebarGroupContent>
             {/* ✨ updated: small gap between rows so the tinted active state has breathing room */}
             <SidebarMenu className="px-1">
-              {menuItems.map((item, index) => (
-                <>
-                  
+              {menuItems.map((item) => {
+                // Existing hover/animation is preserved verbatim; the active-tab
+                // styling (tinted pill + left accent border) is only appended for
+                // the current route.
+                const isActive = location.pathname === item.url;
+                return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className="py-2 transition-all duration-300 ease-in-out hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md"
+                      className={`py-2 transition-all duration-300 ease-in-out hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md${
+                        isActive
+                          ? " bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-ring rounded-md"
+                          : ""
+                      }`}
                     >
-                      <NavLink to={item.url} end className={`${getNavCls} transition-all duration-300 rounded-md`} onClick={handleNavClick}>
+                      <NavLink to={item.url} end onClick={handleNavClick}>
                         <item.icon className="h-[17px] w-[17px]" />
                         {!isCollapsed && <span className="text-[13.5px]">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </>
-              ))}
+                );
+              })}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   {/* ✨ updated: matching rounded-md + transition-colors for consistency with nav items */}

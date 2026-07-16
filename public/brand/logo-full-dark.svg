@@ -1,0 +1,23 @@
+<svg width="900" height="220" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="stroke2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(10,10) scale(0.39)">
+    <path d="M 150 330 a 46 46 0 1 0 -0.1 0 Z"
+          fill="none" stroke="url(#stroke2)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 150 284 L 150 210 Q 150 150 208 150 L 260 150 Q 316 150 316 206
+             L 316 236 L 292 236 L 276 202 L 250 268 L 226 216 L 210 236 L 178 236"
+          fill="none" stroke="url(#stroke2)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="276" cy="202" r="15" fill="#5eead4"/>
+    <circle cx="276" cy="202" r="26" fill="none" stroke="#5eead4" stroke-width="5" opacity="0.55"/>
+  </g>
+
+  <text x="235" y="102" font-family="'Segoe UI', Inter, Arial, sans-serif" font-size="56"
+        font-weight="700" fill="#f8fafc">Symptom</text>
+  <text x="235" y="160" font-family="'Segoe UI', Inter, Arial, sans-serif" font-size="56"
+        font-weight="700" fill="#5eead4">Scribe</text>
+</svg>

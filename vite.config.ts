@@ -16,7 +16,15 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png"],
+      includeAssets: [
+        "apple-touch-icon-180x180.png",
+        "maskable-icon-192x192.png",
+        "maskable-icon-512x512.png",
+        "icons/icon-48x48.png",
+        "icons/icon-72x72.png",
+        "icons/icon-96x96.png",
+        "icons/icon-128x128.png",
+      ],
       manifest: {
         name: "Symptom Scribe",
         short_name: "Symptom Scribe",
@@ -25,10 +33,26 @@ export default defineConfig(({ mode }) => ({
         background_color: "#0f172a",
         display: "standalone",
         start_url: "/",
+        scope: "/",
         icons: [
           {
             src: "pwa-64x64.png",
             sizes: "64x64",
+            type: "image/png"
+          },
+          {
+            src: "icons/icon-72x72.png",
+            sizes: "72x72",
+            type: "image/png"
+          },
+          {
+            src: "icons/icon-96x96.png",
+            sizes: "96x96",
+            type: "image/png"
+          },
+          {
+            src: "icons/icon-128x128.png",
+            sizes: "128x128",
             type: "image/png"
           },
           {
@@ -40,6 +64,12 @@ export default defineConfig(({ mode }) => ({
             src: "pwa-512x512.png",
             sizes: "512x512",
             type: "image/png"
+          },
+          {
+            src: "maskable-icon-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
           },
           {
             src: "maskable-icon-512x512.png",

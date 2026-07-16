@@ -111,7 +111,7 @@ describe("Auth", () => {
   it("renders the sign-in form by default", () => {
     render(<Auth />);
 
-    expect(screen.getByText("Smart Health Tracker")).toBeInTheDocument();
+    expect(screen.getByText("Symptom Scribe")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();

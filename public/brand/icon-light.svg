@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="55%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="496" height="496" rx="120" fill="url(#bg)"/>
+
+  <!-- Stethoscope loop (bottom-left) merging into heartbeat pulse -->
+  <path d="M 150 330
+           a 46 46 0 1 0 -0.1 0 Z"
+        fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M 150 284
+           L 150 210
+           Q 150 150 208 150
+           L 260 150
+           Q 316 150 316 206
+           L 316 236
+           L 292 236
+           L 276 202
+           L 250 268
+           L 226 216
+           L 210 236
+           L 178 236"
+        fill="none" stroke="#ffffff" stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- AI spark node at the peak of the pulse -->
+  <circle cx="276" cy="202" r="15" fill="#ffffff"/>
+  <circle cx="276" cy="202" r="26" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.55"/>
+</svg>

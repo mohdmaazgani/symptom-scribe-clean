@@ -1,0 +1,3 @@
+REMOVE these files from your repo manually:
+public/3.png
+public/site.webmanifest

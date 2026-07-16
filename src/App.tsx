@@ -45,6 +45,11 @@ const GamificationPage = lazy(() => import("@/pages/Gamification"));
 // Loading spinner fallback component
 const LoadingScreen = () => (
   <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-950 text-slate-100">
+    <img
+      src="/brand/icon-dark.svg"
+      alt="Symptom Scribe"
+      className="h-14 w-14 object-contain mb-4"
+    />
     <div className="relative flex items-center justify-center">
       <div className="absolute h-16 w-16 animate-ping rounded-full border-2 border-cyan-500/20 opacity-75"></div>
       <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-r-2 border-cyan-500 border-r-transparent"></div>

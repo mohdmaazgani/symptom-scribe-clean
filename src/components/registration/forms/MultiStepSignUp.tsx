@@ -189,7 +189,7 @@ const MultiStepSignUp = () => {
         );
       } else {
         showSuccess(
-          "Welcome to Smart Health Tracker!",
+          "Welcome to Symptom Scribe!",
           "Your account and health profile are ready."
         );
       }

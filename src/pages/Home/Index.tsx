@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Hero from "@/components/hero/Hero";
-import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
+import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
@@ -110,6 +110,23 @@ const Index = () => {
       desc: "Receive personalized health recommendations and know when to seek professional care.",
     },
   ];
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    const headerOffset = 90;
+
+    const y =
+      element.getBoundingClientRect().top +
+      window.pageYOffset -
+      headerOffset;
+
+    window.scrollTo({
+      top: y,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -122,14 +139,53 @@ const Index = () => {
         }`}
       >
         <div className="container mx-auto flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold text-primary cursor-pointer transition-opacity hover:opacity-80"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            Symptom Scribe🩺
-          </h1>
+          <div
+  className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+>
+  <img
+    src="/brand/icon-light.svg"
+    alt="Symptom Scribe Logo"
+    className="h-12 w-12 object-contain shrink-0"
+  />
 
+  <span className="text-2xl font-bold text-primary">
+    Symptom Scribe
+
+  </span>
+</div>
           <div className="hidden md:flex items-center gap-4">
+            <nav className="flex items-center gap-6 mx-6">
+            <button onClick={()=>scrollToSection("features")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              Features
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+
+            <button onClick={()=>scrollToSection("how-it-works")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              How It Works
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+
+            <button onClick={()=>scrollToSection("why-choose")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              Why Choose Us
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+
+            <button onClick={()=>scrollToSection("reviews")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              Reviews
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+
+            <button onClick={()=>scrollToSection("faq")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              FAQ
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+
+            <button onClick={()=>scrollToSection("contact")} className="group relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary">
+              Contact
+              <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+            </button>
+          </nav>
             <AnimatedThemeToggler />
             {session ? (
               <Button
@@ -199,7 +255,7 @@ const Index = () => {
       <Hero />
       
       {/* Features Section */}
-      <section className="container mx-auto py-14 md:py-16 px-4">
+      <section id="features" className="container mx-auto py-14 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -246,7 +302,7 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-muted py-20 px-3 overflow-hidden">
+      <section id="how-it-works" className="bg-muted pt-20 px-3 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -324,7 +380,7 @@ const Index = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="container mx-auto py-20 px-4">
+      <section id="why-choose" className="container mx-auto py-20 px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -333,7 +389,7 @@ const Index = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Smart Health Tracker</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Symptom Scribe</h2>
             <p className="text-muted-foreground text-lg">Powerful features that make health management effortless</p>
           </div>
 
@@ -402,7 +458,7 @@ const Index = () => {
       </section>
 
           {/* Testimonials Section */}
-      <section className="bg-muted py-20 px-4">
+      <section id="reviews" className="bg-muted py-20 px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -466,14 +522,14 @@ const Index = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+            <p className="text-muted-foreground text-lg">Everything you need to know about Symptom Scribe</p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
               <AccordionContent>
-                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+                No, Symptom Scribe is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
               </AccordionContent>
             </AccordionItem>
 
@@ -508,7 +564,7 @@ const Index = () => {
             <AccordionItem value="item-6">
               <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
               <AccordionContent>
-                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
+                Symptom Scribe is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -527,7 +583,7 @@ const Index = () => {
           <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Take Control of Your Health?</h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already using Smart Health Tracker to monitor their health, 
+            Join thousands of users who are already using Symptom Scribe to monitor their health, 
             understand their symptoms, and make informed decisions about their wellbeing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -544,13 +600,17 @@ const Index = () => {
           </p>
         </motion.div>
       </section>
-      <footer className="border-t border-border bg-gradient-to-b from-background to-muted/30">
-  <div className="container mx-auto px-4 py-12">
+      <footer id="contact" className="border-t border-border bg-gradient-to-b from-background to-muted/30">
+  <div className="container mx-auto px-4 py-12 ">
     <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-10">
       {/* Brand Column */}
 <div className="lg:col-span-2">
   <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-    <Activity className="w-6 h-6 text-primary" />
+    <img
+      src="/brand/icon-light.svg"
+      alt="Symptom Scribe"
+      className="h-7 w-7 object-contain shrink-0"
+    />
     <span className="text-foreground font-bold">
       Symptom Scribe
     </span>
@@ -578,10 +638,10 @@ const Index = () => {
           Platform
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/chat" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Brain className="w-4 h-4" /> AI Symptom Checker</Link></li>
-          <li><Link to="/metrics" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Health Metrics</Link></li>
-          <li><Link to="/history" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Clock className="w-4 h-4" /> Consultation History</Link></li>
-          <li><Link to="/brain-games" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Brain className="w-4 h-4" /> Brain Training</Link></li>
+          <li><Link to="/chat" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> AI Symptom Checker</span></Link></li>
+          <li><Link to="/metrics" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Metrics</span></Link></li>
+          <li><Link to="/history" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Consultation History</span></Link></li>
+          <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Brain Training</span></Link></li>
         </ul>
       </div>
       
@@ -592,8 +652,8 @@ const Index = () => {
           Resources
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/health-library" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Heart className="w-4 h-4" /> Health Library</Link></li>
-          <li><Link to="/emergency" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Shield className="w-4 h-4" /> Emergency Guide</Link></li>
+          <li><Link to="/health-library" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Library</span></Link></li>
+          <li><Link to="/emergency" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "><Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Emergency Guide</span></Link></li>
           <li>
           <button
             onClick={() => {
@@ -604,12 +664,13 @@ const Index = () => {
                 window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
               }
             }}
-            className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 w-full text-left text-sm"
+            className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
           >
-            <HelpCircle className="w-4 h-4" /> FAQ
+            <HelpCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+            <span className="transition-transform duration-300 group-hover:translate-x-1"> FAQ</span>
           </button>
         </li>
-          <li><Link to="/blog" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><FileText className="w-4 h-4" /> Blog</Link></li>
+          <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Blog</span></Link></li>
         </ul>
       </div>
       
@@ -620,10 +681,10 @@ const Index = () => {
           Legal
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Lock className="w-4 h-4" /> Privacy Policy</Link></li>
-          <li><Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><FileText className="w-4 h-4" /> Terms of Service</Link></li>
-          <li><Link to="/disclaimer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Medical Disclaimer</Link></li>
-          <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"><Mail className="w-4 h-4" /> Contact Support</Link></li>
+          <li><Link to="/privacy" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Privacy Policy</span></Link></li>
+          <li><Link to="/terms" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Terms of Service</span></Link></li>
+          <li><Link to="/disclaimer" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Medical Disclaimer</span></Link></li>
+          <li><Link to="/contact" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Contact Support</span></Link></li>
         </ul>
       </div>
     </div>
