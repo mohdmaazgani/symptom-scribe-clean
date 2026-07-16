@@ -55,27 +55,45 @@ vi.mock("@/lib/encryption", () => ({
   generateSearchTokens: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@/lib/offline-db", () => ({
-  db: {
-    healthMetrics: {
-      clear: vi.fn(),
-      toArray: vi.fn().mockResolvedValue([]),
-      bulkPut: vi.fn(),
-      put: vi.fn(),
+const mockMetricsArray = { value: [] as Record<string, unknown>[] };
+
+vi.mock("@/lib/offline-db", () => {
+  return {
+    db: {
+      healthMetrics: {
+        clear: vi.fn(),
+        toArray: vi.fn().mockResolvedValue([]),
+        bulkPut: vi.fn(),
+        put: vi.fn(),
+        where: vi.fn().mockReturnValue({
+          equals: vi.fn().mockReturnValue({
+            filter: vi.fn().mockReturnValue({
+              toArray: vi.fn().mockImplementation(() => Promise.resolve(mockMetricsArray.value)),
+            }),
+          }),
+        }),
+      },
+      symptomHistory: {
+        clear: vi.fn(),
+        toArray: vi.fn().mockResolvedValue([]),
+        bulkPut: vi.fn(),
+        put: vi.fn(),
+        where: vi.fn().mockReturnValue({
+          equals: vi.fn().mockReturnValue({
+            filter: vi.fn().mockReturnValue({
+              toArray: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      },
     },
-    symptomHistory: {
-      clear: vi.fn(),
-      toArray: vi.fn().mockResolvedValue([]),
-      bulkPut: vi.fn(),
-      put: vi.fn(),
-    },
-  },
-  decryptSymptom: vi.fn((s) => s),
-  decryptMetric: vi.fn((m) => m),
-  encryptSymptom: vi.fn((s) => s),
-  encryptMetric: vi.fn((m) => m),
-  syncOfflineData: vi.fn().mockResolvedValue(false),
-}));
+    decryptSymptom: vi.fn((s) => s),
+    decryptMetric: vi.fn((m) => m),
+    encryptSymptom: vi.fn((s) => s),
+    encryptMetric: vi.fn((m) => m),
+    syncOfflineData: vi.fn().mockResolvedValue(false),
+  };
+});
 
 // Mock react-countup so it renders plain numbers synchronously (avoids
 // animation timers interfering with assertions)
@@ -145,6 +163,7 @@ const sampleSymptoms = [
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMetricsArray.value = [];
   });
 
   // 1. Loading state
@@ -259,6 +278,46 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Health Dashboard")).toBeInTheDocument();
+    });
+  });
+
+  // 9. Smart Alerts rendering with metrics
+  it("renders smart alerts when health metrics show abnormal trends", async () => {
+    mockAuthUser();
+    mockCachedSymptoms([]);
+
+    // Populate mock metrics array with 3 elevated heart rate readings
+    mockMetricsArray.value = [
+      {
+        id: "m1",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 105 },
+        recorded_at: new Date().toISOString(),
+        pending_delete: 0,
+      },
+      {
+        id: "m2",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 108 },
+        recorded_at: new Date(Date.now() - 60000).toISOString(),
+        pending_delete: 0,
+      },
+      {
+        id: "m3",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 106 },
+        recorded_at: new Date(Date.now() - 120000).toISOString(),
+        pending_delete: 0,
+      },
+    ];
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Elevated Heart Rate Detected")).toBeInTheDocument();
     });
   });
 });
