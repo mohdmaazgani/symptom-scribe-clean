@@ -31,6 +31,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
+      getSession: vi.fn(),
     },
     from: vi.fn(),
   },
@@ -99,6 +100,9 @@ function mockCachedSymptoms(data: unknown[] | null, error: unknown = null) {
 
 function mockAuthUser(user: typeof mockUser | null = mockUser) {
   (supabase.auth.getUser as Mock).mockResolvedValue({ data: { user } });
+  (supabase.auth.getSession as Mock).mockResolvedValue({
+    data: { session: user ? { access_token: "mock-token" } : null },
+  });
 }
 (supabase.from as Mock).mockReturnValue({
     select: () => ({
@@ -259,6 +263,20 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Health Dashboard")).toBeInTheDocument();
+    });
+  });
+
+  // 9. AI Health Predictions rendering
+  it("renders the AI Health Predictions card on the dashboard", async () => {
+    mockAuthUser();
+    mockCachedSymptoms([]);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("AI Health Predictions")).toBeInTheDocument();
+      expect(screen.getByText("Proactive health risk predictions analyzed from recent symptom logs")).toBeInTheDocument();
+      expect(screen.getByText("No Active Risk Markers")).toBeInTheDocument();
     });
   });
 });

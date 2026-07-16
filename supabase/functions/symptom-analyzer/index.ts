@@ -107,10 +107,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const { messages } = parsed.data;
-
-    const safetyCheck = detectEmergencySymptoms(messages);
-
+    const requestData = parsed.data;
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     if (!GEMINI_API_KEY) {
@@ -122,6 +119,104 @@ serve(async (req: Request): Promise<Response> => {
         getCorsHeaders(origin)
       );
     }
+
+    if ("mode" in requestData && requestData.mode === "predict") {
+      const { symptoms } = requestData;
+
+      if (!symptoms || symptoms.length === 0) {
+        return jsonResponse(
+          { predictions: [] },
+          200,
+          getCorsHeaders(origin)
+        );
+      }
+
+      const predictPrompt = `
+You are an expert AI medical assistant specializing in preventive health and risk analysis.
+You are given a list of recent symptom logs recorded by a user.
+Analyze these symptoms for recurring patterns, frequency, severity levels, and potential underlying risks.
+Based on your analysis, output potential health risk predictions.
+
+You MUST respond with a JSON object that adheres strictly to the following schema:
+{
+  "predictions": [
+    {
+      "risk": "Name of the predicted health risk (e.g., Rising Stress Markers, Seasonal Allergy Susceptibility)",
+      "confidence": "Low | Medium | High",
+      "advice": "Actionable, concrete preventive self-care advice (e.g., stay hydrated, track pollen count, schedule resting period)",
+      "rationale": "Brief explanation of why this risk was predicted based on the symptom patterns"
+    }
+  ]
+}
+
+Ensure you return ONLY valid JSON. If no risks are detected or the logs are too sparse, return an empty array for the "predictions" property.
+
+User Symptom Logs:
+${symptoms.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}
+`;
+
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: predictPrompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 2048,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
+
+      if (!geminiResponse.ok) {
+        const errorText = await geminiResponse.text().catch(() => "");
+        console.error("Gemini prediction API error:", geminiResponse.status, errorText);
+        return jsonResponse(
+          { error: "Failed to generate risk predictions from Gemini API" },
+          geminiResponse.status,
+          getCorsHeaders(origin)
+        );
+      }
+
+      const resJson = await geminiResponse.json();
+      const textContent = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      try {
+        const parsedPrediction = JSON.parse(textContent);
+        return jsonResponse(parsedPrediction, 200, getCorsHeaders(origin));
+      } catch (parseErr) {
+        console.error("Failed to parse Gemini prediction JSON:", parseErr, textContent);
+        return jsonResponse(
+          { error: "Invalid prediction JSON format returned by AI" },
+          500,
+          getCorsHeaders(origin)
+        );
+      }
+    }
+
+    const messages = "messages" in requestData ? requestData.messages : [];
+    if (messages.length === 0) {
+      return jsonResponse(
+        { error: "At least one message is required for chat mode" },
+        400,
+        getCorsHeaders(origin)
+      );
+    }
+
+    const safetyCheck = detectEmergencySymptoms(messages);
 
     const systemPrompt = `
 You are a professional medical assistant helping users understand their symptoms.
