@@ -172,7 +172,7 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
 
       <header 
-        className={`sticky top-0 left-0 w-full px-6 py-1 z-50 ${
+        className={`absolute top-0 left-0 w-full px-6 py-1 z-50 ${
           isScrolled
             ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
             : "bg-background/0 border-transparent"
@@ -180,7 +180,7 @@ const Index = () => {
       >
             
         <div className="container mx-auto">
-          <div className="flex items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-6 py-3 shadow-md">
+          <div className="flex items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-4 py-3 shadow-md">
           <div
   className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
