@@ -31,6 +31,7 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { setupKeysFromPassword } from "@/lib/encryption";
 
 import MultiStepSignUp from "@/components/registration/forms/MultiStepSignUp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const emailSchema = z.string().email("Invalid email address");
 const signinPasswordSchema = z.string().min(1, "Password is required");
@@ -43,6 +44,11 @@ const Auth = () => {
   const [redirecting, setRedirecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authTab, setAuthTab] = useState("signin");
+
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaSubmitting, setMfaSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -57,7 +63,7 @@ const Auth = () => {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session &&
         window.location.href.includes("type=recovery")
       ) {
@@ -66,7 +72,12 @@ const Auth = () => {
       }
 
       if (session) {
-      navigate("/dashboard");
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel) {
+          // 2FA verification still pending — don't navigate yet
+          return;
+        }
+        navigate("/dashboard");
       }
    });
 
@@ -111,6 +122,19 @@ const Auth = () => {
       showError("Sign In Failed", error.message);
       setLoading(false);
     } else {
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel) {
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const totpFactor = factorsData?.totp?.[0];
+        if (totpFactor) {
+          setMfaFactorId(totpFactor.id);
+          setMfaRequired(true);
+        }
+        setLoading(false);
+        return;
+      }
+
       if (signInData?.user) {
         try {
           await setupKeysFromPassword(signInPassword, signInEmail, signInData.user.id);
@@ -121,6 +145,48 @@ const Auth = () => {
       setLoading(false);
       setRedirecting(true);
     }
+  };
+
+  const handleMfaVerify = async () => {
+    if (mfaCode.length !== 6) {
+      showError("Invalid Code", "Enter the 6-digit code from your authenticator app");
+      return;
+    }
+    setMfaSubmitting(true);
+
+    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      factorId: mfaFactorId,
+    });
+
+    if (challengeError) {
+      showError("Verification Failed", challengeError.message);
+      setMfaSubmitting(false);
+      return;
+    }
+
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId: mfaFactorId,
+      challengeId: challengeData.id,
+      code: mfaCode,
+    });
+
+    if (verifyError) {
+      showError("Incorrect Code", "The code you entered is incorrect or expired");
+      setMfaSubmitting(false);
+      return;
+    }
+
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      if (userRes?.user) {
+        await setupKeysFromPassword(signInPassword, signInEmail, userRes.user.id);
+      }
+    } catch (deriveErr) {
+      console.error("Error setting up encryption keys:", deriveErr);
+    }
+
+    setMfaSubmitting(false);
+    setRedirecting(true);
   };
 
 const handleForgotPassword= async () => {
@@ -231,6 +297,61 @@ const handleForgotPassword= async () => {
               </TabsList>
 
               <TabsContent value="signin">
+                {mfaRequired ? (
+                  <div className="space-y-5">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <ShieldCheck className="h-8 w-8 text-cyan-300" />
+                      <p className="text-sm text-slate-200">
+                        Enter the 6-digit code from your authenticator app
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <InputOTP maxLength={6} value={mfaCode} onChange={setMfaCode}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 rounded-2xl border-white/10 bg-transparent text-slate-200 hover:bg-white/10"
+                        onClick={() => {
+                          setMfaRequired(false);
+                          setMfaCode("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleMfaVerify}
+                        disabled={mfaSubmitting || redirecting}
+                        className={`flex-1 ${actionButtonClass}`}
+                      >
+                        {redirecting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Redirecting...
+                          </>
+                        ) : mfaSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (
+                          "Verify"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                 <form onSubmit={handleSignIn} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email" className="text-sm font-medium text-slate-100">
@@ -309,6 +430,7 @@ const handleForgotPassword= async () => {
                     )}
                   </Button>
                 </form>
+                )}
               </TabsContent>
 
               <TabsContent value="signup">
