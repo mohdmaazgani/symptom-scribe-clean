@@ -63,6 +63,16 @@ vi.mock("@/integrations/supabase/client", () => ({
         authStateChangeHolder.current = callback;
         return { data: { subscription: { unsubscribe: vi.fn() } } };
       }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({
+          data: { currentLevel: "aal1", nextLevel: "aal1" },
+          error: null,
+        }),
+        listFactors: vi.fn().mockResolvedValue({
+          data: { totp: [] },
+          error: null,
+        }),
+      },
     },
   },
 }));
@@ -302,13 +312,15 @@ describe("Auth", () => {
   });
 
   // 11. Redirects to /dashboard when a session already exists on mount
-  it("redirects to /dashboard when onAuthStateChange reports an existing session", () => {
+  it("redirects to /dashboard when onAuthStateChange reports an existing session", async () => {
     render(<Auth />);
 
     expect(authStateChangeHolder.current).toBeDefined();
     authStateChangeHolder.current?.("SIGNED_IN", { user: { id: "user-1" } });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    });
   });
 
   // 12. Redirects to /reset-password when the URL signals a recovery flow
