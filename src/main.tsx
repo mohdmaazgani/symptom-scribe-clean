@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { browserEnv } from "./lib/env";
 import StartupDiagnostics from "./components/diagnostics/StartupDiagnostics.tsx";
+import "./lib/i18n";
 import "./index.css";
 
 import ErrorBoundary from "./components/common/ErrorBoundary.tsx";

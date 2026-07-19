@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Activity, Shield, Zap, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { showInfo } from "@/lib/toast-helpers";
 import {
   Heart,
@@ -13,26 +14,6 @@ import {
   Brain,
 } from "lucide-react";
 
-const featurePills = [
-  {
-    icon: Shield,
-    title: "Private & Secure",
-    description: "Your health data stays confidential",
-    delay: 0.2,
-  },
-  {
-    icon: Zap,
-    title: "Instant Analysis",
-    description: "Get insights in seconds",
-    delay: 0.35,
-  },
-  {
-    icon: Activity,
-    title: "Evidence-Based",
-    description: "Powered by medical knowledge",
-    delay: 0.5,
-  },
-];
 const floatingIcons = [
   // Top Left ECG
   {
@@ -134,8 +115,30 @@ const itemVariants = {
 };
 const Hero = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [reduceMotion, setReduceMotion] = useState(false);
+
+  const featurePills = [
+    {
+      icon: Shield,
+      title: t("hero.pillSecureTitle"),
+      description: t("hero.pillSecureDesc"),
+      delay: 0.2,
+    },
+    {
+      icon: Zap,
+      title: t("hero.pillInstantTitle"),
+      description: t("hero.pillInstantDesc"),
+      delay: 0.35,
+    },
+    {
+      icon: Activity,
+      title: t("hero.pillEvidenceTitle"),
+      description: t("hero.pillEvidenceDesc"),
+      delay: 0.5,
+    },
+  ];
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -261,7 +264,7 @@ const Hero = () => {
         >
           <Sparkles className="w-4 h-4 text-primary" />
           <span className="text-sm text-primary font-bold tracking-wide">
-            AI-Powered Health Analysis
+            {t("hero.badge")}
           </span>
         </motion.div>
 
@@ -277,9 +280,9 @@ const Hero = () => {
           }}
           className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-foreground mb-6 leading-[1.15] tracking-tight"
         >
-          Smart Health <br className="hidden sm:block" />
+          {t("hero.headingLine1")} <br className="hidden sm:block" />
           <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Tracker
+            {t("hero.headingLine2")}
           </span>
         </motion.h1>
 
@@ -293,8 +296,7 @@ const Hero = () => {
           }}
         className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          Describe your symptoms and get instant AI-powered insights on possible causes,
-          severity levels, and self-care recommendations.
+          {t("hero.subtitle")}
         </motion.p>
 
         {/* CTA Buttons */}
@@ -312,24 +314,24 @@ const Hero = () => {
           <Button
             size="lg"
             onClick={() => {
-              showInfo("Welcome to Smart Health Tracker", "Sign in to start tracking your health");
+              showInfo(t("hero.toastWelcomeTitle"), t("hero.toastWelcomeDesc"));
               navigate("/auth");
             }}
             className="font-bold gap-2 px-8 h-14 text-base rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group"
           >
-            Get Started Free
+            {t("hero.getStarted")}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-300" />
           </Button>
           <Button
             size="lg"
             variant="outline"
             onClick={() => {
-              showInfo("Welcome back!", "Please sign in to continue");
+              showInfo(t("hero.toastBackTitle"), t("hero.toastBackDesc"));
               navigate("/auth");
             }}
             className="font-bold px-8 h-14 text-base rounded-full border-2 hover:bg-muted transition-all duration-300 active:scale-95"
           >
-            Sign In
+            {t("hero.signIn")}
           </Button>
         </motion.div>
 
