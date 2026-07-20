@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, X, Trash2, Search, ClipboardList } from "lucide-react";
+import { CheckCircle, X, Trash2, Search, ClipboardList, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { showSuccess, showError } from "@/lib/toast-helpers";
@@ -75,7 +77,7 @@ const HistorySkeleton = () => (
 
 const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -327,6 +329,69 @@ const History = () => {
     URL.revokeObjectURL(url);
   };
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Symptom History Summary", 14, 18);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    const generatedOn = new Date().toLocaleString();
+    doc.text(`Generated on: ${generatedOn}`, 14, 25);
+
+    if (history.length > 0) {
+      const oldestDate = new Date(
+        Math.min(...history.map((e) => new Date(e.created_at).getTime()))
+      ).toLocaleDateString();
+      const newestDate = new Date(
+        Math.max(...history.map((e) => new Date(e.created_at).getTime()))
+      ).toLocaleDateString();
+      doc.text(`Date range: ${oldestDate} - ${newestDate}`, 14, 31);
+      doc.text(`Total entries: ${history.length}`, 14, 37);
+    }
+
+    autoTable(doc, {
+      startY: 44,
+      head: [["Date", "Symptoms", "Severity", "Risk Score", "Status"]],
+      body: history.map((entry) => [
+        new Date(entry.created_at).toLocaleDateString(),
+        entry.symptoms,
+        entry.severity_level,
+        `${entry.risk_score}/100`,
+        entry.resolved ? "Resolved" : "Active",
+      ]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [20, 130, 120] },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 2) {
+          const severity = String(data.cell.raw).toLowerCase();
+          if (severity === "high") data.cell.styles.textColor = [200, 40, 40];
+          else if (severity === "moderate") data.cell.styles.textColor = [180, 120, 0];
+        }
+      },
+    });
+
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(
+        "This report is generated from self-reported symptom data and is not a substitute for professional medical advice.",
+        14,
+        doc.internal.pageSize.getHeight() - 10
+      );
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        doc.internal.pageSize.getWidth() - 30,
+        doc.internal.pageSize.getHeight() - 10
+      );
+    }
+
+    doc.save("symptom-history-report.pdf");
+  };
+
   const getSeverityColor = (severity: string): "default" | "secondary" | "destructive" => {
     switch (severity) {
       case "high":
@@ -357,9 +422,15 @@ const History = () => {
           <p className="text-muted-foreground">Review your past health consultations</p>
         </div>
         {history.length > 0 && (
-          <Button onClick={exportCSV} variant="outline" size="sm">
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportCSV} variant="outline" size="sm">
+              Export CSV
+            </Button>
+            <Button onClick={exportPDF} variant="outline" size="sm">
+              <FileDown className="w-4 h-4 mr-1" />
+              Download PDF
+            </Button>
+          </div>
         )}
       </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Brain,
@@ -98,6 +99,16 @@ const games = [
     iconColor: "text-orange-500",
     gradient: "from-orange-500 to-red-500",
     shadow: "shadow-orange-500/20",
+  },
+  {
+    id: "2048",
+    name: "2048",
+    icon: LayoutGrid,
+    description: "Slide and merge tiles to reach 2048 in this classic puzzle game",
+    color: "from-amber-500/20 to-yellow-500/20",
+    iconColor: "text-amber-500",
+    gradient: "from-amber-500 to-yellow-500",
+    shadow: "shadow-amber-500/20",
   },
   {
     id: "simon",
@@ -865,11 +876,32 @@ const BrainGames = () => {
   const [timedMode, setTimedMode] = useState(false);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(15);
   const [showFireStreak, setShowFireStreak] = useState(false);
+  const [grid2048, setGrid2048] = useState<number[][]>([]);
+  const [score2048, setScore2048] = useState(0);
+  const [gameOver2048, setGameOver2048] = useState(false);
+  const [won2048, setWon2048] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const timerRef = useRef<number | null>(null);
   const wordTimeoutRef = useRef<number | null>(null);
   const TOTAL_QUESTIONS = 10;
   const XP_PER_QUESTION = 10;
   const XP_PER_LEVEL = 100;
+  const GRID_SIZE = 4;
+
+  const TILE_COLORS: Record<number, string> = {
+    0: "bg-muted",
+    2: "bg-slate-200 dark:bg-slate-700",
+    4: "bg-sky-200 dark:bg-sky-700",
+    8: "bg-cyan-300 dark:bg-cyan-700",
+    16: "bg-emerald-300 dark:bg-emerald-700",
+    32: "bg-yellow-300 dark:bg-yellow-700",
+    64: "bg-orange-300 dark:bg-orange-700",
+    128: "bg-red-300 dark:bg-red-700",
+    256: "bg-purple-300 dark:bg-purple-700",
+    512: "bg-pink-300 dark:bg-pink-700",
+    1024: "bg-indigo-400 dark:bg-indigo-700",
+    2048: "bg-green-400 dark:bg-green-700",
+  };
 
   // Calculate level dynamically from XP
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
@@ -1487,6 +1519,160 @@ const BrainGames = () => {
     }, 10000);
   };
 
+  const createEmptyGrid = () =>
+    Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+
+  const addRandomTile = (grid: number[][]) => {
+    const empty: [number, number][] = [];
+
+    grid.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        if (cell === 0) empty.push([r, c]);
+      })
+    );
+
+    if (!empty.length) return grid;
+
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    return grid;
+  };
+
+  const initialize2048 = () => {
+    const board = addRandomTile(addRandomTile(createEmptyGrid()));
+    setGrid2048(board.map((row) => [...row]));
+    setScore2048(0);
+    setWon2048(false);
+    setGameOver2048(false);
+  };
+
+  const slideAndMerge = (line: number[]) => {
+    const compact = line.filter(Boolean);
+    const merged: number[] = [];
+    let gain = 0;
+
+    for (let i = 0; i < compact.length; i++) {
+      if (compact[i] === compact[i + 1]) {
+        const value = compact[i] * 2;
+        merged.push(value);
+        gain += value;
+        i += 1;
+      } else {
+        merged.push(compact[i]);
+      }
+    }
+
+    while (merged.length < GRID_SIZE) merged.push(0);
+    return { line: merged, gain };
+  };
+
+  const move = useCallback((direction: "left" | "right" | "up" | "down") => {
+    setGrid2048((prevGrid) => {
+      const board = prevGrid.map((row) => [...row]);
+      let moved = false;
+      let gained = 0;
+
+      const processLine = (line: number[], reverse = false) => {
+        const normalized = reverse ? [...line].reverse() : line;
+        const result = slideAndMerge(normalized);
+        if (JSON.stringify(result.line) !== JSON.stringify(normalized)) moved = true;
+        gained += result.gain;
+        return reverse ? result.line.reverse() : result.line;
+      };
+
+      const nextBoard = (() => {
+        switch (direction) {
+          case "left":
+            return board.map((row) => processLine(row));
+          case "right":
+            return board.map((row) => processLine(row, true));
+          case "up": {
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const mergedCols = cols.map((col) => processLine(col));
+            return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
+          }
+          case "down": {
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const mergedCols = cols.map((col) => processLine(col, true));
+            return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
+          }
+          default:
+            return board;
+        }
+      })();
+
+      if (!moved) return prevGrid;
+
+      const updatedBoard = addRandomTile(nextBoard);
+      setScore2048((score) => score + gained);
+      return updatedBoard.map((row) => [...row]);
+    });
+  }, []);
+
+  const canMove = (grid: number[][]) => {
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (grid[r][c] === 0) return true;
+        if (c < GRID_SIZE - 1 && grid[r][c] === grid[r][c + 1]) return true;
+        if (r < GRID_SIZE - 1 && grid[r][c] === grid[r + 1][c]) return true;
+      }
+    }
+
+    return false;
+  };
+
+  const start2048Game = () => {
+    initialize2048();
+    setActiveGame("2048");
+    showSuccess("2048 Started!", "Merge tiles to reach 2048.");
+  };
+
+  useEffect(() => {
+    if (activeGame !== "2048") return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const directionMap: Record<string, "left" | "right" | "up" | "down"> = {
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        ArrowUp: "up",
+        ArrowDown: "down",
+      };
+
+      const direction = directionMap[event.key];
+      if (!direction) return;
+
+      event.preventDefault();
+      move(direction);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeGame, move]);
+
+  const handle2048TouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handle2048TouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const threshold = 30;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX > threshold) move("right");
+      else if (deltaX < -threshold) move("left");
+    } else {
+      if (deltaY > threshold) move("down");
+      else if (deltaY < -threshold) move("up");
+    }
+
+    touchStartRef.current = null;
+  };
+
   useEffect(() => {
     if (wordPhase !== "memorize" || timeLeft <= 0) return;
 
@@ -1651,6 +1837,76 @@ const BrainGames = () => {
   };
 
   // ─── Pattern game renderer ─────────────────────────────────────────────────
+
+  const render2048Game = () => (
+    <Card className="border-2 border-primary/10 shadow-2xl overflow-hidden rounded-[2.5rem]">
+      <CardHeader className="bg-muted/30 border-b border-border/50 pb-6 sm:pb-8 p-4 sm:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-black tracking-tight">2048</CardTitle>
+            <CardDescription className="text-base font-bold text-primary">
+              Combine matching tiles to reach 2048.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Badge className="h-10 rounded-2xl px-4 text-base font-bold">
+              Score: {score2048}
+            </Badge>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={initialize2048}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setActiveGame(null)}
+              className="h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-muted-foreground hover:text-destructive"
+            >
+              Exit
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-8 md:p-12 space-y-6">
+        {won2048 && (
+          <div className="mx-auto max-w-sm rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm font-semibold text-green-700 dark:text-green-300">
+            🎉 Congratulations! You reached 2048!
+          </div>
+        )}
+
+        {gameOver2048 && (
+          <div className="mx-auto max-w-sm rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm font-semibold text-red-700 dark:text-red-300">
+            Game Over!
+          </div>
+        )}
+
+        <div
+          className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm mx-auto"
+          onTouchStart={handle2048TouchStart}
+          onTouchEnd={handle2048TouchEnd}
+          role="group"
+          aria-label="2048 game board"
+        >
+          {grid2048.flat().map((tile, index) => (
+            <div
+              key={index}
+              className={`aspect-square rounded-2xl flex items-center justify-center text-lg sm:text-2xl font-black ${
+                TILE_COLORS[tile] ?? "bg-background"
+              }`}
+            >
+              {tile || ""}
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Swipe or use the arrow keys to move the tiles. Match them to reach 2048.
+        </p>
+      </CardContent>
+    </Card>
+  );
 
   const renderPatternGame = () => {
     if (gameCompleted) {
@@ -2140,6 +2396,7 @@ const BrainGames = () => {
                         else if (game.id === "math") startMathGame();
                         else if (game.id === "word") startWordGame();
                         else if (game.id === "pattern") startPatternGame();
+                        else if (game.id === "2048") start2048Game();
                         else setActiveGame(game.id);
                       }
                     }}
@@ -2148,6 +2405,7 @@ const BrainGames = () => {
                       else if (game.id === "math") startMathGame();
                       else if (game.id === "word") startWordGame();
                       else if (game.id === "pattern") startPatternGame();
+                      else if (game.id === "2048") start2048Game();
                       else setActiveGame(game.id);
                     }}
                   >
@@ -2702,6 +2960,8 @@ const BrainGames = () => {
                   </div>
                 </CardContent>
               </Card>
+            ) : activeGame === "2048" ? (
+              render2048Game()
             ) : activeGame === "pattern" ? (
               renderPatternGame()
             ) : activeGame === "simon" ? (

@@ -25,7 +25,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("features");
+  const [activeSection, setActiveSection] = useState("");
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -172,30 +172,30 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
 
       <header 
-        className={`sticky top-0 left-0 w-full px-6 py-1 z-50 ${
+        className={`sticky top-0 left-0 w-full px-6 py-0 z-50 ${
           isScrolled
             ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
             : "bg-background/0 border-transparent"
         }`}
       >
             
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-6 py-3 shadow-md">
+        <div className="container mx-auto -mb-[84px]">
+          <div className="flex items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-4 py-3 shadow-md">
           <div
-  className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
-  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
->
-  <img
-    src="/3.png"
-    alt="Symptom Scribe Logo"
-    className="h-7 w-7 object-contain shrink-0"
-  />
+            className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <img
+              src="/3.png"
+              alt="Symptom Scribe Logo"
+              className="h-7 w-7 object-contain shrink-0"
+            />
 
-  <span className="text-xl font-bold text-primary">
-    Symptom Scribe
+            <span className="text-xl font-bold text-primary">
+              Symptom Scribe
 
-  </span>
-</div>
+            </span>
+          </div>
           <div className="hidden md:flex items-center gap-3 ml-4">
             <nav className="flex items-center gap-7 mx-6">
             <button onClick={()=>scrollToSection("features")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300

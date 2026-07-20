@@ -286,7 +286,6 @@ describe("Dashboard", () => {
     mockAuthUser();
     mockCachedSymptoms([]);
 
-    // Populate mockMetricsArray.value with 3 heart rate values in the last 30 days
     mockMetricsArray.value = [
       {
         id: "m1",
@@ -319,5 +318,45 @@ describe("Dashboard", () => {
     expect(screen.getByRole("button", { name: /Heart Rate/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Sleep/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Steps/i })).toBeInTheDocument();
+  });
+
+  // 10. Smart Alerts rendering with metrics
+  it("renders smart alerts when health metrics show abnormal trends", async () => {
+    mockAuthUser();
+    mockCachedSymptoms([]);
+
+    // Populate mock metrics array with 3 elevated heart rate readings
+    mockMetricsArray.value = [
+      {
+        id: "m1",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 105 },
+        recorded_at: new Date().toISOString(),
+        pending_delete: 0,
+      },
+      {
+        id: "m2",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 108 },
+        recorded_at: new Date(Date.now() - 60000).toISOString(),
+        pending_delete: 0,
+      },
+      {
+        id: "m3",
+        user_id: "test-user-id",
+        metric_type: "heart_rate",
+        value: { value: 106 },
+        recorded_at: new Date(Date.now() - 120000).toISOString(),
+        pending_delete: 0,
+      },
+    ];
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Elevated Heart Rate Detected")).toBeInTheDocument();
+    });
   });
 });

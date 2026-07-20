@@ -161,7 +161,7 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
     const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
