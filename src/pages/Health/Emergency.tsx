@@ -519,16 +519,16 @@ const Emergency = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5 pb-20">
+    <div className="space-y-3 pb-12">
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <ShieldAlert className="w-8 h-8 text-destructive" />
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ShieldAlert className="w-6 h-6 text-destructive" />
             Emergency Resources
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             Quick access to emergency contacts, first aid guides, and crisis support
           </p>
         </div>
@@ -563,9 +563,9 @@ const Emergency = () => {
             showInfo("On mobile?", "This button dials emergency services directly on a phone.");
           }
         }}
-        className="flex items-center justify-center gap-3 w-full rounded-xl bg-destructive hover:bg-destructive/90 active:scale-95 transition-all duration-150 py-4 px-6 text-white font-bold text-lg shadow-lg shadow-destructive/30 dark:shadow-destructive/20"
+        className="flex items-center justify-center gap-3 w-full rounded-xl bg-destructive hover:bg-destructive/90 active:scale-95 transition-all duration-150 py-3 px-6 text-white font-bold text-base shadow-lg shadow-destructive/30 dark:shadow-destructive/20"
       >
-        <PhoneCall className="w-6 h-6 animate-pulse" />
+        <PhoneCall className="w-5 h-5 animate-pulse" />
         CALL EMERGENCY SERVICES NOW
         <span className="text-sm font-normal opacity-80 hidden sm:inline">
           — tap to dial 112 / 911 / 999
@@ -573,26 +573,26 @@ const Emergency = () => {
       </a>
 
       {/* ── Broadcast Geolocation / Twilio SMS alerts ────────────────────── */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm space-y-3">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <Bell className="w-5 h-5 text-destructive animate-bounce" />
+          <div className="space-y-0.5">
+            <h3 className="font-bold text-base flex items-center gap-2">
+              <Bell className="w-4 h-4 text-destructive animate-bounce" />
               Broadcast Emergency Alert
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Send an instant SMS with your real-time GPS coordinates and a Google Maps link to your trusted contact.
             </p>
           </div>
         </div>
 
         {profileLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-1">
             <Loader2 className="w-4 h-4 animate-spin text-destructive" />
             Checking emergency contacts...
           </div>
         ) : !profile || !profile.emergency_contact_phone ? (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div>
@@ -608,12 +608,12 @@ const Emergency = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 disabled={alertStatus !== "idle"}
                 onClick={handleAlertContacts}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-lg text-white font-bold text-sm transition-all duration-200 active:scale-95 shadow-sm
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-white font-bold text-sm transition-all duration-200 active:scale-95 shadow-sm
                   ${alertStatus === "idle" ? "bg-destructive hover:bg-destructive/90" : ""}
                   ${alertStatus === "locating" ? "bg-orange-500 animate-pulse" : ""}
                   ${alertStatus === "sending" ? "bg-blue-600" : ""}
@@ -655,7 +655,7 @@ const Emergency = () => {
             </div>
 
             {/* Status / Contact detail message */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2 pt-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
               <div>
                 Recipient: <span className="font-semibold text-foreground">{profile.emergency_contact_name || "Emergency Contact"}</span> ({profile.emergency_contact_phone})
               </div>
@@ -670,8 +670,8 @@ const Emergency = () => {
       </div>
 
       {/* ── P2P Mesh Network Dashboard ─────────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-5">
-        <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-border">
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-3 pb-2.5 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <Radio className="w-5 h-5 text-primary animate-pulse" />
@@ -726,7 +726,7 @@ const Emergency = () => {
         </div>
 
         {/* Node Information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-muted/20 p-3.5 rounded-lg border border-border">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm bg-muted/20 p-2.5 rounded-lg border border-border">
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground block font-medium">Local Node ID</span>
             <span className="font-mono text-xs font-semibold">{meshNetwork.getNodeId()}</span>
@@ -757,12 +757,12 @@ const Emergency = () => {
         </div>
 
         {/* Peers List */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
             <Users className="w-3.5 h-3.5" /> Discovered Peers ({peers.length})
           </h4>
           {peers.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic py-3 text-center bg-muted/10 border border-dashed rounded-lg">
+            <p className="text-xs text-muted-foreground italic py-2 text-center bg-muted/10 border border-dashed rounded-lg">
               No other active peers discovered. Open another tab or window on this route to simulate peers.
             </p>
           ) : (
@@ -787,12 +787,12 @@ const Emergency = () => {
         </div>
 
         {/* Sync Queue */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
             <Database className="w-3.5 h-3.5" /> Mesh Alert Queue & Relays ({meshAlerts.length})
           </h4>
           {meshAlerts.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic py-3 text-center bg-muted/10 border border-dashed rounded-lg">
+            <p className="text-xs text-muted-foreground italic py-2 text-center bg-muted/10 border border-dashed rounded-lg">
               Queue is empty. Broadcast an alert to populate the mesh ledger.
             </p>
           ) : (
@@ -839,7 +839,7 @@ const Emergency = () => {
       </div>
 
       {/* ── Pulsing Alert Strip ───────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-xl border border-destructive/40 bg-destructive/5 dark:bg-destructive/10 px-4 py-3">
+      <div className="relative overflow-hidden rounded-xl border border-destructive/40 bg-destructive/5 dark:bg-destructive/10 px-4 py-2">
         <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-destructive animate-pulse" />
         <div className="flex items-center gap-2 ml-3">
           <Flame className="w-4 h-4 text-destructive flex-shrink-0 animate-pulse" />
@@ -851,15 +851,15 @@ const Emergency = () => {
 
       {/* ── Warning Signs Accordion ──────────────────────────────────────── */}
       <details className="group rounded-xl border border-destructive/30 bg-destructive/5 dark:bg-destructive/10 overflow-hidden">
-        <summary className="flex cursor-pointer items-center justify-between px-4 py-3 select-none list-none">
+        <summary className="flex cursor-pointer items-center justify-between px-4 py-2.5 select-none list-none">
           <span className="flex items-center gap-2 font-semibold text-destructive text-sm">
             <AlertTriangle className="w-4 h-4 animate-pulse" />
             When to Call Emergency Services Immediately
           </span>
           <ChevronDown className="w-4 h-4 text-destructive transition-transform duration-200 group-open:rotate-180" />
         </summary>
-        <div className="px-4 pb-4 pt-1 border-t border-destructive/20">
-          <p className="text-xs text-muted-foreground mb-3">
+        <div className="px-4 pb-3 pt-1 border-t border-destructive/20">
+          <p className="text-xs text-muted-foreground mb-2">
             Do not wait — every second matters in these situations
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -886,7 +886,7 @@ const Emergency = () => {
             aria-selected={activeSection === id}
             aria-controls={`panel-${id}`}
             onClick={() => setActiveSection(id)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium flex-1 justify-center transition-all duration-150
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium flex-1 justify-center transition-all duration-150
               ${activeSection === id
                 ? "bg-destructive text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -912,10 +912,10 @@ const Emergency = () => {
 
       {/* ══ SECTION 1 — Emergency Numbers ════════════════════════════════════ */}
       {activeSection === "numbers" && (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
           <Phone className="w-5 h-5 text-destructive" />
-          <h2 className="text-xl font-bold text-foreground">Emergency Numbers</h2>
+          <h2 className="text-lg font-bold text-foreground">Emergency Numbers</h2>
         </div>
 
         <input
@@ -928,7 +928,7 @@ const Emergency = () => {
 
         {/* Featured Local Hotline Card */}
         {localMatch && !searchCountry && (
-          <div className="p-5 rounded-xl border border-destructive bg-destructive/5 dark:bg-destructive/10 relative overflow-hidden transition-all duration-300 shadow-md">
+          <div className="p-4 rounded-xl border border-destructive bg-destructive/5 dark:bg-destructive/10 relative overflow-hidden transition-all duration-300 shadow-md">
             <span className="absolute left-0 top-0 h-full w-1.5 bg-destructive animate-pulse" />
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="space-y-1">
@@ -977,7 +977,7 @@ const Emergency = () => {
               className="group relative rounded-xl border border-border bg-card hover:border-destructive/40 hover:shadow-md dark:hover:shadow-destructive/10 transition-all duration-200 overflow-hidden"
             >
               <span className="absolute left-0 top-0 h-full w-1 bg-destructive rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center justify-between px-4 py-4 ml-1">
+              <div className="flex items-center justify-between px-4 py-3 ml-1">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-2xl">{item.flag}</span>
@@ -985,7 +985,7 @@ const Emergency = () => {
                       {item.country}
                     </p>
                   </div>
-                  <p className="text-4xl font-black text-destructive leading-none tracking-tight">
+                  <p className="text-3xl font-black text-destructive leading-none tracking-tight">
                     {item.number}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
@@ -1023,10 +1023,10 @@ const Emergency = () => {
 
       {/* ══ SECTION 2 — First Aid ══════════════════════════════════════════════ */}
       {activeSection === "firstaid" && (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-destructive" />
-          <h2 className="text-xl font-bold text-foreground">First Aid Guides</h2>
+          <h2 className="text-lg font-bold text-foreground">First Aid Guides</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           Tap any situation for step-by-step instructions. Life-threatening situations require a call first.
@@ -1045,7 +1045,7 @@ const Emergency = () => {
               {/* Guide Header */}
               <button
                 onClick={() => toggleGuide(guide.id)}
-                className={`w-full flex items-center justify-between px-4 py-3.5 ${guide.bg} hover:opacity-90 transition-opacity`}
+                className={`w-full flex items-center justify-between px-4 py-3 ${guide.bg} hover:opacity-90 transition-opacity`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${guide.bg} border ${guide.border}`}>
@@ -1072,9 +1072,9 @@ const Emergency = () => {
 
                   {/* LIFE THREATENING — show call screen first */}
                   {guide.isLifeThreatening && !hasCalled ? (
-                    <div className="flex flex-col items-center gap-4 px-6 py-8 text-center">
-                      <div className="w-16 h-16 rounded-full bg-destructive/10 border-2 border-destructive/30 flex items-center justify-center">
-                        <PhoneCall className="w-8 h-8 text-destructive animate-bounce" />
+                    <div className="flex flex-col items-center gap-3 px-6 py-5 text-center">
+                      <div className="w-14 h-14 rounded-full bg-destructive/10 border-2 border-destructive/30 flex items-center justify-center">
+                        <PhoneCall className="w-7 h-7 text-destructive animate-bounce" />
                       </div>
                       <div>
                         <p className="font-bold text-lg text-destructive">Call Emergency Services First!</p>
@@ -1102,13 +1102,13 @@ const Emergency = () => {
                     </div>
                   ) : (
                     /* Steps — timeline style */
-                    <div className="px-4 py-4">
+                    <div className="px-4 py-3">
                       {/* Non-life-threatening still gets a small call reminder */}
                       {!guide.isLifeThreatening && (
                         <a
                           href="tel:112"
                           onClick={(e) => { if (!isMobile()) e.preventDefault(); }}
-                          className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold"
+                          className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold"
                         >
                           <Phone className="w-3.5 h-3.5" />
                           Call 112 / 911 if situation is severe
@@ -1118,7 +1118,7 @@ const Emergency = () => {
                       <div className="relative pl-8">
                         <span className={`absolute left-3 top-2 bottom-2 w-px border-l-2 ${guide.border}`} />
                         {guide.steps.map((step, idx) => (
-                          <div key={idx} className="relative mb-4 last:mb-0">
+                          <div key={idx} className="relative mb-3 last:mb-0">
                             <div className={`absolute -left-8 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${guide.color.replace("text-", "bg-")}`}>
                               {idx + 1}
                             </div>
@@ -1127,7 +1127,7 @@ const Emergency = () => {
                         ))}
                       </div>
 
-                      <p className="text-xs text-muted-foreground italic mt-4 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground italic mt-3 pt-2 border-t border-border">
                         ⚠️ General guidance only. Always follow instructions from emergency dispatchers.
                       </p>
                     </div>
@@ -1142,10 +1142,10 @@ const Emergency = () => {
 
       {/* ══ SECTION 3 — Crisis Hotlines ══════════════════════════════════════ */}
       {activeSection === "crisis" && (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
           <Heart className="w-5 h-5 text-destructive" />
-          <h2 className="text-xl font-bold text-foreground">Crisis & Mental Health Hotlines</h2>
+          <h2 className="text-lg font-bold text-foreground">Crisis & Mental Health Hotlines</h2>
         </div>
         <p className="text-sm text-muted-foreground">Free, confidential support — you are not alone.</p>
 
@@ -1153,7 +1153,7 @@ const Emergency = () => {
           {crisisHotlines.map((line, idx) => (
             <div
               key={idx}
-              className="rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200 p-4"
+              className="rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200 p-3.5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -1208,8 +1208,8 @@ const Emergency = () => {
         </div>
 
         {/* Reminders — with checkoff */}
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 dark:bg-muted/10 p-4 mt-2">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 dark:bg-muted/10 p-3.5">
+          <div className="flex items-center gap-2 mb-2.5">
             <CheckCircle2 className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm">Important Reminders</h3>
             {checkedReminders.length > 0 && (
@@ -1247,10 +1247,10 @@ const Emergency = () => {
 
       {/* ══ SECTION 4 — Find Help ═════════════════════════════════════════════ */}
       {activeSection === "find" && (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
           <MapPin className="w-5 h-5 text-destructive" />
-          <h2 className="text-xl font-bold text-foreground">Find Nearby Help</h2>
+          <h2 className="text-lg font-bold text-foreground">Find Nearby Help</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           Opens Google Maps to locate medical facilities near you.
@@ -1298,10 +1298,10 @@ const Emergency = () => {
               <button
                 key={item.type}
                 onClick={() => openMap(item.type, item.url)}
-                className={`group rounded-xl border ${item.color} ${item.bg} p-5 text-left transition-all duration-200 hover:shadow-md`}
+                className={`group rounded-xl border ${item.color} ${item.bg} p-4 text-left transition-all duration-200 hover:shadow-md`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <Icon className={`w-7 h-7 ${item.iconColor} ${isLoading ? "animate-spin" : "group-hover:animate-bounce"}`} />
+                <div className="flex items-start justify-between mb-2.5">
+                  <Icon className={`w-6 h-6 ${item.iconColor} ${isLoading ? "animate-spin" : "group-hover:animate-bounce"}`} />
                   {isLoading
                     ? <span className="text-xs text-muted-foreground animate-pulse">Finding...</span>
                     : <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
