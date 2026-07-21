@@ -389,6 +389,69 @@ body,
   transition: all .25s ease;
 }
 
+/*
+ * Form control focus/state transitions (theme-agnostic).
+ * Reusable base so individual pages/components don't need their own
+ * transition rules. Applies to native and shadcn-based inputs,
+ * textareas, and selects.
+ */
+input,
+textarea,
+select,
+[role="combobox"] {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Clear, consistent focus ring across all form controls */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="combobox"]:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 4px hsl(var(--ring));
+}
+
+/* Disabled state stays visually distinct */
+input:disabled,
+textarea:disabled,
+select:disabled,
+[role="combobox"][data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transition: opacity 0.2s ease;
+}
+
+/* Read-only state is distinct from both default and disabled */
+input:read-only:not(:disabled),
+textarea:read-only:not(:disabled) {
+  background-color: hsl(var(--muted) / 0.4);
+  cursor: default;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  input,
+  textarea,
+  select,
+  [role="combobox"],
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="combobox"]:focus-visible,
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 /* Buttons */
 .cosmic button,
 .deep-blue button,
