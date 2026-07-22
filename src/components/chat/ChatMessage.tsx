@@ -19,6 +19,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
       {!isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-glow">
           <Bot className="w-5 h-5 text-primary-foreground" />
+          <span className="sr-only">AI Health Assistant:</span>
         </div>
       )}
       
@@ -31,6 +32,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
         )}
       >
         <div className="text-sm leading-relaxed">
+          <span className="sr-only">{isUser ? "You said: " : "AI Health Assistant said: "}</span>
   <ReactMarkdown
     components={{
       strong: ({ children }) => (
@@ -66,6 +68,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
       {isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
           <User className="w-5 h-5 text-secondary-foreground" />
+          <span className="sr-only">You:</span>
         </div>
       )}
     </div>

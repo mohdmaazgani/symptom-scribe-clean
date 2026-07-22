@@ -65,7 +65,9 @@ const ChatInterface = () => {
   const { toast } = useToast();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (typeof messagesEndRef.current?.scrollIntoView === "function") {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -380,7 +382,7 @@ const ChatInterface = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && (!e.shiftKey || e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSend();
     }
@@ -420,6 +422,7 @@ const ChatInterface = () => {
               <button
                 onClick={() => handleSelectSession(session.id)}
                 className="flex-1 text-left truncate pr-2 focus:outline-none"
+                aria-label={`Open session: ${session.title || "Untitled Session"}`}
               >
                 {session.title || "Untitled Session"}
               </button>
@@ -473,6 +476,7 @@ const ChatInterface = () => {
         <div className="p-4 border-b border-border flex flex-col gap-2">
           <Button
             onClick={handleNewChat}
+            aria-label="Create new consultation"
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -508,6 +512,7 @@ const ChatInterface = () => {
                 <div className="p-4 border-b border-border">
                   <Button
                     onClick={handleNewChat}
+                    aria-label="Create new consultation"
                     className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold"
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
@@ -529,6 +534,7 @@ const ChatInterface = () => {
             variant="ghost"
             size="sm"
             onClick={handleNewChat}
+            aria-label="Create new consultation"
             className="text-xs flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -561,6 +567,7 @@ const ChatInterface = () => {
                 onKeyDown={handleKeyPress}
                 placeholder="Describe your symptoms... (e.g., 'I have a sore throat and headache')"
                 aria-label="Describe your symptoms to the AI health assistant"
+                aria-keyshortcuts="Control+Enter"
                 className="min-h-[60px] max-h-[120px] resize-none rounded-xl"
                 disabled={isLoading}
               />
@@ -568,6 +575,10 @@ const ChatInterface = () => {
                 <p className="text-xs text-muted-foreground select-none">
                   <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
                     Enter
+                  </kbd>{" "}
+                  or{" "}
+                  <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
+                    Ctrl+Enter
                   </kbd>{" "}
                   to send{" · "}
                   <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
