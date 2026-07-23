@@ -24,5 +24,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Copy example env
+        run: cp .env.example .env || true
+
       - name: Run tests
         run: npm test

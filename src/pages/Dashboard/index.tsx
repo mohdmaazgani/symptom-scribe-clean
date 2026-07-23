@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Activity, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import { showError, showInfo } from "@/lib/toast-helpers";
 import CountUp from "react-countup";
-import CardSkeleton from "@/components/ui/CardSkeleton";
 import HealthTrendsChart from "@/components/dashboard/HealthTrendsChart";
 import SymptomPredictions from "@/components/dashboard/SymptomPredictions";
 import { getCachedData } from "@/lib/cached-queries";
@@ -14,6 +13,7 @@ import { decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
 import { whenEncryptionReady, decryptProfileField } from "@/lib/encryption";
 import { motion } from "framer-motion";
 import { SmartAlertsBanner } from "@/components/dashboard/SmartAlertsBanner";
+import CardSkeleton from "@/components/ui/CardSkeleton";
 import { WeeklyHealthScoreCard } from "@/components/dashboard/WeeklyHealthScoreCard";
 
 interface Stats {
@@ -486,10 +486,10 @@ const Dashboard = () => {
                 <div
                   key={item.id}
                   className={`flex items-start justify-between border-b pb-3 last:border-0 transition-all duration-300 hover:px-2 rounded-md p-2 ${item.severity_level === "high"
-                      ? "bg-red-500/10 border-red-500 text-red-400"
-                      : item.severity_level === "moderate"
-                        ? "bg-yellow-500/10 border-yellow-500 text-yellow-400"
-                        : "bg-green-500/10 border-green-500 text-green-400"
+                    ? "bg-red-500/10 border-red-500 text-red-400"
+                    : item.severity_level === "moderate"
+                      ? "bg-yellow-500/10 border-yellow-500 text-yellow-400"
+                      : "bg-green-500/10 border-green-500 text-green-400"
                     }`}
                 >
                   <div className="flex-1">

@@ -360,15 +360,19 @@ async function handleSessionChange(session: Session) {
     console.error("Failed to sync encryption salt from profiles:", saltErr);
   }
 
-  if (token === lastToken) return;
+  // Derive persistent master key from stored seed (or stable userId fallback)
+  const storedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
+  const masterSeed = storedSeed || userId;
+
+  if (masterSeed === lastToken && getKey()) return;
 
   const prevToken = lastToken;
 
   try {
-    const newKey = await deriveKeyFromToken(token, userId);
-    const newSearchKey = await deriveSearchKeyFromToken(token, userId);
+    const newKey = await deriveKeyFromToken(masterSeed, userId);
+    const newSearchKey = await deriveSearchKeyFromToken(masterSeed, userId);
 
-    if (prevToken && prevToken !== token) {
+    if (prevToken && prevToken !== masterSeed && getKey()) {
       const oldKey = await deriveKeyFromToken(prevToken, userId);
       const oldSearchKey = await deriveSearchKeyFromToken(prevToken, userId);
       if (onTokenRefreshCallback) {
@@ -377,9 +381,9 @@ async function handleSessionChange(session: Session) {
     }
 
     setKeys(newKey, newSearchKey);
-    lastToken = token;
+    lastToken = masterSeed;
   } catch (error) {
-    console.error("Failed to derive or rotate encryption keys:", error);
+    console.error("Failed to derive encryption keys:", error);
     setKeys(null, null);
     lastToken = null;
   }

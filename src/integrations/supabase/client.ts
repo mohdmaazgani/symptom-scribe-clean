@@ -26,18 +26,31 @@ const missing: string[] = [];
 if (!supabaseUrl) missing.push("VITE_SUPABASE_URL");
 if (!supabasePublishableKey) missing.push("VITE_SUPABASE_PUBLISHABLE_KEY");
 
+const isTestEnv =
+  typeof (globalThis as unknown as { vi?: unknown }).vi !== "undefined" ||
+  (typeof process !== "undefined" && process.env.NODE_ENV === "test") ||
+  import.meta.env.MODE === "test";
+
 if (missing.length > 0) {
-  throw new Error(
+  const message =
     `[Supabase] Missing required environment variable(s):\n` +
-      missing.map((v) => `  - ${v}`).join("\n") +
-      `\nCopy .env.example to .env and fill in the values.`
-  );
+    missing.map((v) => `  - ${v}`).join("\n") +
+    `\nCopy .env.example to .env and fill in the values.`;
+
+  if (!isTestEnv) {
+    throw new Error(message);
+  } else {
+    console.warn(message);
+  }
 }
 
 export { supabaseUrl };
 
 // ─── Client ───────────────────────────────────────────────────────────────────
-export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
+const effectiveUrl = supabaseUrl || (isTestEnv ? "https://placeholder.supabase.co" : "");
+const effectiveKey = supabasePublishableKey || (isTestEnv ? "placeholder-key" : "");
+
+export const supabase = createClient<Database>(effectiveUrl, effectiveKey, {
   auth: {
     storage: typeof window !== "undefined" ? localStorage : undefined,
     persistSession: true,
