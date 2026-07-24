@@ -73,12 +73,21 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
       });
   }, [records]);
 
-  // Determine if there is any data to show in the chart
+  // Determine if there is any data to show in the chart, respecting the active filter
   const hasData = useMemo(() => {
+    if (activeFilter === "heart_rate") {
+      return chartData.some((d) => d["Heart Rate"] !== null);
+    }
+    if (activeFilter === "sleep") {
+      return chartData.some((d) => d["Sleep Duration"] !== null);
+    }
+    if (activeFilter === "steps") {
+      return chartData.some((d) => d["Daily Steps"] !== null);
+    }
     return chartData.some(
       (d) => d["Heart Rate"] !== null || d["Sleep Duration"] !== null || d["Daily Steps"] !== null
     );
-  }, [chartData]);
+  }, [chartData, activeFilter]);
 
   if (loading) {
     return (
