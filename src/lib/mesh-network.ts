@@ -35,7 +35,9 @@ class MeshNetworkManager {
 
   constructor() {
     // Generate a unique node ID for this tab session
-    this.nodeId = "peer-" + Math.random().toString(36).substring(2, 9);
+    const idArray = new Uint8Array(8);
+    crypto.getRandomValues(idArray);
+    this.nodeId = "peer-" + Array.from(idArray).map(b => b.toString(36).padStart(2, "0")).join("");
     this.isOfflineSimulated = localStorage.getItem("symptom_scribe_offline_sim") === "true";
 
     if (typeof window !== "undefined") {
