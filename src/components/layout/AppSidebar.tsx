@@ -11,6 +11,7 @@ import {
   Settings,
   Bot,
   Trophy,
+  CalendarDays,
 } from "lucide-react";
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -45,6 +46,7 @@ const menuItems = [
   { title: "AI Health Assistant", url: "/ai-health-assistant", icon: Bot },
   { title: "Health Metrics", url: "/metrics", icon: Activity },
   { title: "History", url: "/history", icon: History },
+  { title: "Symptom Timeline", url: "/timeline", icon: CalendarDays },
   { title: "Challenges", url: "/gamification", icon: Trophy },
   { title: "Profile", url: "/profile", icon: User },
   { title: "Emergency", url: "/emergency", icon: Phone },

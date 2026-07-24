@@ -41,6 +41,7 @@ const Contact = lazy(() => import("./pages/Contact/index.tsx"));
 const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
+const Timeline = lazy(() => import("./pages/Timeline"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -237,6 +238,16 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <GamificationPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/timeline"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Timeline />
                     </Layout>
                   </ProtectedRoute>
                 }
