@@ -78,7 +78,7 @@ const firstAidGuides = [
     badgeColor: "bg-orange-500/20 text-orange-500 border-orange-500/30",
     urgency: "LIFE THREATENING",
     isLifeThreatening: true,
-    animationClass: "animate-bounce",
+    animationClass: "animate-pulse",
     steps: [
       "Ask 'Are you choking?' — if they cannot speak, cough, or breathe, act immediately",
       "Stand behind the person, slightly to one side. Support their chest with one hand",
