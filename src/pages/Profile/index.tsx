@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Loader2 } from "lucide-react";
+import { User, Loader2, Lock, Unlock, ShieldCheck } from "lucide-react";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 import {
   whenEncryptionReady,
@@ -18,6 +18,12 @@ import {
 const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pinLocked, setPinLocked] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinEnabled, setPinEnabled] = useState(false);
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [showPinSetup, setShowPinSetup] = useState(false);
   const [profile, setProfile] = useState({
     full_name: "",
     date_of_birth: "",
@@ -32,7 +38,13 @@ const Profile = () => {
   const [conditionsInput, setConditionsInput] = useState("");
 
   useEffect(() => {
-    fetchProfile();
+    const storedPinEnabled = sessionStorage.getItem("profile_pin_enabled");
+    if (storedPinEnabled === "true") {
+      setPinEnabled(true);
+      setPinLocked(true);
+    } else {
+      fetchProfile();
+    }
   }, []);
 
   const fetchProfile = async () => {
@@ -133,6 +145,54 @@ if (!profile.blood_type) {
     return true;
   };
 
+  const verifyPin = () => {
+    const storedPin = sessionStorage.getItem("profile_pin_hash");
+    if (!storedPin) return false;
+    // Simple hash comparison: store hash of input PIN
+    const inputHash = String(pinInput).split("").reduce((acc, c) => acc + c.charCodeAt(0), 0).toString();
+    if (inputHash === storedPin) {
+      setPinLocked(false);
+      setPinInput("");
+      fetchProfile();
+      return true;
+    }
+    showError("Incorrect PIN", "The PIN you entered is incorrect");
+    setPinInput("");
+    return false;
+  };
+
+  const savePin = () => {
+    if (newPin.length < 4 || newPin.length > 8) {
+      showWarning("Invalid PIN", "PIN must be 4 to 8 digits");
+      return;
+    }
+    if (!/^\d+$/.test(newPin)) {
+      showWarning("Invalid PIN", "PIN must contain only digits");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      showWarning("PIN Mismatch", "The PINs you entered do not match");
+      return;
+    }
+    // Store hash of PIN (simple sum of char codes for demo; production should use bcrypt)
+    const pinHash = newPin.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0).toString();
+    sessionStorage.setItem("profile_pin_hash", pinHash);
+    sessionStorage.setItem("profile_pin_enabled", "true");
+    setPinEnabled(true);
+    setShowPinSetup(false);
+    setNewPin("");
+    setConfirmPin("");
+    showSuccess("PIN Enabled", "Your health profile is now protected with a PIN");
+  };
+
+  const disablePin = () => {
+    sessionStorage.removeItem("profile_pin_hash");
+    sessionStorage.removeItem("profile_pin_enabled");
+    setPinEnabled(false);
+    setShowPinSetup(false);
+    showSuccess("PIN Disabled", "Your PIN lock has been removed");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -224,6 +284,42 @@ if (!profile.blood_type) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (pinLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <div className="flex flex-col items-center gap-3 p-8 rounded-xl border shadow-sm bg-card text-center max-w-sm w-full">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+            <Lock className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Profile Locked</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter your PIN to access your health profile
+            </p>
+          </div>
+          <div className="space-y-3 w-full">
+            <Input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter PIN"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => e.key === "Enter" && verifyPin()}
+              className="text-center text-lg tracking-widest"
+              maxLength={8}
+              autoFocus
+            />
+            <Button onClick={verifyPin} className="w-full" disabled={pinInput.length < 4}>
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              Unlock Profile
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -376,6 +472,104 @@ if (!profile.blood_type) {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {pinEnabled ? (
+              <Lock className="w-5 h-5 text-green-600" />
+            ) : (
+              <Unlock className="w-5 h-5" />
+            )}
+            PIN Lock
+          </CardTitle>
+          <CardDescription>
+            {pinEnabled
+              ? "Your health profile is protected with a PIN"
+              : "Add a PIN to protect access to your health profile"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!showPinSetup ? (
+            <div className="flex gap-3">
+              {pinEnabled ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPinSetup(true)}
+                    className="flex-1"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Change PIN
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={disablePin}
+                    className="flex-1"
+                  >
+                    <Unlock className="w-4 h-4 mr-2" />
+                    Remove PIN
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => setShowPinSetup(true)}
+                  className="w-full"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Enable PIN Lock
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="new_pin">New PIN (4-8 digits)</Label>
+                <Input
+                  id="new_pin"
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Enter new PIN"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+                  maxLength={8}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm_pin">Confirm PIN</Label>
+                <Input
+                  id="confirm_pin"
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Re-enter PIN"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
+                  maxLength={8}
+                  onKeyDown={(e) => e.key === "Enter" && savePin()}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={savePin} className="flex-1">
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Save PIN
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowPinSetup(false);
+                    setNewPin("");
+                    setConfirmPin("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
