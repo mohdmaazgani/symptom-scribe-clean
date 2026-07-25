@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,8 +8,14 @@ export const BackToTop = () => {
 
   // The app shell scrolls inside <main id="main-scroll">, falling back to the
   // window for any context where that container isn't present.
-  const getScroller = (): HTMLElement | Window =>
-    document.getElementById("main-scroll") ?? window;
+  const scrollerRef = useRef<HTMLElement | Window | null>(null);
+
+  const getScroller = (): HTMLElement | Window => {
+    if (scrollerRef.current === null) {
+      scrollerRef.current = document.getElementById("main-scroll") ?? window;
+    }
+    return scrollerRef.current;
+  };
 
   const getScrollTop = (scroller: HTMLElement | Window) =>
     scroller instanceof Window ? scroller.scrollY : scroller.scrollTop;
