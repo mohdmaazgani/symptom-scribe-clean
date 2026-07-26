@@ -290,12 +290,14 @@ const AIHealthAssistant = () => {
             showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
           }
 
+          const rngScore = (range: number, offset: number) =>
+            offset + Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1) * range);
           const riskScore =
             severityLevel === "high"
-              ? Math.floor(Math.random() * 20) + 70
+              ? rngScore(20, 70)
               : severityLevel === "moderate"
-                ? Math.floor(Math.random() * 30) + 40
-                : Math.floor(Math.random() * 30) + 10;
+                ? rngScore(30, 40)
+                : rngScore(30, 10);
 
           if (shouldPersistConsultation(assistantContent)) {
             const recordId = crypto.randomUUID();
