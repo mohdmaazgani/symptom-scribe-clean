@@ -27,7 +27,9 @@ export function useFocusTrap(active = true) {
           el.offsetHeight > 0 &&
           style.visibility !== "hidden" &&
           style.display !== "none";
-        const isNotDisabled = !el.hasAttribute("disabled") && !("disabled" in el && (el as unknown as { disabled: boolean }).disabled === true);
+        const isNotDisabled =
+          !el.hasAttribute("disabled") &&
+          !("disabled" in el && (el as unknown as { disabled: boolean }).disabled === true);
         return isVisible && isNotDisabled;
       });
 
@@ -75,7 +77,9 @@ export function useFocusTrap(active = true) {
           el.offsetHeight > 0 &&
           style.visibility !== "hidden" &&
           style.display !== "none";
-        const isNotDisabled = !el.hasAttribute("disabled") && !("disabled" in el && (el as unknown as { disabled: boolean }).disabled === true);
+        const isNotDisabled =
+          !el.hasAttribute("disabled") &&
+          !("disabled" in el && (el as unknown as { disabled: boolean }).disabled === true);
         return isVisible && isNotDisabled;
       });
 

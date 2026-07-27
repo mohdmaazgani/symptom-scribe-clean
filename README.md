@@ -32,12 +32,12 @@ Symptom Scribe is an AI-powered health and wellness platform designed to help us
 
 Symptom Scribe provides a centralized health management experience that combines:
 
-* Health tracking
-* Symptom analysis
-* AI-powered recommendations
-* Brain-training activities
-* Medical education
-* Doctor consultation guidance
+- Health tracking
+- Symptom analysis
+- AI-powered recommendations
+- Brain-training activities
+- Medical education
+- Doctor consultation guidance
 
 The goal is to make healthcare monitoring more accessible, engaging, and personalized.
 
@@ -45,11 +45,11 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 
 # 🎯 Objectives
 
-* Help users monitor daily health metrics.
-* Enable symptom tracking and analysis.
-* Provide educational health insights.
-* Encourage healthier lifestyles through gamification.
-* Support informed healthcare decisions.
+- Help users monitor daily health metrics.
+- Enable symptom tracking and analysis.
+- Provide educational health insights.
+- Encourage healthier lifestyles through gamification.
+- Support informed healthcare decisions.
 
 ---
 
@@ -57,39 +57,39 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 
 ## 🧠 Health & Wellness Tracking
 
-* Track hydration, nutrition, activity levels, and wellness goals.
-* View health progress over time.
-* Personalized wellness recommendations.
+- Track hydration, nutrition, activity levels, and wellness goals.
+- View health progress over time.
+- Personalized wellness recommendations.
 
 ## 🩻 Symptom Analysis
 
-* Log and manage symptoms.
-* AI-assisted symptom evaluation.
-* Health recommendations based on reported symptoms.
+- Log and manage symptoms.
+- AI-assisted symptom evaluation.
+- Health recommendations based on reported symptoms.
 
 ## 🎮 Brain Games
 
-* Interactive games designed to improve:
+- Interactive games designed to improve:
 
-  * Memory
-  * Focus
-  * Cognitive performance
+  - Memory
+  - Focus
+  - Cognitive performance
 
 ## 💡 Health Facts
 
-* Educational health facts and medical trivia.
-* Daily learning opportunities.
-* "Did You Know?" pop-ups with fascinating human body facts and medical trivia.
+- Educational health facts and medical trivia.
+- Daily learning opportunities.
+- "Did You Know?" pop-ups with fascinating human body facts and medical trivia.
 
 ## 👨‍⚕️ Doctor Consultation Suggestions
 
-* Intelligent recommendations for professional medical consultation.
-* Supports early decision-making for health concerns.
+- Intelligent recommendations for professional medical consultation.
+- Supports early decision-making for health concerns.
 
 ## 📊 Health History & Metrics
 
-* Store historical health records.
-* Visualize health trends and patterns.
+- Store historical health records.
+- Visualize health trends and patterns.
 
 ---
 
@@ -112,13 +112,12 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 
 > Add screenshots of the following sections:
 
-* Dashboard
-* Symptom Analyzer
-* Health Metrics
-* Brain Games
-* Settings Page
-* Mobile Responsive View
-
+- Dashboard
+- Symptom Analyzer
+- Health Metrics
+- Brain Games
+- Settings Page
+- Mobile Responsive View
 
 Example:
 
@@ -183,7 +182,6 @@ npm run dev
 
 Open in your browser → [http://localhost:8080](http://localhost:8080)
 
-
 ### Supabase Edge Function Setup
 
 The browser app and Supabase edge functions use different environment surfaces. Browser variables are loaded into Vite at build time and live in `.env.local`. Edge-function runtime secrets are read by deployed functions or by the Supabase CLI when you serve them locally — **never** place `SUPABASE_SERVICE_ROLE_KEY` or other edge secrets in `.env.local`.
@@ -232,7 +230,6 @@ supabase functions serve --env-file supabase/.env.local
 
 Keep the service role key out of browser-loaded files and client-side code.
 
-
 ## 📂 Project Structure
 
 ```text
@@ -245,7 +242,7 @@ symptom-scribe-clean/
 │   └── reference/                                    # Reference documentation
 │       ├── CHANGELOG.md
 │       ├── FAQ.md
-│       └── SECURITY.md 
+│       └── SECURITY.md
 ├── public/                                           # Static assets
 ├── src/
 │   ├── components/
@@ -378,10 +375,10 @@ symptom-scribe-clean/
 
 ## Frontend Variables
 
-| Variable                      | Description                |
-| ----------------------------- | -------------------------- |
-| VITE_SUPABASE_URL             | Supabase Project URL       |
-| VITE_SUPABASE_PUBLISHABLE_KEY | Browser authentication key |
+| Variable                      | Description                                       |
+| ----------------------------- | ------------------------------------------------- |
+| VITE_SUPABASE_URL             | Supabase Project URL                              |
+| VITE_SUPABASE_PUBLISHABLE_KEY | Browser authentication key                        |
 | VITE_SUPABASE_ANON_KEY        | Legacy fallback if the publishable key is missing |
 
 ### Important
@@ -394,18 +391,18 @@ Only variables prefixed with `VITE_` are exposed to the frontend. The app reads 
 
 ## Required Secrets
 
-| Secret                    | Purpose                          |
-| ------------------------- | -------------------------------- |
-| GEMINI_API_KEY            | Gemini API Key for symptom analysis |
-| SUPABASE_URL              | Supabase project URL (System Injected) |
-| SUPABASE_ANON_KEY         | Caller validation (System Injected)    |
+| Secret                    | Purpose                                        |
+| ------------------------- | ---------------------------------------------- |
+| GEMINI_API_KEY            | Gemini API Key for symptom analysis            |
+| SUPABASE_URL              | Supabase project URL (System Injected)         |
+| SUPABASE_ANON_KEY         | Caller validation (System Injected)            |
 | SUPABASE_SERVICE_ROLE_KEY | Admin account-deletion flows (System Injected) |
-| TWILIO_ACCOUNT_SID        | Emergency SMS alerts             |
-| TWILIO_AUTH_TOKEN         | Emergency SMS alerts             |
-| TWILIO_PHONE_NUMBER       | Emergency SMS sender number      |
-| UPSTASH_REDIS_REST_URL    | Optional rate limiting/cache     |
-| UPSTASH_REDIS_REST_TOKEN  | Optional rate limiting/cache     |
-| WEBHOOK_SECRET            | Optional cache webhook auth      |
+| TWILIO_ACCOUNT_SID        | Emergency SMS alerts                           |
+| TWILIO_AUTH_TOKEN         | Emergency SMS alerts                           |
+| TWILIO_PHONE_NUMBER       | Emergency SMS sender number                    |
+| UPSTASH_REDIS_REST_URL    | Optional rate limiting/cache                   |
+| UPSTASH_REDIS_REST_TOKEN  | Optional rate limiting/cache                   |
+| WEBHOOK_SECRET            | Optional cache webhook auth                    |
 
 ## Configure Secrets
 
@@ -447,25 +444,25 @@ supabase functions serve --env-file supabase/.env.local
 
 Handled through:
 
-* Supabase Auth
-* JWT Session Management
+- Supabase Auth
+- JWT Session Management
 
 ## Database
 
 Managed via:
 
-* PostgreSQL
-* Supabase Migrations
+- PostgreSQL
+- Supabase Migrations
 
 ## Edge Functions
 
 Current Functions:
 
-* `symptom-analyzer`
-* `broadcast-emergency`
-* `get-cached-data`
-* `invalidate-cache`
-* `delete-user-account`
+- `symptom-analyzer`
+- `broadcast-emergency`
+- `get-cached-data`
+- `invalidate-cache`
+- `delete-user-account`
 
 ---
 
@@ -640,11 +637,11 @@ TROUBLESHOOTING.md
 
 Common issues include:
 
-* Missing environment variables
-* Supabase authentication failures
-* Dependency installation errors
-* Port conflicts
-* Build failures
+- Missing environment variables
+- Supabase authentication failures
+- Dependency installation errors
+- Port conflicts
+- Build failures
 
 ---
 
@@ -662,17 +659,17 @@ VITE_
 
 Verify:
 
-* Supabase credentials
-* User account status
-* Environment variables
+- Supabase credentials
+- User account status
+- Environment variables
 
 ### Why does the app fail to build?
 
 Check:
 
-* Dependency installation
-* TypeScript errors
-* Environment configuration
+- Dependency installation
+- TypeScript errors
+- Environment configuration
 
 ---
 
@@ -688,12 +685,11 @@ Contributions are welcome!
 4. Push your branch.
 5. Open a Pull Request.
 
-###  Contributors
+### Contributors
 
 Thanks to all contributors ❤️
 
 [![Contributors](https://contrib.rocks/image?repo=mohdmaazgani/symptom-scribe-clean)](https://github.com/mohdmaazgani/symptom-scribe-clean/graphs/contributors)
-
 
 ## Pull Request Requirements
 
@@ -705,23 +701,23 @@ Closes #<issue-number>
 
 ### Checklist
 
-* [ ] Tested locally
-* [ ] No unrelated files changed
-* [ ] Code style followed
-* [ ] Issue linked
-* [ ] No console errors
-* [ ] Issue assigned before work began
+- [ ] Tested locally
+- [ ] No unrelated files changed
+- [ ] Code style followed
+- [ ] Issue linked
+- [ ] No console errors
+- [ ] Issue assigned before work began
 
 ---
 
 # 🚀 Future Enhancements
 
-* Wearable device integration
-* AI-powered conversational diagnosis
-* Medication reminders
-* Advanced analytics dashboards
-* Doctor-patient collaboration portal
-* Personalized health forecasting
+- Wearable device integration
+- AI-powered conversational diagnosis
+- Medication reminders
+- Advanced analytics dashboards
+- Doctor-patient collaboration portal
+- Personalized health forecasting
 
 ---
 
@@ -731,9 +727,9 @@ This project is licensed under the MIT License.
 
 You are free to:
 
-* Use
-* Modify
-* Distribute
+- Use
+- Modify
+- Distribute
 
 the software under the terms of the MIT License.
 
@@ -744,4 +740,3 @@ the software under the terms of the MIT License.
 Developed by **@mohdmaazgani**
 
 ✨ Passionate about building intelligent, user-centric healthcare solutions.
-

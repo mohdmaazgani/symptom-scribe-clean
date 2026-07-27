@@ -25,7 +25,8 @@ export const blogPosts: BlogPost[] = [
     date: "May 20, 2026",
     readTime: "4 min read",
     title: "5 Daily Habits That Improve Your Long-Term Health",
-    excerpt: "Small, consistent actions compound over time. Here are five science-backed habits that make a real difference.",
+    excerpt:
+      "Small, consistent actions compound over time. Here are five science-backed habits that make a real difference.",
     content: [
       {
         body: "Good health isn't built in a single day — it's the result of small, consistent habits practiced over time. Here are five evidence-based daily habits that can significantly improve your long-term health.",
@@ -67,7 +68,8 @@ export const blogPosts: BlogPost[] = [
     date: "May 12, 2026",
     readTime: "6 min read",
     title: "Understanding Your Symptom Data: What the Numbers Mean",
-    excerpt: "Your health metrics tell a story. We break down how to interpret common patterns in your symptom logs.",
+    excerpt:
+      "Your health metrics tell a story. We break down how to interpret common patterns in your symptom logs.",
     content: [
       {
         body: "When you log symptoms consistently, patterns begin to emerge. Understanding what those patterns mean can help you make better decisions about your health and have more informed conversations with your doctor.",
@@ -113,7 +115,8 @@ export const blogPosts: BlogPost[] = [
     date: "April 30, 2026",
     readTime: "5 min read",
     title: "How Brain Games Improve Cognitive Function",
-    excerpt: "Research suggests targeted cognitive exercises can improve memory and focus. Here's what the science says.",
+    excerpt:
+      "Research suggests targeted cognitive exercises can improve memory and focus. Here's what the science says.",
     content: [
       {
         body: "The idea that you can train your brain like a muscle has gained significant scientific support. Targeted cognitive exercises — commonly called brain games — have been shown to improve specific mental functions when practiced consistently.",
@@ -159,7 +162,8 @@ export const blogPosts: BlogPost[] = [
     date: "April 18, 2026",
     readTime: "7 min read",
     title: "When to See a Doctor vs. Monitor Symptoms at Home",
-    excerpt: "Not every symptom requires an emergency visit. Learn how to make that call confidently.",
+    excerpt:
+      "Not every symptom requires an emergency visit. Learn how to make that call confidently.",
     content: [
       {
         body: "One of the most common health decisions people face isn't which treatment to choose — it's whether to seek care at all. Knowing when to see a doctor versus when to watch and wait can save you time, money, and unnecessary anxiety.",

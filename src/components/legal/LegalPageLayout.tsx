@@ -40,9 +40,7 @@ const LegalPageLayout = ({ title, icon: Icon, children }: LegalPageLayoutProps) 
       </div>
 
       {/* Page Content */}
-      <div className="max-w-4xl mx-auto px-6 pb-20 space-y-6">
-        {children}
-      </div>
+      <div className="max-w-4xl mx-auto px-6 pb-20 space-y-6">{children}</div>
 
       <PageFooter />
     </div>

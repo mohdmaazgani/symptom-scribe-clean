@@ -63,11 +63,13 @@ class OfflineDatabase extends Dexie {
     super("SymptomScribeOfflineDB");
     this.version(1).stores({
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
-      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      symptomHistory:
+        "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
     });
     this.version(2).stores({
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
-      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      symptomHistory:
+        "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
     });
   }
@@ -112,7 +114,10 @@ export async function encryptSymptom(
   return encrypted;
 }
 
-export async function decryptSymptom(record: OfflineSymptom, key: CryptoKey): Promise<OfflineSymptom> {
+export async function decryptSymptom(
+  record: OfflineSymptom,
+  key: CryptoKey
+): Promise<OfflineSymptom> {
   const decrypted = { ...record };
   if (record.symptoms && record.symptoms.startsWith("enc:str:")) {
     const rawEnc = record.symptoms.substring(8);
@@ -163,11 +168,7 @@ export async function encryptMetric(
 
 export async function decryptMetric(record: OfflineMetric, key: CryptoKey): Promise<OfflineMetric> {
   const decrypted = { ...record };
-  if (
-    record.value &&
-    typeof record.value === "string" &&
-    record.value.startsWith("enc:json:")
-  ) {
+  if (record.value && typeof record.value === "string" && record.value.startsWith("enc:json:")) {
     const rawEnc = record.value.substring(9);
     decrypted.value = JSON.parse(await decryptText(rawEnc, key));
   }
@@ -219,7 +220,9 @@ export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return false;
 
     const key = await whenEncryptionReady();
@@ -232,10 +235,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingMetricsDeletes) {
-      const { error } = await supabase
-        .from("health_metrics")
-        .delete()
-        .eq("id", record.id);
+      const { error } = await supabase.from("health_metrics").delete().eq("id", record.id);
 
       if (!error || error.code === "PGRST116") {
         await db.healthMetrics.delete(record.id);
@@ -244,16 +244,11 @@ export const syncOfflineData = async (): Promise<boolean> => {
     }
 
     // 2. Sync pending health metrics insertions
-    const pendingMetricsInserts = await db.healthMetrics
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
+    const pendingMetricsInserts = await db.healthMetrics.where("pending_sync").equals(1).toArray();
 
     for (const record of pendingMetricsInserts) {
       const { pending_sync, pending_delete, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("health_metrics")
-        .insert(supabaseData);
+      const { error } = await supabase.from("health_metrics").insert(supabaseData);
 
       if (!error) {
         await db.healthMetrics.update(record.id, { pending_sync: 0 });
@@ -268,10 +263,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomDeletes) {
-      const { error } = await supabase
-        .from("symptom_history")
-        .delete()
-        .eq("id", record.id);
+      const { error } = await supabase.from("symptom_history").delete().eq("id", record.id);
 
       if (!error || error.code === "PGRST116") {
         await db.symptomHistory.delete(record.id);
@@ -280,16 +272,11 @@ export const syncOfflineData = async (): Promise<boolean> => {
     }
 
     // 4. Sync pending symptom history insertions
-    const pendingSymptomInserts = await db.symptomHistory
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
+    const pendingSymptomInserts = await db.symptomHistory.where("pending_sync").equals(1).toArray();
 
     for (const record of pendingSymptomInserts) {
       const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("symptom_history")
-        .insert(supabaseData);
+      const { error } = await supabase.from("symptom_history").insert(supabaseData);
 
       if (!error) {
         await db.symptomHistory.update(record.id, { pending_sync: 0 });

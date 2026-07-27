@@ -111,7 +111,8 @@ const TwoFactorAuth = () => {
       <CardHeader>
         <CardTitle>Two-Factor Authentication</CardTitle>
         <CardDescription>
-          Add an extra layer of security by requiring a code from an authenticator app when you sign in.
+          Add an extra layer of security by requiring a code from an authenticator app when you sign
+          in.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

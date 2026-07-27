@@ -268,11 +268,14 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
       timers.current.push(window.setTimeout(() => setActivePad(null), 600 * i + 600));
     });
     timers.current.push(
-      window.setTimeout(() => {
-        setStatus("input");
-        setUserStep(0);
-        setMessage("Your turn — repeat it!");
-      }, 600 * seq.length + 300),
+      window.setTimeout(
+        () => {
+          setStatus("input");
+          setUserStep(0);
+          setMessage("Your turn — repeat it!");
+        },
+        600 * seq.length + 300
+      )
     );
   };
 
@@ -299,7 +302,7 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
             const next = [...sequence, Math.floor(Math.random() * 4)];
             setSequence(next);
             playSequence(next);
-          }, 800),
+          }, 800)
         );
       } else {
         setUserStep(nextStep);
@@ -385,7 +388,8 @@ const StroopTestGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
     const w = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
     let ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
     if (Math.random() < 0.75) {
-      while (ik.name === w.name) ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+      while (ik.name === w.name)
+        ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
     }
     setWord(w);
     setInk(ik);
@@ -632,7 +636,7 @@ const ReactionGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
     () => () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     },
-    [],
+    []
   );
 
   const begin = () => {
@@ -740,23 +744,29 @@ const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
     clearTimers();
     seq.forEach((tile, i) => {
       timers.current.push(
-        window.setTimeout(() => setActiveTile(tile), COLOR_SEQ_FLASH_MS * i + 300),
+        window.setTimeout(() => setActiveTile(tile), COLOR_SEQ_FLASH_MS * i + 300)
       );
       timers.current.push(
-        window.setTimeout(() => setActiveTile(null), COLOR_SEQ_FLASH_MS * i + COLOR_SEQ_FLASH_MS - 100),
+        window.setTimeout(
+          () => setActiveTile(null),
+          COLOR_SEQ_FLASH_MS * i + COLOR_SEQ_FLASH_MS - 100
+        )
       );
     });
     timers.current.push(
-      window.setTimeout(() => {
-        setStatus("recall");
-        setMessage("Now tap the tiles in the same order.");
-      }, COLOR_SEQ_FLASH_MS * seq.length + 300),
+      window.setTimeout(
+        () => {
+          setStatus("recall");
+          setMessage("Now tap the tiles in the same order.");
+        },
+        COLOR_SEQ_FLASH_MS * seq.length + 300
+      )
     );
   };
 
   const startGame = () => {
     const first = Array.from({ length: COLOR_SEQ_START_LENGTH }, () =>
-      Math.floor(Math.random() * COLOR_TILES.length),
+      Math.floor(Math.random() * COLOR_TILES.length)
     );
     setRound(1);
     setSequence(first);
@@ -790,7 +800,7 @@ const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
           setRound((r) => r + 1);
           setSequence(next);
           flashSequence(next);
-        }, 900),
+        }, 900)
       );
     }
   };
@@ -946,10 +956,11 @@ const BrainGames = () => {
       const { error } = await supabase.rpc("award_user_xp", {
         points_to_add: pointsToGain,
       });
-      
+
       if (error) {
         // Handle rate limiting exceptions explicitly
-        const isRateLimit = error.message?.includes("Rate limit") || error.details?.includes("Rate limit");
+        const isRateLimit =
+          error.message?.includes("Rate limit") || error.details?.includes("Rate limit");
         if (isRateLimit) {
           showWarning(
             "XP Cap Reached",
@@ -1118,7 +1129,7 @@ const BrainGames = () => {
   useEffect(() => {
     const isGameActive = !!(
       (activeGame === "memory" && memoryCards.length > 0 && !memoryGameWon) ||
-      (activeGame === "math") ||
+      activeGame === "math" ||
       (activeGame === "word" && wordSequence.length > 0) ||
       (activeGame === "pattern" && currentQuestion !== null && !gameCompleted)
     );
@@ -1166,7 +1177,14 @@ const BrainGames = () => {
       window.removeEventListener("popstate", handlePopState);
       window.isGameActive = false;
     };
-  }, [activeGame, memoryCards.length, memoryGameWon, wordSequence.length, currentQuestion, gameCompleted]);
+  }, [
+    activeGame,
+    memoryCards.length,
+    memoryGameWon,
+    wordSequence.length,
+    currentQuestion,
+    gameCompleted,
+  ]);
 
   // ─── Pattern Recognition Game ──────────────────────────────────────────────
 
@@ -1377,25 +1395,16 @@ const BrainGames = () => {
         const completionBonus = 50;
         awardXp(completionBonus);
         showSuccess("Game Complete!", `+${completionBonus} XP bonus!`);
-        if ((xp + completionBonus) >= 100 && xp < 100) {
-          showSuccess(
-            "🏆 Achievement Unlocked!",
-            "First 100 XP achieved!"
-          );
+        if (xp + completionBonus >= 100 && xp < 100) {
+          showSuccess("🏆 Achievement Unlocked!", "First 100 XP achieved!");
         }
 
-        if ((level + 1) >= 3) {
-          showSuccess(
-           "🎖 Achievement Unlocked!",
-           "Reached Level 3!"
-          );
+        if (level + 1 >= 3) {
+          showSuccess("🎖 Achievement Unlocked!", "Reached Level 3!");
         }
 
         if (percentage >= 90) {
-          showSuccess(
-           "🥇 Achievement Unlocked!",
-           "Perfect Performance Badge Earned!"
-          );
+          showSuccess("🥇 Achievement Unlocked!", "Perfect Performance Badge Earned!");
         }
         return;
       }
@@ -1519,8 +1528,7 @@ const BrainGames = () => {
     }, 10000);
   };
 
-  const createEmptyGrid = () =>
-    Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+  const createEmptyGrid = () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
 
   const addRandomTile = (grid: number[][]) => {
     const empty: [number, number][] = [];
@@ -1587,12 +1595,16 @@ const BrainGames = () => {
           case "right":
             return board.map((row) => processLine(row, true));
           case "up": {
-            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) =>
+              board.map((row) => row[col])
+            );
             const mergedCols = cols.map((col) => processLine(col));
             return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
           }
           case "down": {
-            const cols = Array.from({ length: GRID_SIZE }, (_, col) => board.map((row) => row[col]));
+            const cols = Array.from({ length: GRID_SIZE }, (_, col) =>
+              board.map((row) => row[col])
+            );
             const mergedCols = cols.map((col) => processLine(col, true));
             return Array.from({ length: GRID_SIZE }, (_, row) => mergedCols.map((col) => col[row]));
           }
@@ -1849,9 +1861,7 @@ const BrainGames = () => {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Badge className="h-10 rounded-2xl px-4 text-base font-bold">
-              Score: {score2048}
-            </Badge>
+            <Badge className="h-10 rounded-2xl px-4 text-base font-bold">Score: {score2048}</Badge>
             <Button
               variant="outline"
               size="icon"
@@ -1931,7 +1941,9 @@ const BrainGames = () => {
               <Trophy className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-primary mb-4 sm:mb-6 drop-shadow-glow" />
               <p className="text-3xl sm:text-5xl font-black mb-2 tracking-tight">
                 {patternScore}{" "}
-                <span className="text-lg sm:text-2xl text-muted-foreground font-normal">/ {maxScore}</span>
+                <span className="text-lg sm:text-2xl text-muted-foreground font-normal">
+                  / {maxScore}
+                </span>
               </p>
               <p className="text-muted-foreground font-medium uppercase tracking-widest text-[10px] sm:text-sm mb-4 sm:mb-6">
                 Final Score
@@ -2138,7 +2150,10 @@ const BrainGames = () => {
                 }
                 const height = (value / maxValue) * 160;
                 return (
-                  <div key={index} className="flex flex-col items-center gap-4 flex-1 max-w-[60px] sm:max-w-[80px]">
+                  <div
+                    key={index}
+                    className="flex flex-col items-center gap-4 flex-1 max-w-[60px] sm:max-w-[80px]"
+                  >
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${Math.max(40, height)}px` }}
@@ -2286,13 +2301,13 @@ const BrainGames = () => {
         <motion.div
           key={`lobby-status-${level}`}
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
-            opacity: 1, 
+          animate={{
+            opacity: 1,
             scale: [0.9, 1.05, 1],
           }}
-          transition={{ 
-            duration: 0.5, 
-            ease: "easeOut" 
+          transition={{
+            duration: 0.5,
+            ease: "easeOut",
           }}
           className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-6 sm:px-8 w-full sm:w-auto min-w-[280px] sm:min-w-[320px]"
         >
@@ -2317,9 +2332,7 @@ const BrainGames = () => {
 
             <div className="flex items-center gap-4">
               <div className="text-center">
-                <p className="text-xs font-semibold text-primary">
-                 🎯 Next Milestone
-                </p>
+                <p className="text-xs font-semibold text-primary">🎯 Next Milestone</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Reach Level {level + 1}
                 </p>
@@ -2338,27 +2351,24 @@ const BrainGames = () => {
             </div>
             <div className="flex gap-1 mt-2">
               {[...Array(10)].map((_, index) => {
-            const progress =
-               ((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 10;
+                const progress = ((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 10;
 
-            return (
-              <motion.div
-               key={index}
-               initial={{ opacity: 0.3, scale: 0.8 }}
-               animate={{
-               opacity: index < progress ? 1 : 0.3,
-               scale: index < progress ? 1 : 0.8,
-            }}
-              transition={{ duration: 0.3 }}
-              className={`h-2 flex-1 rounded-full ${
-              index < progress
-              ? "bg-primary shadow-md"
-              : "bg-slate-300 dark:bg-slate-700"
-             }`}
-            />
-          );
-         })}
-       </div>
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0.3, scale: 0.8 }}
+                    animate={{
+                      opacity: index < progress ? 1 : 0.3,
+                      scale: index < progress ? 1 : 0.8,
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className={`h-2 flex-1 rounded-full ${
+                      index < progress ? "bg-primary shadow-md" : "bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  />
+                );
+              })}
+            </div>
             <p className="text-xs text-center text-muted-foreground mt-2">
               {XP_PER_LEVEL - (xp % XP_PER_LEVEL)} XP remaining to reach Level {level + 1}
             </p>
@@ -2579,14 +2589,14 @@ const BrainGames = () => {
                   <CardContent className="p-4 sm:p-8 md:p-12">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
                       {memoryCards.map((card, index) => {
-                        const isFlipped = flippedCards.includes(index) || matchedCards.includes(index);
+                        const isFlipped =
+                          flippedCards.includes(index) || matchedCards.includes(index);
                         return (
-                          <div 
-                            key={index} 
+                          <div
+                            key={index}
                             className="[perspective:1000px] w-full aspect-square relative"
                           >
                             <div
-                              
                               role="button"
                               tabIndex={0}
                               aria-label={`Memory card ${index + 1}`}
@@ -2634,7 +2644,9 @@ const BrainGames = () => {
                     <div className="flex flex-wrap gap-3">
                       <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl">
                         <Trophy className="w-5 h-5 text-primary" />
-                        <span className="text-lg sm:text-2xl font-black text-primary">{mathScore}</span>
+                        <span className="text-lg sm:text-2xl font-black text-primary">
+                          {mathScore}
+                        </span>
                         <span className="text-xs font-bold text-primary uppercase tracking-widest ml-1">
                           Score
                         </span>
@@ -2667,8 +2679,12 @@ const BrainGames = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     className={`flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] max-w-xs mx-auto border-2 shadow-lg ${mathTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
                   >
-                    <Timer className={`w-6 h-6 sm:w-8 sm:h-8 ${mathTimeLeft <= 5 ? "animate-spin-slow" : ""}`} />
-                    <span className="text-2xl sm:text-4xl font-black tracking-tighter">{mathTimeLeft}</span>
+                    <Timer
+                      className={`w-6 h-6 sm:w-8 sm:h-8 ${mathTimeLeft <= 5 ? "animate-spin-slow" : ""}`}
+                    />
+                    <span className="text-2xl sm:text-4xl font-black tracking-tighter">
+                      {mathTimeLeft}
+                    </span>
                     <span className="text-sm font-bold uppercase tracking-widest">Seconds</span>
                   </motion.div>
 

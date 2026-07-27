@@ -21,7 +21,7 @@ import {
   Brain,
   Utensils,
   BatteryLow,
-  HeartPulse
+  HeartPulse,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -320,12 +320,8 @@ const AIHealthAssistant = () => {
             );
 
             // Strip offline-only fields so we match the Supabase table schema
-            const {
-              pending_sync,
-              pending_update,
-              pending_delete,
-              ...supabaseRecord
-            } = encryptedRecord;
+            const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+              encryptedRecord;
 
             const { error: insertError } = await supabase
               .from("symptom_history")
@@ -333,7 +329,7 @@ const AIHealthAssistant = () => {
 
             if (insertError) {
               console.warn("Supabase save failed, falling back to local saving:", insertError);
-              
+
               // Save locally to Dexie immediately with pending_sync: 1
               await db.symptomHistory.put({
                 ...encryptedRecord,

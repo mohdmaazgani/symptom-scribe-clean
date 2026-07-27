@@ -341,7 +341,7 @@ const ChatInterface = () => {
 
           if (insertError) {
             console.warn("Supabase save failed, falling back to local saving:", insertError);
-            
+
             // Save locally to Dexie immediately with pending_sync: 1
             await db.symptomHistory.put({
               ...encryptedRecord,
@@ -498,7 +498,12 @@ const ChatInterface = () => {
           <div className="flex items-center gap-2">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open chat history menu">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Open chat history menu"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>

@@ -1,9 +1,5 @@
 import { db, type MeshAlert } from "./offline-db";
-import {
-  getP2PSigningKeys,
-  signPayload,
-  verifyPayload,
-} from "./encryption";
+import { getP2PSigningKeys, signPayload, verifyPayload } from "./encryption";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MeshPeer {
@@ -47,7 +43,7 @@ class MeshNetworkManager {
 
       // Listen for online events to relay pending alerts
       window.addEventListener("online", () => this.syncMeshAlerts());
-      
+
       // Attempt initial sync if online
       if (this.isOnline()) {
         this.syncMeshAlerts();
@@ -166,7 +162,7 @@ class MeshNetworkManager {
             lastSeen: Date.now(),
           });
           this.notifyListeners();
-          
+
           // Respond with Pong
           this.postMessage({
             type: "PONG",
@@ -252,7 +248,7 @@ class MeshNetworkManager {
     if (existing && existing.pending_sync === 1) {
       await db.pendingEmergencyMesh.update(alertId, { pending_sync: 0 });
       this.notifyListeners();
-      
+
       const event = new CustomEvent("mesh-sync-completed", { detail: alertId });
       window.dispatchEvent(event);
     }
@@ -354,7 +350,7 @@ class MeshNetworkManager {
       if (error) throw error;
 
       console.log(`Mesh Gateway: Successfully relayed alert ${alert.id}!`);
-      
+
       // Update local storage status
       await db.pendingEmergencyMesh.update(alert.id, { pending_sync: 0 });
       this.notifyListeners();

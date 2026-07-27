@@ -7,7 +7,7 @@ import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 export function useMetricsHistory(userId: string | null) {
   const [records, setRecords] = useState<OfflineMetric[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const fetchHistory = useCallback(async () => {
     if (!userId) return;
@@ -75,7 +75,7 @@ export function useMetricsHistory(userId: string | null) {
 
       const sortedRecords = [...decryptedRecords];
 
-      if (sortOrder === 'newest') {
+      if (sortOrder === "newest") {
         sortedRecords.sort(
           (a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
         );
@@ -95,10 +95,7 @@ export function useMetricsHistory(userId: string | null) {
 
   const deleteRecord = async (id: string) => {
     if (navigator.onLine) {
-      const { error } = await supabase
-        .from("health_metrics")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("health_metrics").delete().eq("id", id);
 
       if (!error) {
         await invalidateCache("health_metrics");

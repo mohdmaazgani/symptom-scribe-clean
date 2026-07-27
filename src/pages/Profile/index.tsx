@@ -4,7 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { User, Loader2 } from "lucide-react";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 import {
@@ -37,7 +43,9 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         showWarning("Not Signed In", "Please sign in to view your profile");
         setLoading(false);
@@ -60,7 +68,10 @@ const Profile = () => {
         const decryptedFullName = await decryptProfileField(data.full_name, key);
         const decryptedDob = await decryptProfileField(data.date_of_birth, key);
         const decryptedEmergencyName = await decryptProfileField(data.emergency_contact_name, key);
-        const decryptedEmergencyPhone = await decryptProfileField(data.emergency_contact_phone, key);
+        const decryptedEmergencyPhone = await decryptProfileField(
+          data.emergency_contact_phone,
+          key
+        );
         const decryptedAllergies = await decryptProfileArray(data.allergies, key);
         const decryptedChronicConditions = await decryptProfileArray(data.chronic_conditions, key);
 
@@ -76,11 +87,14 @@ const Profile = () => {
         });
         setAllergiesInput(decryptedAllergies.join(", ") || "");
         setConditionsInput(decryptedChronicConditions.join(", ") || "");
-        
+
         if (decryptedFullName) {
           showInfo("Profile Loaded", `Welcome back, ${decryptedFullName}!`);
         } else {
-          showInfo("Complete Your Profile", "Add your health information for better AI recommendations");
+          showInfo(
+            "Complete Your Profile",
+            "Add your health information for better AI recommendations"
+          );
         }
       } else {
         showInfo("New Profile", "Fill out your health information to get started");
@@ -94,34 +108,28 @@ const Profile = () => {
   };
 
   const validateProfile = () => {
-
     if (!profile.date_of_birth) {
-  showWarning("Missing Field", "Date of Birth is required");
-  return false;
-}
+      showWarning("Missing Field", "Date of Birth is required");
+      return false;
+    }
 
-if (!profile.gender) {
-  showWarning("Missing Field", "Gender is required");
-  return false;
-}
+    if (!profile.gender) {
+      showWarning("Missing Field", "Gender is required");
+      return false;
+    }
 
-if (!profile.blood_type) {
-  showWarning("Missing Field", "Blood Type is required");
-  return false;
-}
+    if (!profile.blood_type) {
+      showWarning("Missing Field", "Blood Type is required");
+      return false;
+    }
     if (
-  profile.emergency_contact_phone &&
-  !/^\+?[0-9]{10,15}$/.test(
-    profile.emergency_contact_phone.replace(/[\s()-]/g, "")
-  )
-) {
-  showWarning(
-    "Invalid Phone Number",
-    "Please enter a valid emergency contact number"
-  );
-  return false;
-}
-    
+      profile.emergency_contact_phone &&
+      !/^\+?[0-9]{10,15}$/.test(profile.emergency_contact_phone.replace(/[\s()-]/g, ""))
+    ) {
+      showWarning("Invalid Phone Number", "Please enter a valid emergency contact number");
+      return false;
+    }
+
     if (profile.date_of_birth) {
       const age = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear();
       if (age < 0 || age > 120) {
@@ -129,19 +137,21 @@ if (!profile.blood_type) {
         return false;
       }
     }
-    
+
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateProfile()) return;
-    
+
     setSaving(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         showError("Authentication Error", "You must be logged in to save your profile");
         setSaving(false);
@@ -164,7 +174,10 @@ if (!profile.blood_type) {
       const encryptedFullName = await encryptProfileField(profile.full_name, key);
       const encryptedDob = await encryptProfileField(profile.date_of_birth, key);
       const encryptedEmergencyName = await encryptProfileField(profile.emergency_contact_name, key);
-      const encryptedEmergencyPhone = await encryptProfileField(profile.emergency_contact_phone, key);
+      const encryptedEmergencyPhone = await encryptProfileField(
+        profile.emergency_contact_phone,
+        key
+      );
       const encryptedAllergies = await encryptProfileArray(allergiesArray, key);
       const encryptedChronicConditions = await encryptProfileArray(conditionsArray, key);
 
@@ -184,9 +197,7 @@ if (!profile.blood_type) {
       console.log("Saving profile data:", profileData);
 
       // Upsert the profile data targeting the unique user_id constraint
-      const result = await supabase
-        .from("profiles")
-        .upsert(profileData, { onConflict: "user_id" });
+      const result = await supabase.from("profiles").upsert(profileData, { onConflict: "user_id" });
 
       if (result.error) {
         console.error("Supabase error:", result.error);
@@ -195,23 +206,31 @@ if (!profile.blood_type) {
       }
 
       console.log("Save successful:", result);
-      
+
       // Show success message
       if (profile.full_name) {
-        showSuccess("Profile Updated!", `Great! Your health profile is now complete, ${profile.full_name}`);
+        showSuccess(
+          "Profile Updated!",
+          `Great! Your health profile is now complete, ${profile.full_name}`
+        );
       } else {
         showSuccess("Profile Saved", "Your health information has been updated");
       }
 
       // Show helpful warnings (optional)
       if (allergiesArray.length === 0 && conditionsArray.length === 0) {
-        showWarning("Health Info Missing", "Consider adding allergies or conditions for better AI recommendations");
+        showWarning(
+          "Health Info Missing",
+          "Consider adding allergies or conditions for better AI recommendations"
+        );
       }
-      
+
       if (!profile.emergency_contact_name || !profile.emergency_contact_phone) {
-        showWarning("Emergency Contact Missing", "Adding an emergency contact is recommended for safety");
+        showWarning(
+          "Emergency Contact Missing",
+          "Adding an emergency contact is recommended for safety"
+        );
       }
-      
     } catch (error) {
       console.error("Error saving profile:", error);
       showError("Save Failed", "Could not save your profile. Please try again.");
@@ -259,7 +278,9 @@ if (!profile.blood_type) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_of_birth">Date of Birth <span className="text-red-500">*</span></Label>
+                <Label htmlFor="date_of_birth">
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -269,7 +290,9 @@ if (!profile.blood_type) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender <span className="text-red-500">*</span></Label>
+                <Label htmlFor="gender">
+                  Gender <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={profile.gender}
                   onValueChange={(value) => setProfile({ ...profile, gender: value })}
@@ -287,7 +310,9 @@ if (!profile.blood_type) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="blood_type">Blood Type <span className="text-red-500">*</span></Label>
+                <Label htmlFor="blood_type">
+                  Blood Type <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={profile.blood_type}
                   onValueChange={(value) => setProfile({ ...profile, blood_type: value })}

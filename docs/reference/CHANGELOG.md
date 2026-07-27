@@ -10,6 +10,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Planned
+
 - Integration with wearable devices (Fitbit, Apple Watch)
 - AI-powered chat diagnosis assistant
 - Prescription reminders and progress dashboards
@@ -26,6 +27,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.1.0] - 2025-05-28
 
 ### Added
+
 - **Password Strength Meter** — real-time visual indicator with color-coded feedback
   (Very Weak → Weak → Fair → Good → Strong) using a 0–5 scoring scale.
 - **Password Requirements Checklist** — interactive checklist that shows which policy
@@ -47,6 +49,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   including API reference, configuration guide, accessibility notes, and migration steps.
 
 ### Security
+
 - Enforced minimum password length of 12 characters for all new sign-ups.
 - Added server-side password validation mirroring the client-side policy to prevent
   bypass via direct API calls.
@@ -58,6 +61,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.0.0] - 2025-04-01
 
 ### Added
+
 - **Health & Wellness Dashboard** — track daily vital metrics including step count,
   hydration, and nutrition goals with personalised activity tips.
 - **Symptom Analysis** — log symptoms and receive AI-assisted health insights with
@@ -83,10 +87,10 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Version History Summary
 
-| Version | Date       | Highlights                                          |
-|---------|------------|-----------------------------------------------------|
-| 1.1.0   | 2025-05-28 | Password strength, generator, policy config, tests  |
-| 1.0.0   | 2025-04-01 | Initial release — core health platform features     |
+| Version | Date       | Highlights                                         |
+| ------- | ---------- | -------------------------------------------------- |
+| 1.1.0   | 2025-05-28 | Password strength, generator, policy config, tests |
+| 1.0.0   | 2025-04-01 | Initial release — core health platform features    |
 
 ---
 
