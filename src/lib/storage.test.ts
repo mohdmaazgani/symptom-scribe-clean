@@ -60,7 +60,7 @@ describe("Storage Utilities", () => {
     it("should handle objects with optional TTL", () => {
       const data = { theme: "dark", size: 12 };
       setTypedStorage("config", data);
-      
+
       const loaded = getTypedStorage("config", { theme: "light", size: 10 });
       expect(loaded).toEqual(data);
     });

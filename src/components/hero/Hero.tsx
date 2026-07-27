@@ -5,14 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { showInfo } from "@/lib/toast-helpers";
-import {
-  Heart,
-  HeartPulse,
-  Stethoscope,
-  Pill,
-  Cross,
-  Brain,
-} from "lucide-react";
+import { Heart, HeartPulse, Stethoscope, Pill, Cross, Brain } from "lucide-react";
 
 const floatingIcons = [
   // Top Left ECG
@@ -85,7 +78,6 @@ const floatingIcons = [
     size: 26,
   },
 ];
-
 
 const containerVariants = {
   hidden: {},
@@ -185,53 +177,53 @@ const Hero = () => {
       onMouseMove={handleMouseMove}
     >
       {/* Interactive Mouse Spotlight */}
-      <div 
+      <div
         className="pointer-events-none absolute -inset-px opacity-0 transition duration-500 group-hover:opacity-100"
         style={{
           background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, hsl(var(--primary) / 0.08), transparent 40%)`,
         }}
       />
-      
+
       {/* Background decoration */}
       {/* Grid */}
-<div className="absolute inset-0 bg-grid-pattern opacity-[0.05] pointer-events-none" />
+      <div className="absolute inset-0 bg-grid-pattern opacity-[0.05] pointer-events-none" />
 
-{/* Glow blobs */}
-<div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-primary/20 blur-[140px] animate-float" />
+      {/* Glow blobs */}
+      <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-primary/20 blur-[140px] animate-float" />
 
-<div className="absolute -bottom-40 -right-40 w-[560px] h-[560px] rounded-full bg-secondary/20 blur-[150px] animate-float-delayed" />
+      <div className="absolute -bottom-40 -right-40 w-[560px] h-[560px] rounded-full bg-secondary/20 blur-[150px] animate-float-delayed" />
 
-{/* Floating Icons */}
-{!reduceMotion &&
-  floatingIcons.map(({ Icon, ...item }, index) => (
-    <motion.div
-      key={index}
-      className="absolute text-primary/30 pointer-events-none"
-      style={{
-        top: item.top,
-        bottom: item.bottom,
-        left: item.left,
-        right: item.right,
-      }}
-      animate={{
-        y: [0, -25, 0],
-        rotate: [0, 8, -8, 0],
-      }}
-      transition={{
-        duration: item.duration,
-        repeat: Infinity,
-        delay: item.delay,
-        ease: "easeInOut",
-      }}
-    >
-      <Icon
-        style={{
-          width: item.size,
-          height: item.size,
-        }}
-      />
-    </motion.div>
-))}
+      {/* Floating Icons */}
+      {!reduceMotion &&
+        floatingIcons.map(({ Icon, ...item }, index) => (
+          <motion.div
+            key={index}
+            className="absolute text-primary/30 pointer-events-none"
+            style={{
+              top: item.top,
+              bottom: item.bottom,
+              left: item.left,
+              right: item.right,
+            }}
+            animate={{
+              y: [0, -25, 0],
+              rotate: [0, 8, -8, 0],
+            }}
+            transition={{
+              duration: item.duration,
+              repeat: Infinity,
+              delay: item.delay,
+              ease: "easeInOut",
+            }}
+          >
+            <Icon
+              style={{
+                width: item.size,
+                height: item.size,
+              }}
+            />
+          </motion.div>
+        ))}
 
       <motion.div
         className="relative max-w-5xl mx-auto text-center z-10"
@@ -263,9 +255,7 @@ const Hero = () => {
           className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-5 py-2 mb-8 shadow-sm"
         >
           <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm text-primary font-bold tracking-wide">
-            {t("hero.badge")}
-          </span>
+          <span className="text-sm text-primary font-bold tracking-wide">{t("hero.badge")}</span>
         </motion.div>
 
         {/* Main heading */}
@@ -294,7 +284,7 @@ const Hero = () => {
             duration: 0.8,
             delay: 0.75,
           }}
-        className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed"
+          className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed"
         >
           {t("hero.subtitle")}
         </motion.p>
@@ -340,88 +330,84 @@ const Hero = () => {
           {featurePills.map((pill) => (
             <motion.div
               key={pill.title}
-            initial={{
-              opacity: 0,
-              y: 35,
-              scale: 0.96,
-            }}
-            animate={{
-              opacity: 1,
-              y: [0, -4, 0, 4, 0],
-              rotate: [0, 0.5, 0, -0.5, 0],
-              scale: 1,
-            }}
+              initial={{
+                opacity: 0,
+                y: 35,
+                scale: 0.96,
+              }}
+              animate={{
+                opacity: 1,
+                y: [0, -4, 0, 4, 0],
+                rotate: [0, 0.5, 0, -0.5, 0],
+                scale: 1,
+              }}
 
-            transition={{
-              delay: 1.3 + pill.delay,
-              type: "spring",
-              stiffness: 120,
-              damping: 18,
-              rotate: {
-                duration: 7,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: pill.delay,
-              },
-              y: {
-                duration: 7,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: pill.delay,
-              },
-            }}
-            whileHover={{
-              y: -8,
-              scale: 1.03,
-              rotateX: 2,
-              rotateY: -2,
-              transition: {
+              transition={{
+                delay: 1.3 + pill.delay,
                 type: "spring",
-                stiffness: 380,
-                damping: 22,
-                mass: 0.7,
-              },
-            }}
+                stiffness: 120,
+                damping: 18,
+                rotate: {
+                  duration: 7,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: pill.delay,
+                },
+                y: {
+                  duration: 7,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: pill.delay,
+                },
+              }}
+              whileHover={{
+                y: -8,
+                scale: 1.03,
+                rotateX: 2,
+                rotateY: -2,
+                transition: {
+                  type: "spring",
+                  stiffness: 380,
+                  damping: 22,
+                  mass: 0.7,
+                },
+              }}
               className="group relative bg-card/70 backdrop-blur-xl border border-border/60 rounded-2xl p-6 text-center shadow-sm hover:border-primary/40 hover:shadow-2xl"
             >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-  
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
               <motion.div
-                  whileHover={{
-                    scale: 1.15,
-                    rotate: 10,
-                    y: -4,
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={{
-                    opacity: 1,
-                    y: [0, -4, 0],
-                    scale: 1,
-                  }}
-                  transition={{
-                    y: {
-                      duration: 4,
-                      repeat: Infinity,
-                      repeatType: "mirror",
-                      ease: "easeInOut",
-                    },
-                    opacity: {
-                      duration: 0.6,
-                    },
-                    scale: {
-                      duration: 0.6,
-                    },
-                  }}
-                  className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300">
-                    
+                whileHover={{
+                  scale: 1.15,
+                  rotate: 10,
+                  y: -4,
+                }}
+                whileTap={{ scale: 0.95 }}
+                animate={{
+                  opacity: 1,
+                  y: [0, -4, 0],
+                  scale: 1,
+                }}
+                transition={{
+                  y: {
+                    duration: 4,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                  opacity: {
+                    duration: 0.6,
+                  },
+                  scale: {
+                    duration: 0.6,
+                  },
+                }}
+                className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300"
+              >
                 <pill.icon className="w-6 h-6 text-primary" />
               </motion.div>
-              <h3 className="text-foreground font-bold mb-2 text-lg">
-                {pill.title}
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {pill.description}
-              </p>
+              <h3 className="text-foreground font-bold mb-2 text-lg">{pill.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{pill.description}</p>
             </motion.div>
           ))}
         </div>

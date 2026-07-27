@@ -9,12 +9,7 @@ const PageFooter = () => (
         { label: "Disclaimer", to: "/disclaimer" },
         { label: "Accessibility", to: "/accessibility" },
       ].map(({ label, to }) => (
-        <Link
-          key={to}
-          to={to}
-          aria-label={label}
-          className="hover:text-primary transition-colors"
-        >
+        <Link key={to} to={to} aria-label={label} className="hover:text-primary transition-colors">
           {label}
         </Link>
       ))}

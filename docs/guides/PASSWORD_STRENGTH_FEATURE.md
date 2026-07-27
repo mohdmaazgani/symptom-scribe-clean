@@ -7,21 +7,25 @@ This feature implements comprehensive password validation and generation to enfo
 ## Features
 
 ### 1. **Password Strength Validation**
+
 - Validates passwords against configurable complexity rules
 - Real-time strength scoring (0-5 scale)
 - Clear feedback on unmet requirements
 
 ### 2. **Real-Time Strength Meter**
+
 - Visual strength indicator bar
 - Color-coded feedback (red → orange → yellow → lime → green)
 - Strength labels (Very Weak → Weak → Fair → Good → Strong)
 
 ### 3. **Requirements Checklist**
+
 - Interactive checklist showing which requirements are met
 - Screen-reader friendly with proper ARIA labels
 - Configurable requirements based on policy
 
 ### 4. **Password Generator**
+
 - Generates secure passwords meeting policy requirements
 - One-click copy to clipboard
 - Visual feedback on copy success
@@ -94,14 +98,14 @@ if (!isValid) {
 
 ```typescript
 interface PasswordStrengthMeterProps {
-  value: string;                    // Current password value
+  value: string; // Current password value
   onChange: (value: string) => void; // Change handler
-  label?: string;                    // Input label (default: "Password")
-  placeholder?: string;              // Input placeholder
-  policy?: PasswordPolicy;           // Custom policy (default: DEFAULT_PASSWORD_POLICY)
-  showGenerator?: boolean;           // Show generator button (default: true)
-  id?: string;                       // Input ID
-  required?: boolean;                // Required field (default: true)
+  label?: string; // Input label (default: "Password")
+  placeholder?: string; // Input placeholder
+  policy?: PasswordPolicy; // Custom policy (default: DEFAULT_PASSWORD_POLICY)
+  showGenerator?: boolean; // Show generator button (default: true)
+  id?: string; // Input ID
+  required?: boolean; // Required field (default: true)
 }
 ```
 
@@ -151,6 +155,7 @@ Unit tests are provided in `src/lib/password-strength.test.ts`. They cover:
 - ✅ Special character handling
 
 Run tests:
+
 ```bash
 npm test
 ```

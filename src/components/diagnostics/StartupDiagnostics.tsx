@@ -21,7 +21,9 @@ const StartupDiagnostics = () => {
                 Startup configuration required
               </CardTitle>
               <CardDescription className="max-w-2xl text-sm leading-6 text-slate-300">
-                Symptom Scribe cannot start until the required browser environment variables are available. Add them to .env.local or your deployment environment, then restart the app.
+                Symptom Scribe cannot start until the required browser environment variables are
+                available. Add them to .env.local or your deployment environment, then restart the
+                app.
               </CardDescription>
             </div>
           </CardHeader>
