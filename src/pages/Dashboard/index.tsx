@@ -52,7 +52,7 @@ async function fetchSymptomHistory(
 
   if (directError) {
     if (error) {
-      console.error("Cached symptom_history fetch failed:", error);
+      console.warn("Cached symptom_history fetch failed:", error);
     }
     throw directError;
   }
@@ -198,7 +198,7 @@ const Dashboard = () => {
 
           setUserName(decryptedFullName);
         } catch (err) {
-          console.error("Full name decryption failed", err);
+          console.warn("Full name decryption failed:", err);
         }
       }
 
@@ -262,7 +262,7 @@ const Dashboard = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.warn("Error fetching dashboard data:", error);
       showError("Connection Error", "Failed to load dashboard data");
     } finally {
       setLoading(false);
