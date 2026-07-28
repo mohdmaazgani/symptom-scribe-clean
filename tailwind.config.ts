@@ -3,7 +3,12 @@ import animatePlugin from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -81,21 +86,21 @@ export default {
           "0%": { opacity: "1", transform: "translateY(0)" },
           "100%": { opacity: "0", transform: "translateY(10px)" },
         },
-        "float": {
-          "0%":   { transform: "translate(0px, 0px) scale(1)" },
-          "25%":  { transform: "translate(60px, -50px) scale(1.08)" },
-          "50%":  { transform: "translate(30px, -90px) scale(0.95)" },
-          "75%":  { transform: "translate(80px, -30px) scale(1.05)" },
+        float: {
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "25%": { transform: "translate(60px, -50px) scale(1.08)" },
+          "50%": { transform: "translate(30px, -90px) scale(0.95)" },
+          "75%": { transform: "translate(80px, -30px) scale(1.05)" },
           "100%": { transform: "translate(0px, 0px) scale(1)" },
         },
         "float-delayed": {
-          "0%":   { transform: "translate(0px, 0px) scale(1)" },
-          "25%":  { transform: "translate(-70px, 40px) scale(1.06)" },
-          "50%":  { transform: "translate(-30px, 80px) scale(0.96)" },
-          "75%":  { transform: "translate(-60px, 20px) scale(1.07)" },
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "25%": { transform: "translate(-70px, 40px) scale(1.06)" },
+          "50%": { transform: "translate(-30px, 80px) scale(0.96)" },
+          "75%": { transform: "translate(-60px, 20px) scale(1.07)" },
           "100%": { transform: "translate(0px, 0px) scale(1)" },
         },
-        "shimmer": {
+        shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
@@ -109,14 +114,14 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
         "fade-out": "fade-out 0.3s ease-out",
-        "float": "float 10s ease-in-out infinite",
+        float: "float 10s ease-in-out infinite",
         "float-delayed": "float-delayed 13s ease-in-out infinite",
-        "shimmer": "shimmer 2.5s ease-in-out infinite",
+        shimmer: "shimmer 2.5s ease-in-out infinite",
         "glow-pulse": "glow-pulse 3s ease-in-out infinite",
       },
       boxShadow: {
-        "soft": "var(--shadow-soft)",
-        "glow": "var(--shadow-glow)",
+        soft: "var(--shadow-soft)",
+        glow: "var(--shadow-glow)",
       },
     },
   },

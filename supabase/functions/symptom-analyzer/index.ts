@@ -124,11 +124,7 @@ serve(async (req: Request): Promise<Response> => {
       const { symptoms } = requestData;
 
       if (!symptoms || symptoms.length === 0) {
-        return jsonResponse(
-          { predictions: [] },
-          200,
-          getCorsHeaders(origin)
-        );
+        return jsonResponse({ predictions: [] }, 200, getCorsHeaders(origin));
       }
 
       const predictPrompt = `
@@ -299,8 +295,9 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
     const decoder = new TextDecoder();
 
     function extractTextChunks(parsed: unknown): string[] {
-      const candidate = (parsed as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
-        ?.candidates?.[0];
+      const candidate = (
+        parsed as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+      )?.candidates?.[0];
       const parts = candidate?.content?.parts ?? [];
       return parts.map((p) => p?.text).filter((t): t is string => Boolean(t));
     }

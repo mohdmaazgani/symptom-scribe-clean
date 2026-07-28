@@ -16,7 +16,6 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return String(error);
 }
 
-
 export async function getCachedData<T = unknown>(
   table: CachedTable
 ): Promise<{ data: T | null; cachedAt: string | null; error: string | null }> {

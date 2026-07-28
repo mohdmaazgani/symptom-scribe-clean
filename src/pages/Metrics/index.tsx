@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -118,21 +112,41 @@ const MetricsTableSkeleton = () => (
     <Table className="min-w-[600px]">
       <TableHeader>
         <TableRow>
-          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-          <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-          <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-20" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {Array.from({ length: 4 }).map((_, i) => (
           <TableRow key={i}>
-            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-            <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-            <TableCell><Skeleton className="h-8 w-8 rounded" /></TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-32" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-36" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-8 w-8 rounded" />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -176,7 +190,7 @@ const Metrics = () => {
     link.href = dataUrl;
     link.click();
   };
-  
+
   const [metricType, setMetricType] = useState("");
   const [value, setValue] = useState("");
   const [systolic, setSystolic] = useState("");
@@ -195,7 +209,7 @@ const Metrics = () => {
     sortOrder,
     setSortOrder,
   } = useMetricsHistory(historyUserId);
-  
+
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -210,7 +224,9 @@ const Metrics = () => {
     fetchUser();
   }, []);
 
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
 
   const [historyMetricFilter, setHistoryMetricFilter] = useState("all");
   const [timeframeFilter, setTimeframeFilter] = useState("all");
@@ -236,7 +252,7 @@ const Metrics = () => {
       window.removeEventListener("offline", handleOffline);
     };
   }, [refresh]);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -251,7 +267,7 @@ const Metrics = () => {
         return;
       }
     }
-    
+
     if (metricType === "temperature") {
       const temp = Number(value);
       if (temp < 86 || temp > 113) {
@@ -293,7 +309,7 @@ const Metrics = () => {
         return;
       }
     }
-    
+
     setLoading(true);
     try {
       const {
@@ -301,7 +317,7 @@ const Metrics = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       setHistoryUserId(user.id);
-      
+
       let metricValue: { value?: number; systolic?: number; diastolic?: number } = {};
       if (metricType === "blood_pressure") {
         metricValue = {
@@ -312,9 +328,7 @@ const Metrics = () => {
         metricValue = { value: parseFloat(value) };
       }
 
-      const metricLabel = metricTypes.find(
-        (m) => m.value === metricType,
-      )?.label;
+      const metricLabel = metricTypes.find((m) => m.value === metricType)?.label;
 
       const recordId = crypto.randomUUID();
       const recordedAt = new Date().toISOString();
@@ -343,10 +357,7 @@ const Metrics = () => {
           await invalidateCache("health_metrics");
           await db.healthMetrics.put(encryptedRecord);
 
-          showSuccess(
-            `${metricLabel} Recorded`,
-            "Your health metric has been saved successfully.",
-          );
+          showSuccess(`${metricLabel} Recorded`, "Your health metric has been saved successfully.");
         } catch (supabaseError) {
           console.warn("Supabase insert failed, falling back to local saving:", supabaseError);
           const fallbackRecord = {
@@ -365,7 +376,7 @@ const Metrics = () => {
 
         showSuccess(
           `${metricLabel} Saved Offline`,
-          "No internet connection. Saved locally and will sync once online.",
+          "No internet connection. Saved locally and will sync once online."
         );
       }
 
@@ -383,9 +394,13 @@ const Metrics = () => {
       setLoading(false);
     }
   };
-  
+
   const formatMetricValue = (record: OfflineMetric) => {
-    const recordValue = record.value as { value?: number; systolic?: number; diastolic?: number } | null;
+    const recordValue = record.value as {
+      value?: number;
+      systolic?: number;
+      diastolic?: number;
+    } | null;
     if (record.metric_type === "blood_pressure") {
       return `${recordValue?.systolic}/${recordValue?.diastolic} mmHg`;
     }
@@ -394,7 +409,7 @@ const Metrics = () => {
 
     return `${recordValue?.value} ${metric?.unit || ""}`;
   };
-  
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString([], {
       year: "numeric",
@@ -404,11 +419,9 @@ const Metrics = () => {
       minute: "2-digit",
     });
   };
-  
+
   const filteredRecords = records.filter((record: OfflineMetric) => {
-    const metricMatch =
-      historyMetricFilter === "all" ||
-      record.metric_type === historyMetricFilter;
+    const metricMatch = historyMetricFilter === "all" || record.metric_type === historyMetricFilter;
 
     if (timeframeFilter === "all") {
       return metricMatch;
@@ -425,7 +438,7 @@ const Metrics = () => {
 
     return metricMatch && diffDays <= days;
   });
-  
+
   const isBloodPressure = historyMetricFilter === "blood_pressure";
 
   const handleMetricCardSelect = (metric: string) => {
@@ -460,9 +473,7 @@ const Metrics = () => {
             </span>
           )}
         </div>
-        <p className="text-muted-foreground">
-          Track your vital signs and health measurements
-        </p>
+        <p className="text-muted-foreground">Track your vital signs and health measurements</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -564,25 +575,23 @@ const Metrics = () => {
           </form>
         </DialogContent>
       </Dialog>
-      
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Metrics History</CardTitle>
-            <CardDescription>
-              Your previously recorded health metrics
-            </CardDescription>
+            <CardDescription>Your previously recorded health metrics</CardDescription>
           </div>
-          {historyView === "chart" && (
-            <Button onClick={downloadChart}>
-              Download Chart
-            </Button>
-          )}
+          {historyView === "chart" && <Button onClick={downloadChart}>Download Chart</Button>}
         </CardHeader>
 
         <CardContent>
           {historyLoading ? (
-            historyView === "table" ? <MetricsTableSkeleton /> : <MetricsChartSkeleton />
+            historyView === "table" ? (
+              <MetricsTableSkeleton />
+            ) : (
+              <MetricsChartSkeleton />
+            )
           ) : records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-lg font-medium">No health metrics yet</p>
@@ -593,10 +602,7 @@ const Metrics = () => {
           ) : (
             <>
               <div className="flex flex-wrap gap-3 mb-4">
-                <Select
-                  value={historyMetricFilter}
-                  onValueChange={setHistoryMetricFilter}
-                >
+                <Select value={historyMetricFilter} onValueChange={setHistoryMetricFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter metric" />
                   </SelectTrigger>
@@ -610,10 +616,7 @@ const Metrics = () => {
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={timeframeFilter}
-                  onValueChange={setTimeframeFilter}
-                >
+                <Select value={timeframeFilter} onValueChange={setTimeframeFilter}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select timeframe" />
                   </SelectTrigger>
@@ -674,15 +677,9 @@ const Metrics = () => {
                     <TableBody>
                       {filteredRecords.map((record: OfflineMetric) => (
                         <TableRow key={record.id}>
+                          <TableCell>{formatDate(record.recorded_at)}</TableCell>
                           <TableCell>
-                            {formatDate(record.recorded_at)}
-                          </TableCell>
-                          <TableCell>
-                            {
-                              metricTypes.find(
-                                (m) => m.value === record.metric_type,
-                              )?.label
-                            }
+                            {metricTypes.find((m) => m.value === record.metric_type)?.label}
                           </TableCell>
                           <TableCell>{formatMetricValue(record)}</TableCell>
                           <TableCell>{record.notes || "-"}</TableCell>
@@ -695,20 +692,15 @@ const Metrics = () => {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Delete Record?
-                                  </AlertDialogTitle>
+                                  <AlertDialogTitle>Delete Record?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. The selected
-                                    health metric record will be permanently
-                                    removed.
+                                    This action cannot be undone. The selected health metric record
+                                    will be permanently removed.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteRecord(record.id)}
-                                  >
+                                  <AlertDialogAction onClick={() => deleteRecord(record.id)}>
                                     Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -726,9 +718,12 @@ const Metrics = () => {
                 (historyMetricFilter === "all" ? (
                   <div className="flex flex-col items-center justify-center h-[400px] w-full rounded-xl border border-dashed p-8 text-center bg-muted/20">
                     <TrendingUp className="w-12 h-12 text-muted-foreground mb-4 opacity-60" />
-                    <h3 className="text-lg font-semibold mb-1">Chart View Disabled for "All Metrics"</h3>
+                    <h3 className="text-lg font-semibold mb-1">
+                      Chart View Disabled for "All Metrics"
+                    </h3>
                     <p className="text-sm text-muted-foreground max-w-sm">
-                      Please select a specific metric type from the dropdown filter above to view its trend chart.
+                      Please select a specific metric type from the dropdown filter above to view
+                      its trend chart.
                     </p>
                   </div>
                 ) : (

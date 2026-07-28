@@ -8,10 +8,8 @@ const ALLOWED_ORIGINS = [
 ];
 
 const getCorsHeaders = (origin: string | null) => ({
-  "Access-Control-Allow-Origin":
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 });
 
 function hexToUint8Array(hex: string): Uint8Array {
@@ -23,13 +21,10 @@ serve(async (req) => {
   const origin = req.headers.get("origin");
 
   if (origin && !ALLOWED_ORIGINS.includes(origin)) {
-    return new Response(
-      JSON.stringify({ error: "Origin not allowed" }),
-      {
-        status: 403,
-        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+    });
   }
 
   if (req.method === "OPTIONS") {
@@ -39,10 +34,10 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header provided" }),
-        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No authorization header provided" }), {
+        status: 401,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      });
     }
 
     // Initialize Supabase Client with User's JWT
@@ -64,10 +59,10 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid authorization token" }),
-        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid authorization token" }), {
+        status: 401,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      });
     }
 
     // Get the request body
@@ -87,10 +82,10 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch (_) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or empty JSON request body" }),
-        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid or empty JSON request body" }), {
+        status: 400,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      });
     }
 
     const {
@@ -118,7 +113,9 @@ serve(async (req) => {
       !publicKeyJwk
     ) {
       return new Response(
-        JSON.stringify({ error: "Missing required emergency alert metadata or cryptographic signature block" }),
+        JSON.stringify({
+          error: "Missing required emergency alert metadata or cryptographic signature block",
+        }),
         { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
@@ -160,8 +157,13 @@ serve(async (req) => {
 
       if (!isValid) {
         return new Response(
-          JSON.stringify({ error: "Cryptographic signature verification failed: unauthorized alert packet" }),
-          { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: "Cryptographic signature verification failed: unauthorized alert packet",
+          }),
+          {
+            status: 400,
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+          }
         );
       }
     } catch (verifyErr) {
@@ -192,15 +194,19 @@ serve(async (req) => {
         JSON.stringify({
           error: isEncrypted
             ? "The emergency contact phone number is encrypted client-side and cannot be read by the server. Please ensure it is decrypted before triggering."
-            : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890)."
+            : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890).",
         }),
         { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
     const contactPhone = rawContactPhone;
-    const contactName = (rawContactName && !rawContactName.startsWith("enc:str:")) ? rawContactName : "Emergency Contact";
-    const senderName = (rawSenderName && !rawSenderName.startsWith("enc:str:")) ? rawSenderName : "A user";
+    const contactName =
+      rawContactName && !rawContactName.startsWith("enc:str:")
+        ? rawContactName
+        : "Emergency Contact";
+    const senderName =
+      rawSenderName && !rawSenderName.startsWith("enc:str:") ? rawSenderName : "A user";
 
     // Check Twilio Secrets
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
@@ -249,7 +255,9 @@ serve(async (req) => {
     if (!twilioResponse.ok) {
       console.error("Twilio SMS failed:", twilioResult);
       return new Response(
-        JSON.stringify({ error: `Twilio failed to send message: ${twilioResult.message || "Unknown error"}` }),
+        JSON.stringify({
+          error: `Twilio failed to send message: ${twilioResult.message || "Unknown error"}`,
+        }),
         { status: 502, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
@@ -263,7 +271,6 @@ serve(async (req) => {
       }),
       { status: 200, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
     );
-
   } catch (err) {
     console.error("Broadcast emergency error:", err);
     return new Response(

@@ -37,7 +37,6 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
 
   return (
     <div className="relative rounded-xl border border-border bg-card p-5 flex flex-col gap-4 transition-all hover:shadow-md hover:-translate-y-0.5">
-
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -51,9 +50,7 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
             </p>
           </div>
         </div>
-        {isCompleted && (
-          <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        )}
+        {isCompleted && <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />}
       </div>
 
       {/* Meta */}
@@ -72,7 +69,9 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
       {isJoined && (
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Day {streak} of {challenge.duration_days}</span>
+            <span>
+              Day {streak} of {challenge.duration_days}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">

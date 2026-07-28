@@ -4,10 +4,10 @@
 
 We recommend updating to the latest stable release to receive security patches.
 
-| Version | Supported |
-| ------- | --------- |
-| Latest  | ✅ Yes     |
-| < Latest| ❌ No      |
+| Version  | Supported |
+| -------- | --------- |
+| Latest   | ✅ Yes    |
+| < Latest | ❌ No     |
 
 ## Reporting a Vulnerability
 

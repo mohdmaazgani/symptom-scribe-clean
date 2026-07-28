@@ -101,7 +101,10 @@ export function WeeklyHealthScoreCard({ userId, symptoms }: WeeklyHealthScoreCar
             </div>
           </div>
 
-          <Badge variant="outline" className={`mt-3 text-xs font-semibold px-2.5 py-0.5 rounded-full ${scoreColor} border-current/20`}>
+          <Badge
+            variant="outline"
+            className={`mt-3 text-xs font-semibold px-2.5 py-0.5 rounded-full ${scoreColor} border-current/20`}
+          >
             {badgeLabel}
           </Badge>
         </div>
@@ -116,7 +119,10 @@ export function WeeklyHealthScoreCard({ userId, symptoms }: WeeklyHealthScoreCar
             {breakdown.map((item) => {
               const percentage = Math.round((item.points / item.maxPoints) * 100);
               return (
-                <div key={item.id} className="space-y-1.5 p-2.5 rounded-lg border border-border/40 bg-card hover:bg-muted/10 transition-colors">
+                <div
+                  key={item.id}
+                  className="space-y-1.5 p-2.5 rounded-lg border border-border/40 bg-card hover:bg-muted/10 transition-colors"
+                >
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 font-medium text-foreground">
                       {item.completed ? (
@@ -131,9 +137,7 @@ export function WeeklyHealthScoreCard({ userId, symptoms }: WeeklyHealthScoreCar
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-muted-foreground pl-6">
-                    {item.description}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground pl-6">{item.description}</p>
 
                   <div className="pl-6 pt-1">
                     <Progress value={percentage} className="h-1.5" />
