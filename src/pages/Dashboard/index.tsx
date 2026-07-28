@@ -51,9 +51,7 @@ async function fetchSymptomHistory(
     .order("created_at", { ascending: false });
 
   if (directError) {
-    if (error) {
-      console.warn("Cached symptom_history fetch failed:", error);
-    }
+    console.warn("Direct symptom_history fetch failed:", directError);
     throw directError;
   }
 
