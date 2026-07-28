@@ -77,7 +77,7 @@ const HistorySkeleton = () => (
 
 const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");

@@ -12,29 +12,56 @@ interface Post {
   prevPost?: { slug: string; title: string };
   nextPost?: { slug: string; title: string };
 }
- 
+
 const categoryColors: Record<string, { border: string; bg: string; text: string; dot: string }> = {
-  Wellness:      { border: "border-emerald-500/40", bg: "bg-emerald-900/20", text: "text-emerald-300", dot: "bg-emerald-400" },
-  "Health Tips": { border: "border-cyan-500/40",    bg: "bg-cyan-900/20",    text: "text-cyan-300",   dot: "bg-cyan-400"    },
-  "Brain Health":{ border: "border-violet-500/40",  bg: "bg-violet-900/20",  text: "text-violet-300", dot: "bg-violet-400"  },
-  Guidance:      { border: "border-amber-500/40",   bg: "bg-amber-900/20",   text: "text-amber-300",  dot: "bg-amber-400"   },
+  Wellness: {
+    border: "border-emerald-500/40",
+    bg: "bg-emerald-900/20",
+    text: "text-emerald-300",
+    dot: "bg-emerald-400",
+  },
+  "Health Tips": {
+    border: "border-cyan-500/40",
+    bg: "bg-cyan-900/20",
+    text: "text-cyan-300",
+    dot: "bg-cyan-400",
+  },
+  "Brain Health": {
+    border: "border-violet-500/40",
+    bg: "bg-violet-900/20",
+    text: "text-violet-300",
+    dot: "bg-violet-400",
+  },
+  Guidance: {
+    border: "border-amber-500/40",
+    bg: "bg-amber-900/20",
+    text: "text-amber-300",
+    dot: "bg-amber-400",
+  },
 };
- 
-const defaultColor = { border: "border-cyan-500/40", bg: "bg-cyan-900/20", text: "text-cyan-300", dot: "bg-cyan-400" };
- 
+
+const defaultColor = {
+  border: "border-cyan-500/40",
+  bg: "bg-cyan-900/20",
+  text: "text-cyan-300",
+  dot: "bg-cyan-400",
+};
+
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const post = getPostBySlug(slug || "");
-  const color = post ? (categoryColors[post.category] || defaultColor) : defaultColor;
- 
+  const color = post ? categoryColors[post.category] || defaultColor : defaultColor;
+
   if (!post) {
     return (
       <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-4xl mb-4">🔍</p>
           <p className="text-white font-bold text-xl mb-2">Post not found</p>
-          <p className="text-gray-500 text-sm mb-6">This article doesn't exist or may have moved.</p>
+          <p className="text-gray-500 text-sm mb-6">
+            This article doesn't exist or may have moved.
+          </p>
           <button
             onClick={() => navigate("/blog")}
             className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 mx-auto transition-colors text-sm"
@@ -46,10 +73,9 @@ const BlogPostPage = () => {
       </div>
     );
   }
- 
+
   return (
     <div className="min-h-screen bg-[#0a0f1a] text-gray-200">
- 
       {/* Sticky top nav */}
       <div className="border-b border-white/[0.06] bg-[#0a0f1a]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -69,9 +95,8 @@ const BlogPostPage = () => {
           </button>
         </div>
       </div>
- 
+
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-16">
- 
         {/* Article header */}
         <div className="mb-10">
           {/* Category + icon */}
@@ -83,18 +108,20 @@ const BlogPostPage = () => {
               <p className="text-xs font-semibold tracking-widest text-cyan-400 uppercase mb-0.5">
                 Resources
               </p>
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${color.border} ${color.bg} ${color.text} text-xs font-medium`}>
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${color.border} ${color.bg} ${color.text} text-xs font-medium`}
+              >
                 <span className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />
                 {post.category}
               </span>
             </div>
           </div>
- 
+
           {/* Title */}
           <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-4">
             {post.title}
           </h1>
- 
+
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
             <div className="flex items-center gap-2">
@@ -106,13 +133,15 @@ const BlogPostPage = () => {
               {post.readTime}
             </span>
             <span className="text-gray-600">·</span>
-            <span className="text-gray-600 text-xs">Last updated: {post.updated_at || post.date}</span>
+            <span className="text-gray-600 text-xs">
+              Last updated: {post.updated_at || post.date}
+            </span>
           </div>
         </div>
- 
+
         {/* Divider */}
         <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-10" />
- 
+
         {/* Article body */}
         <div className="rounded-3xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
           <div className="p-8 md:p-10 space-y-8">
@@ -132,7 +161,7 @@ const BlogPostPage = () => {
             ))}
           </div>
         </div>
- 
+
         {/* Prev / Next navigation */}
         {(post.prevPost || post.nextPost) && (
           <div className="mt-10 grid grid-cols-2 gap-4">
@@ -152,7 +181,7 @@ const BlogPostPage = () => {
                 </button>
               )}
             </div>
- 
+
             {/* Next */}
             <div>
               {post.nextPost && (
@@ -171,7 +200,7 @@ const BlogPostPage = () => {
             </div>
           </div>
         )}
- 
+
         {/* Bottom nav */}
         <div className="mt-10 pt-8 border-t border-white/[0.06] flex items-center justify-between flex-wrap gap-4">
           <button
@@ -193,5 +222,5 @@ const BlogPostPage = () => {
     </div>
   );
 };
- 
+
 export default BlogPostPage;

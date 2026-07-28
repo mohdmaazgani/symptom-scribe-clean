@@ -16,23 +16,18 @@ function isAllowedOrigin(origin: string): boolean {
 }
 
 const getCorsHeaders = (origin: string | null) => ({
-  "Access-Control-Allow-Origin":
-    origin && isAllowedOrigin(origin) ? origin : "null",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Origin": origin && isAllowedOrigin(origin) ? origin : "null",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 });
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
-  
+
   if (origin && !isAllowedOrigin(origin)) {
-    return new Response(
-      JSON.stringify({ error: "Origin not allowed" }),
-      {
-        status: 403,
-        headers: getCorsHeaders(origin),
-      }
-    );
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: getCorsHeaders(origin),
+    });
   }
 
   if (req.method === "OPTIONS") {
@@ -43,9 +38,7 @@ serve(async (req) => {
 
   try {
     const ip =
-      req.headers.get("x-forwarded-for") ||
-      req.headers.get("cf-connecting-ip") ||
-      "unknown";
+      req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
@@ -63,16 +56,13 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      });
     }
 
     const supabase = createClient(
@@ -88,21 +78,16 @@ serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      });
     }
 
-    const { error } = await supabase.auth.admin.deleteUser(
-      user.id
-    );
+    const { error } = await supabase.auth.admin.deleteUser(user.id);
 
     if (error) {
       return new Response(
@@ -135,10 +120,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(
       JSON.stringify({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error",
+        error: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,

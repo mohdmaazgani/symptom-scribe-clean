@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Generates a cryptographically secure random index in the range [0, limit - 1] using window.crypto.getRandomValues().
  * This is used for security-sensitive operations such as password generation.
- * 
+ *
  * @param limit The upper bound (exclusive) for the random index
  * @returns A cryptographically secure random integer between 0 (inclusive) and limit (exclusive)
  */
@@ -18,7 +18,7 @@ export const secureRandomIndex = (limit: number): number => {
 /**
  * Shuffles an array using the Fisher-Yates (Knuth) algorithm with cryptographically secure random indices.
  * This is used for security-sensitive shuffling such as passwords and any other shuffle operations.
- * 
+ *
  * @param array The array to shuffle
  * @returns A new shuffled array
  */
@@ -33,7 +33,7 @@ export function shuffleArray<T>(array: T[]): T[] {
 /**
  * Shuffles an array using the Fisher-Yates (Knuth) algorithm with cryptographically secure random indices.
  * This is used for security-sensitive shuffling such as passwords.
- * 
+ *
  * @param array The array to shuffle
  * @returns A new shuffled array
  */

@@ -143,7 +143,10 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
         />
       </svg>
 
-      <div className="absolute flex flex-col items-center justify-center text-center" aria-hidden="true">
+      <div
+        className="absolute flex flex-col items-center justify-center text-center"
+        aria-hidden="true"
+      >
         <span className={`text-base font-black tracking-tight ${textColor}`}>{score}%</span>
         <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
           Well
@@ -191,18 +194,13 @@ const Dashboard = () => {
         const key = await whenEncryptionReady();
 
         try {
-          const decryptedFullName = await decryptProfileField(
-            profile.full_name,
-            key
-          );
+          const decryptedFullName = await decryptProfileField(profile.full_name, key);
 
           setUserName(decryptedFullName);
         } catch (err) {
           console.warn("Full name decryption failed", err);
         }
       }
-
-
 
       const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
 
@@ -304,8 +302,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="border"
-        style={{ background: "var(--welcome-bg)" }}>
+      <Card className="border" style={{ background: "var(--welcome-bg)" }}>
         <CardContent className="flex items-center justify-between py-6">
           <div>
             <h2 className="text-3xl font-bold">
@@ -326,9 +323,7 @@ const Dashboard = () => {
         <p className="text-muted-foreground">Overview of your health tracking journey</p>
       </div>
 
-      {userId && (
-        <SmartAlertsBanner userId={userId} symptoms={symptoms} />
-      )}
+      {userId && <SmartAlertsBanner userId={userId} symptoms={symptoms} />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="group relative overflow-hidden border border-border/60 transition-all duration-500 hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/20">
@@ -349,7 +344,8 @@ const Dashboard = () => {
                 stiffness: 300,
                 damping: 15,
               }}
-              className="rounded-full p-2 bg-primary/10">
+              className="rounded-full p-2 bg-primary/10"
+            >
               <Activity className="h-4 w-4 text-primary" />
             </motion.div>
           </CardHeader>
@@ -357,9 +353,7 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">
               <CountUp end={stats.totalSymptoms} duration={1.2} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Lifetime symptom checks
-            </p>
+            <p className="text-xs text-muted-foreground">Lifetime symptom checks</p>
           </CardContent>
         </Card>
 
@@ -382,7 +376,8 @@ const Dashboard = () => {
                 stiffness: 300,
                 damping: 15,
               }}
-              className="rounded-full p-2 bg-primary/10">
+              className="rounded-full p-2 bg-primary/10"
+            >
               <AlertCircle className="h-4 w-4 text-primary" />
             </motion.div>
           </CardHeader>
@@ -392,9 +387,7 @@ const Dashboard = () => {
               <CountUp end={stats.unresolvedSymptoms} duration={1.2} />
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Requiring follow-up
-            </p>
+            <p className="text-xs text-muted-foreground">Requiring follow-up</p>
           </CardContent>
         </Card>
 
@@ -414,7 +407,8 @@ const Dashboard = () => {
                 stiffness: 300,
                 damping: 15,
               }}
-              className="rounded-full p-2 bg-primary/10">
+              className="rounded-full p-2 bg-primary/10"
+            >
               <TrendingUp className="h-4 w-4 text-primary" />
             </motion.div>
           </CardHeader>
@@ -427,10 +421,7 @@ const Dashboard = () => {
 
               <p className="text-xs text-muted-foreground">
                 Avg Risk:
-                <span className="font-semibold">
-                  {" "}
-                  {stats.avgRiskScore}/100
-                </span>
+                <span className="font-semibold"> {stats.avgRiskScore}/100</span>
               </p>
             </div>
             <RadialWellnessGauge score={100 - stats.avgRiskScore} />
@@ -453,7 +444,8 @@ const Dashboard = () => {
                 stiffness: 300,
                 damping: 15,
               }}
-              className="rounded-full p-2 bg-primary/10">
+              className="rounded-full p-2 bg-primary/10"
+            >
               <CheckCircle className="h-4 w-4 text-primary" />
             </motion.div>
           </CardHeader>
@@ -462,11 +454,8 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">
               <CountUp end={stats.recentActivity} duration={1.2} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Last 7 days
-            </p>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
           </CardContent>
-
         </Card>
       </div>
 
@@ -491,12 +480,13 @@ const Dashboard = () => {
               {recentHistory.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-start justify-between border-b pb-3 last:border-0 transition-all duration-300 hover:px-2 rounded-md p-2 ${item.severity_level === "high"
-                    ? "bg-red-500/10 border-red-500 text-red-400"
-                    : item.severity_level === "moderate"
-                      ? "bg-yellow-500/10 border-yellow-500 text-yellow-400"
-                      : "bg-green-500/10 border-green-500 text-green-400"
-                    }`}
+                  className={`flex items-start justify-between border-b pb-3 last:border-0 transition-all duration-300 hover:px-2 rounded-md p-2 ${
+                    item.severity_level === "high"
+                      ? "bg-red-500/10 border-red-500 text-red-400"
+                      : item.severity_level === "moderate"
+                        ? "bg-yellow-500/10 border-yellow-500 text-yellow-400"
+                        : "bg-green-500/10 border-green-500 text-green-400"
+                  }`}
                 >
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.symptoms.substring(0, 60)}...</p>

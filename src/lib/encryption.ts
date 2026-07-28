@@ -6,7 +6,8 @@ let activeSearchKey: CryptoKey | null = null;
 let lastToken: string | null = null;
 
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
-let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null = null;
+let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null =
+  null;
 
 function resetReadyPromise() {
   readyPromise = new Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }>((resolve) => {
@@ -99,19 +100,11 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
   const encoder = new TextEncoder();
   const tokenBytes = encoder.encode(token);
 
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    tokenBytes,
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
+  const baseKey = await crypto.subtle.importKey("raw", tokenBytes, "PBKDF2", false, ["deriveKey"]);
 
   // Use per-user random salt when userId is available; fall back to a
   // deterministic domain salt for unauthenticated derivation paths.
-  const salt = userId
-    ? getUserSalt(userId)
-    : encoder.encode("symptom-scribe-offline-salt");
+  const salt = userId ? getUserSalt(userId) : encoder.encode("symptom-scribe-offline-salt");
 
   return await crypto.subtle.deriveKey(
     {
@@ -134,17 +127,9 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
   const encoder = new TextEncoder();
   const tokenBytes = encoder.encode(token);
 
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    tokenBytes,
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
+  const baseKey = await crypto.subtle.importKey("raw", tokenBytes, "PBKDF2", false, ["deriveKey"]);
 
-  const salt = userId
-    ? getUserSalt(userId)
-    : encoder.encode("symptom-scribe-search-salt");
+  const salt = userId ? getUserSalt(userId) : encoder.encode("symptom-scribe-search-salt");
 
   return await crypto.subtle.deriveKey(
     {
@@ -177,11 +162,7 @@ export function tokenizeText(text: string): string[] {
 export async function generateBlindIndex(word: string, searchKey: CryptoKey): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(word);
-  const signatureBuffer = await crypto.subtle.sign(
-    { name: "HMAC" },
-    searchKey,
-    data
-  );
+  const signatureBuffer = await crypto.subtle.sign({ name: "HMAC" }, searchKey, data);
   return arrayBufferToHex(signatureBuffer);
 }
 
@@ -189,9 +170,7 @@ export async function generateSearchTokens(text: string, searchKey: CryptoKey): 
   const tokens = tokenizeText(text);
   if (tokens.length === 0) return [];
   const uniqueTokens = Array.from(new Set(tokens));
-  return await Promise.all(
-    uniqueTokens.map((token) => generateBlindIndex(token, searchKey))
-  );
+  return await Promise.all(uniqueTokens.map((token) => generateBlindIndex(token, searchKey)));
 }
 
 // Encryption / Decryption
@@ -241,12 +220,14 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
 // Callbacks registered by offline-db
 let onLogoutCallback: (() => Promise<void>) | null = null;
 
-let onTokenRefreshCallback: ((
-  oldKey: CryptoKey,
-  newKey: CryptoKey,
-  oldSearchKey: CryptoKey,
-  newSearchKey: CryptoKey
-) => Promise<void>) | null = null;
+let onTokenRefreshCallback:
+  | ((
+      oldKey: CryptoKey,
+      newKey: CryptoKey,
+      oldSearchKey: CryptoKey,
+      newSearchKey: CryptoKey
+    ) => Promise<void>)
+  | null = null;
 
 export function registerEncryptionHooks(callbacks: {
   onLogout: () => Promise<void>;
@@ -266,13 +247,9 @@ const SEED_KEY_PREFIX = "symptom_scribe_master_seed_";
 // Helper to derive stable master seed from password + email using PBKDF2
 export async function deriveSeedFromPassword(password: string, email: string): Promise<string> {
   const encoder = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
+  const baseKey = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, [
+    "deriveBits",
+  ]);
   // Use email as a stable salt for password derivation
   const salt = encoder.encode(email.toLowerCase().trim());
   const derivedBits = await crypto.subtle.deriveBits(
@@ -289,7 +266,11 @@ export async function deriveSeedFromPassword(password: string, email: string): P
 }
 
 // Function called during login/signup/password-change to store seed and active keys
-export async function setupKeysFromPassword(password: string, email: string, userId: string): Promise<void> {
+export async function setupKeysFromPassword(
+  password: string,
+  email: string,
+  userId: string
+): Promise<void> {
   const seed = await deriveSeedFromPassword(password, email);
   localStorage.setItem(SEED_KEY_PREFIX + userId, seed);
 
@@ -334,24 +315,29 @@ async function handleSessionChange(session: Session) {
         localStorage.setItem(SALT_KEY_PREFIX + userId, dbSalt);
       }
     } else {
-      const activeSalt = localSalt || (() => {
-        const newSalt = crypto.getRandomValues(new Uint8Array(16));
-        return Array.from(newSalt)
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-      })();
+      const activeSalt =
+        localSalt ||
+        (() => {
+          const newSalt = crypto.getRandomValues(new Uint8Array(16));
+          return Array.from(newSalt)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        })();
 
       localStorage.setItem(SALT_KEY_PREFIX + userId, activeSalt);
 
       // Save salt to both the database profile and user metadata
       await Promise.all([
-        supabase.from("profiles").upsert({
-          user_id: userId,
-          encryption_salt: activeSalt,
-        }, { onConflict: "user_id" }),
+        supabase.from("profiles").upsert(
+          {
+            user_id: userId,
+            encryption_salt: activeSalt,
+          },
+          { onConflict: "user_id" }
+        ),
         supabase.auth.updateUser({
-          data: { encryption_salt: activeSalt }
-        })
+          data: { encryption_salt: activeSalt },
+        }),
       ]).catch((syncErr) => {
         console.warn("Failed to sync salt to Supabase profiles or auth metadata:", syncErr);
       });
@@ -391,7 +377,9 @@ async function handleSessionChange(session: Session) {
 
 async function handleSessionClear() {
   // Clear user-specific data on logout
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (user?.id) {
     clearUserSalt(user.id);
     localStorage.removeItem(SEED_KEY_PREFIX + user.id);
@@ -416,15 +404,15 @@ export function initializeEncryption() {
     }
   });
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      if (session) {
-        await handleSessionChange(session);
-      } else {
-        await handleSessionClear();
-      }
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      await handleSessionChange(session);
+    } else {
+      await handleSessionClear();
     }
-  );
+  });
 
   return () => {
     subscription.unsubscribe();
@@ -470,7 +458,10 @@ export async function decryptProfileArray(
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
-export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
+export async function getP2PSigningKeys(): Promise<{
+  privateKey: CryptoKey;
+  publicKey: CryptoKey;
+}> {
   const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
   const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
 

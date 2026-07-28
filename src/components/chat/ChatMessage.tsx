@@ -10,19 +10,14 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
   const isUser = role === "user";
 
   return (
-    <div
-      className={cn(
-        "flex gap-3 animate-fade-in",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
+    <div className={cn("flex gap-3 animate-fade-in", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-glow">
           <Bot className="w-5 h-5 text-primary-foreground" />
           <span className="sr-only">AI Health Assistant:</span>
         </div>
       )}
-      
+
       <div
         className={cn(
           "max-w-[80%] rounded-2xl px-4 py-3 shadow-soft",
@@ -33,38 +28,24 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
       >
         <div className="text-sm leading-relaxed">
           <span className="sr-only">{isUser ? "You said: " : "AI Health Assistant said: "}</span>
-  <ReactMarkdown
-    components={{
-      strong: ({ children }) => (
-        <strong className="font-bold text-card-foreground">
-          {children}
-        </strong>
-      ),
+          <ReactMarkdown
+            components={{
+              strong: ({ children }) => (
+                <strong className="font-bold text-card-foreground">{children}</strong>
+              ),
 
-      ul: ({ children }) => (
-        <ul className="list-disc pl-5 space-y-1">
-          {children}
-        </ul>
-      ),
+              ul: ({ children }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
 
-      li: ({ children }) => (
-        <li className="text-card-foreground">
-          {children}
-        </li>
-      ),
+              li: ({ children }) => <li className="text-card-foreground">{children}</li>,
 
-      p: ({ children }) => (
-        <p className="mb-3 text-card-foreground">
-          {children}
-        </p>
-      ),
-    }}
-  >
-    {content.replace(/•/g, "-")}
-  </ReactMarkdown>
-</div>
+              p: ({ children }) => <p className="mb-3 text-card-foreground">{children}</p>,
+            }}
+          >
+            {content.replace(/•/g, "-")}
+          </ReactMarkdown>
+        </div>
       </div>
-      
+
       {isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
           <User className="w-5 h-5 text-secondary-foreground" />

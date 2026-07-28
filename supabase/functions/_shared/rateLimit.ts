@@ -47,7 +47,7 @@ function memoryRateLimit(ip: string): { success: boolean } {
   }
   const now = Date.now();
   const existing = requestStore.get(ip);
-  
+
   if (!existing || now - existing.timestamp > WINDOW_SIZE_MS) {
     if (existing) requestStore.delete(ip);
     requestStore.set(ip, { count: 1, timestamp: now });

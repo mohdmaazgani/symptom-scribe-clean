@@ -43,13 +43,9 @@ const ResetPassword = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md rounded-2xl bg-card p-8 shadow-xl border border-border">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Reset Password
-        </h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Reset Password</h1>
 
-        <p className="text-muted-foreground mb-6">
-          Enter your new password below.
-        </p>
+        <p className="text-muted-foreground mb-6">Enter your new password below.</p>
 
         <div className="mb-6">
           <PasswordStrengthMeter

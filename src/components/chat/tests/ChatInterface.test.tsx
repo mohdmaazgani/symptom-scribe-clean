@@ -74,10 +74,7 @@ describe("ChatInterface Accessibility", () => {
     const logRegion = screen.getByRole("log");
     expect(logRegion).toBeInTheDocument();
     expect(logRegion).toHaveAttribute("aria-live", "polite");
-    expect(logRegion).toHaveAttribute(
-      "aria-label",
-      "Chat conversation with AI health assistant"
-    );
+    expect(logRegion).toHaveAttribute("aria-label", "Chat conversation with AI health assistant");
   });
 
   it("provides accessible labels for new chat buttons and inputs", async () => {

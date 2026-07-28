@@ -129,7 +129,9 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
         <CardTitle className="text-xl font-bold flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-yellow-500 animate-pulse" /> AI Health Predictions
         </CardTitle>
-        <CardDescription>Proactive health risk predictions analyzed from recent symptom logs</CardDescription>
+        <CardDescription>
+          Proactive health risk predictions analyzed from recent symptom logs
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {error ? (
@@ -143,7 +145,8 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
             <CheckCircle className="w-12 h-12 text-emerald-500/60 mb-2" />
             <h4 className="font-bold text-sm text-foreground">No Active Risk Markers</h4>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 leading-relaxed">
-              No recent symptom logs found. Consult with the AI assistant to track symptoms and populate predictions.
+              No recent symptom logs found. Consult with the AI assistant to track symptoms and
+              populate predictions.
             </p>
           </div>
         ) : predictions.length === 0 ? (
@@ -151,7 +154,8 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
             <CheckCircle className="w-12 h-12 text-emerald-500/60 mb-2" />
             <h4 className="font-bold text-sm text-foreground">All Systems Stable</h4>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 leading-relaxed">
-              AI analysis of your recent logs shows no elevated health risk patterns. Keep maintaining a healthy routine!
+              AI analysis of your recent logs shows no elevated health risk patterns. Keep
+              maintaining a healthy routine!
             </p>
           </div>
         ) : (
@@ -163,11 +167,14 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
               >
                 <div className="flex items-center justify-between gap-4">
                   <h4 className="font-bold text-sm text-foreground">{pred.risk}</h4>
-                  <Badge variant="outline" className={`text-xs px-2 py-0.5 rounded-full ${getConfidenceColor(pred.confidence)}`}>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2 py-0.5 rounded-full ${getConfidenceColor(pred.confidence)}`}
+                  >
                     {pred.confidence} Confidence
                   </Badge>
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   <span className="font-semibold text-foreground">Analysis: </span>
                   {pred.rationale}

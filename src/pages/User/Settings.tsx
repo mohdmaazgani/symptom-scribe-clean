@@ -6,7 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Trash2, Loader2, AlertTriangle, Languages } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
@@ -14,12 +22,7 @@ import { PasswordStrengthMeter } from "@/components/registration/shared/Password
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { clearSafeStorage } from "@/lib/storage";
-import {
-  getKey,
-  getSearchKey,
-  setupKeysFromPassword,
-  triggerKeyRotation,
-} from "@/lib/encryption";
+import { getKey, getSearchKey, setupKeysFromPassword, triggerKeyRotation } from "@/lib/encryption";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
 
 const Settings = () => {
@@ -171,7 +174,7 @@ const Settings = () => {
         // Log out locally (clear session)
         await supabase.auth.signOut();
         showSuccess("Account Deleted", "Your account has been deleted successfully");
-        
+
         // Clear storage and redirect
         clearSafeStorage();
         navigate("/auth");
@@ -181,27 +184,15 @@ const Settings = () => {
       console.error("[DELETE_ACCOUNT_ERROR]", err);
 
       if (err?.message?.includes("Unauthorized")) {
-    showError(
-      "Unauthorized",
-      "You are not authorized to delete this account"
-    );
-  } else if (err?.message?.includes("User not found")) {
-    showError(
-      "User Not Found",
-      "The account could not be found"
-    );
-  } else if (err?.message?.includes("network")) {
-    showError(
-      "Network Error",
-      "Please check your internet connection and try again"
-    );
-  } else {
-    showError(
-      "Deletion Failed",
-      "An unexpected error occurred while deleting your account"
-    );
-  }
-} finally {
+        showError("Unauthorized", "You are not authorized to delete this account");
+      } else if (err?.message?.includes("User not found")) {
+        showError("User Not Found", "The account could not be found");
+      } else if (err?.message?.includes("network")) {
+        showError("Network Error", "Please check your internet connection and try again");
+      } else {
+        showError("Deletion Failed", "An unexpected error occurred while deleting your account");
+      }
+    } finally {
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
     }
@@ -238,9 +229,7 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
+              <CardDescription>Update your password to keep your account secure</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
@@ -289,11 +278,7 @@ const Settings = () => {
                   )}
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={changePasswordLoading}
-                  className="w-full"
-                >
+                <Button type="submit" disabled={changePasswordLoading} className="w-full">
                   {changePasswordLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -2,7 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { type SmartAlert, dismissAlert, detectSmartAlerts } from "@/lib/alerts-engine";
 import { db, type OfflineMetric, type OfflineSymptom, decryptMetric } from "@/lib/offline-db";
 import { whenEncryptionReady } from "@/lib/encryption";
-import { AlertCircle, AlertTriangle, Info, X, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  X,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SmartAlertsBannerProps {
@@ -81,7 +89,8 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
     <div className="space-y-3 mb-6">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 select-none">
-          <AlertCircle className="w-4 h-4 text-primary animate-pulse" /> Smart Health Alerts ({alerts.length})
+          <AlertCircle className="w-4 h-4 text-primary animate-pulse" /> Smart Health Alerts (
+          {alerts.length})
         </h3>
       </div>
       <AnimatePresence initial={false}>
@@ -114,7 +123,9 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className={`p-1.5 rounded-lg ${isCritical ? "bg-destructive/15" : isWarning ? "bg-orange-500/15" : "bg-primary/15"} mt-0.5`}>
+                  <div
+                    className={`p-1.5 rounded-lg ${isCritical ? "bg-destructive/15" : isWarning ? "bg-orange-500/15" : "bg-primary/15"} mt-0.5`}
+                  >
                     {isCritical ? (
                       <AlertTriangle className={`w-5 h-5 ${iconColor}`} />
                     ) : isWarning ? (
@@ -125,7 +136,9 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
                   </div>
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-foreground leading-none">{alert.title}</h4>
+                      <h4 className="font-bold text-sm text-foreground leading-none">
+                        {alert.title}
+                      </h4>
                       {isCritical && (
                         <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground animate-pulse">
                           Critical
@@ -145,9 +158,17 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
                       e.stopPropagation();
                       toggleExpand(alert.id);
                     }}
-                    aria-label={isExpanded ? `Collapse details for ${alert.title}` : `Expand details for ${alert.title}`}
+                    aria-label={
+                      isExpanded
+                        ? `Collapse details for ${alert.title}`
+                        : `Expand details for ${alert.title}`
+                    }
                   >
-                    {isExpanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                    )}
                   </button>
                   <button
                     className="p-1 rounded-md hover:bg-muted-foreground/10 text-muted-foreground/80 transition-colors"
@@ -168,7 +189,9 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
                     className="overflow-hidden mt-3 pl-11 border-t pt-3 border-border/40"
                   >
                     <div className="space-y-1.5">
-                      <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Action Plan:</h5>
+                      <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Action Plan:
+                      </h5>
                       <p className="text-xs font-medium text-foreground leading-relaxed">
                         {alert.actionPlan}
                       </p>

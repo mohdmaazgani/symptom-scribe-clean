@@ -34,9 +34,7 @@ import Auth from "@/pages/Auth";
 // ---------------------------------------------------------------------------
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
 vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>(
-    "react-router-dom"
-  );
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return {
     ...actual,
     useNavigate: () => mockNavigate,
@@ -49,9 +47,7 @@ vi.mock("react-router-dom", async () => {
 // ---------------------------------------------------------------------------
 const { authStateChangeHolder } = vi.hoisted(() => ({
   authStateChangeHolder: {
-    current: undefined as
-      | ((event: string, session: unknown) => void)
-      | undefined,
+    current: undefined as ((event: string, session: unknown) => void) | undefined,
   },
 }));
 vi.mock("@/integrations/supabase/client", () => ({
@@ -261,9 +257,7 @@ describe("Auth", () => {
     await user.click(screen.getByRole("button", { name: /forgot password/i }));
 
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "Email Required" })
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Email Required" }));
     });
     expect(supabase.auth.resetPasswordForEmail).not.toHaveBeenCalled();
   });

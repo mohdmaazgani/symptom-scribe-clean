@@ -138,7 +138,10 @@ export function calculateWeeklyHealthScore(
     biometricDesc = `${optimalCount} of ${validMetrics.length} vital readings in optimal range`;
   }
 
-  const totalScore = Math.min(100, Math.max(0, consistencyPoints + symptomPoints + biometricPoints));
+  const totalScore = Math.min(
+    100,
+    Math.max(0, consistencyPoints + symptomPoints + biometricPoints)
+  );
 
   const breakdown: ScoreBreakdownItem[] = [
     {

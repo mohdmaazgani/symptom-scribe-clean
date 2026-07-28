@@ -10,10 +10,8 @@ const ALLOWED_ORIGINS = [
 ];
 
 const getCorsHeaders = (origin: string | null) => ({
-  "Access-Control-Allow-Origin":
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 });
 
 serve(async (req) => {
@@ -35,9 +33,7 @@ serve(async (req) => {
   try {
     // Rate limit check
     const ip =
-      req.headers.get("x-forwarded-for") ||
-      req.headers.get("cf-connecting-ip") ||
-      "unknown";
+      req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
@@ -53,13 +49,10 @@ serve(async (req) => {
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -73,15 +66,15 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      });
     }
 
     // Parse payload
@@ -91,7 +84,9 @@ serve(async (req) => {
 
     if (!table || !allowedTables.includes(table)) {
       return new Response(
-        JSON.stringify({ error: `Invalid or unsupported table. Must be one of: ${allowedTables.join(", ")}` }),
+        JSON.stringify({
+          error: `Invalid or unsupported table. Must be one of: ${allowedTables.join(", ")}`,
+        }),
         {
           status: 400,
           headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },

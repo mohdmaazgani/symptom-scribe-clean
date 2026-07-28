@@ -64,22 +64,22 @@ const Auth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session &&
-        window.location.href.includes("type=recovery")
-      ) {
-      navigate("/reset-password");
-      return;
+      if (session && window.location.href.includes("type=recovery")) {
+        navigate("/reset-password");
+        return;
       }
 
       if (session) {
-        const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+        const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? {
+          data: null,
+        };
         if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel) {
           // 2FA verification still pending — don't navigate yet
           return;
         }
         navigate("/dashboard");
       }
-   });
+    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -87,7 +87,6 @@ const Auth = () => {
   useEffect(() => {
     setShowPassword(false);
   }, [authTab]);
-
 
   const validateSignIn = () => {
     try {
@@ -122,7 +121,9 @@ const Auth = () => {
       showError("Sign In Failed", error.message);
       setLoading(false);
     } else {
-      const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+      const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? {
+        data: null,
+      };
 
       if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel) {
         const { data: factorsData } = await supabase.auth.mfa.listFactors();
@@ -189,28 +190,21 @@ const Auth = () => {
     setRedirecting(true);
   };
 
-const handleForgotPassword= async () => {
-  if (!signInEmail) {
-    showError(
-      "Email Required",
-      "Please enter your email address before resetting your password"
-    );
-    return;
-  }
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    signInEmail,
-    {
-    redirectTo: "https://symptom-scribe-15.lovable.app/reset-password",
+  const handleForgotPassword = async () => {
+    if (!signInEmail) {
+      showError("Email Required", "Please enter your email address before resetting your password");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(signInEmail, {
+      redirectTo: "https://symptom-scribe-15.lovable.app/reset-password",
     });
 
-  if (error) {
-    showError("Reset Failed", error.message);
-  } else {
-    showSuccess(
-      "Reset Email Sent","Please check your inbox for the password reset link"
-    );
-  }
-};
+    if (error) {
+      showError("Reset Failed", error.message);
+    } else {
+      showSuccess("Reset Email Sent", "Please check your inbox for the password reset link");
+    }
+  };
 
   return (
     <div className="dark relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,rgba(20,184,166,0.22),transparent_38%),linear-gradient(135deg,#07111f_0%,#0f2433_45%,#12362f_100%)] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -352,84 +346,88 @@ const handleForgotPassword= async () => {
                     </div>
                   </div>
                 ) : (
-                <form onSubmit={handleSignIn} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-sm font-medium text-slate-100">
-                      Email
-                    </Label>
+                  <form onSubmit={handleSignIn} className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email" className="text-sm font-medium text-slate-100">
+                        Email
+                      </Label>
 
-                    <div className="relative">
-                      <Mail className={fieldIconClass} />
+                      <div className="relative">
+                        <Mail className={fieldIconClass} />
 
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={signInEmail}
-                        onChange={(e) => setSignInEmail(e.target.value)}
-                        required
-                        className={fieldClass}
-                      />
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={signInEmail}
+                          onChange={(e) => setSignInEmail(e.target.value)}
+                          required
+                          className={fieldClass}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-sm font-medium text-slate-100">
-                      Password
-                    </Label>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="signin-password"
+                        className="text-sm font-medium text-slate-100"
+                      >
+                        Password
+                      </Label>
 
-                    <div className="relative">
-                      <Lock className={fieldIconClass} />
+                      <div className="relative">
+                        <Lock className={fieldIconClass} />
 
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        value={signInPassword}
-                        onChange={(e) => setSignInPassword(e.target.value)}
-                        required
-                        className={`${fieldClass} pr-12`}
-                      />
+                        <Input
+                          id="signin-password"
+                          type={showPassword ? "text" : "password"}
+                          value={signInPassword}
+                          onChange={(e) => setSignInPassword(e.target.value)}
+                          required
+                          className={`${fieldClass} pr-12`}
+                        />
 
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        onClick={handleForgotPassword}
+                        className="text-sm text-cyan-400 hover:underline mt-2"
                       >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        Forgot Password?
                       </button>
                     </div>
-                  </div>
 
-                  <div className="flex justify-end">
-                    <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-sm text-cyan-400 hover:underline mt-2">
-                      Forgot Password?
-                    </button>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={loading || redirecting}
-                    className={actionButtonClass}
-                  >
-                    {redirecting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecting...
-                      </>
-                    ) : loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      "Sign In"
-                    )}
-                  </Button>
-                </form>
+                    <Button
+                      type="submit"
+                      disabled={loading || redirecting}
+                      className={actionButtonClass}
+                    >
+                      {redirecting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Redirecting...
+                        </>
+                      ) : loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing In...
+                        </>
+                      ) : (
+                        "Sign In"
+                      )}
+                    </Button>
+                  </form>
                 )}
               </TabsContent>
 

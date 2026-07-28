@@ -32,14 +32,13 @@ export default function GamificationPage() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "challenges", label: "Challenges", icon: <Flame className="w-4 h-4" /> },
-    { id: "mood",       label: "Mood Tracker", icon: <Smile className="w-4 h-4" /> },
-    { id: "badges",     label: "My Badges",    icon: <Award className="w-4 h-4" /> },
+    { id: "mood", label: "Mood Tracker", icon: <Smile className="w-4 h-4" /> },
+    { id: "badges", label: "My Badges", icon: <Award className="w-4 h-4" /> },
   ];
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3 text-foreground">
@@ -101,7 +100,9 @@ export default function GamificationPage() {
               ) : challenges.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed border-border bg-muted/10">
                   <span className="text-5xl mb-4">🏆</span>
-                  <h3 className="text-lg font-semibold text-foreground mb-1">No challenges available yet</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    No challenges available yet
+                  </h3>
                   <p className="text-sm text-muted-foreground max-w-xs">
                     Challenges will appear here once the database is set up. Check back soon!
                   </p>
@@ -131,11 +132,8 @@ export default function GamificationPage() {
             <MoodCalendarView moodLogs={moodLogs} onLogMood={logMood.mutateAsync} />
           )}
 
-          {activeTab === "badges" && (
-            <BadgeDisplay userBadges={userBadges} />
-          )}
+          {activeTab === "badges" && <BadgeDisplay userBadges={userBadges} />}
         </div>
-
       </div>
     </div>
   );
