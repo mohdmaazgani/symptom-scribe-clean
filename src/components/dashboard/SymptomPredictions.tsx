@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, AlertTriangle, CheckCircle, Info, Loader2 } from "lucide-react";
@@ -22,81 +22,80 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchPredictions = useCallback(async () => {
     if (!userId || symptoms.length === 0) {
       setPredictions([]);
       return;
     }
 
-    const fetchPredictions = async () => {
-      // 1. Check local storage cache
-      const cacheKey = `ai_health_predictions_${userId}`;
-      const cached = localStorage.getItem(cacheKey);
-      const symptomsHash = symptoms.join("|");
+    const cacheKey = `ai_health_predictions_${userId}`;
+    const cached = localStorage.getItem(cacheKey);
+    const symptomsHash = symptoms.join("|");
 
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          const age = Date.now() - parsed.timestamp;
-          // Refresh if cache is > 24 hours OR if symptoms list changed
-          if (age < 24 * 60 * 60 * 1000 && parsed.symptomsHash === symptomsHash) {
-            setPredictions(parsed.predictions);
-            return;
-          }
-        } catch (e) {
-          console.warn("Failed to parse cached predictions", e);
-        }
-      }
-
-      setLoading(true);
-      setError(null);
-
+    if (cached) {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token || browserEnv.supabasePublishableKey;
-
-        const response = await fetch(browserEnv.getSupabaseFunctionUrl("symptom-analyzer"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            mode: "predict",
-            symptoms,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch predictions from AI assistant");
+        const parsed = JSON.parse(cached);
+        const age = Date.now() - parsed.timestamp;
+        // Refresh if cache is > 24 hours OR if symptoms list changed
+        if (age < 24 * 60 * 60 * 1000 && parsed.symptomsHash === symptomsHash) {
+          setPredictions(parsed.predictions);
+          return;
         }
-
-        const data = await response.json();
-        const preds = data.predictions || [];
-
-        // Save to cache
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            predictions: preds,
-            symptomsHash,
-            timestamp: Date.now(),
-          })
-        );
-
-        setPredictions(preds);
-      } catch (err) {
-        console.error("Error fetching AI predictions:", err);
-        setError(err instanceof Error ? err.message : "Failed to load predictions");
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.warn("Failed to parse cached predictions", e);
       }
-    };
+    }
 
-    fetchPredictions();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token || browserEnv.supabasePublishableKey;
+
+      const response = await fetch(browserEnv.getSupabaseFunctionUrl("symptom-analyzer"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          mode: "predict",
+          symptoms,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch predictions from AI assistant");
+      }
+
+      const data = await response.json();
+      const preds = data.predictions || [];
+
+      // Save to cache
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          predictions: preds,
+          symptomsHash,
+          timestamp: Date.now(),
+        })
+      );
+
+      setPredictions(preds);
+    } catch (err) {
+      console.error("Error fetching AI predictions:", err);
+      setError(err instanceof Error ? err.message : "Failed to load predictions");
+    } finally {
+      setLoading(false);
+    }
   }, [userId, symptoms]);
+
+  useEffect(() => {
+    fetchPredictions();
+  }, [fetchPredictions]);
 
   const getConfidenceColor = (conf: string) => {
     switch (conf) {
