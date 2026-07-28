@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Plus, History, Trash2, Menu } from "lucide-react";
@@ -74,7 +74,7 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       setSessionsLoading(true);
       const {
@@ -94,11 +94,11 @@ const ChatInterface = () => {
     } finally {
       setSessionsLoading(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchSessions();
-  }, []);
+  }, [fetchSessions]);
 
   const handleSelectSession = (sessionId: string) => {
     const session = sessions.find((s) => s.id === sessionId);
