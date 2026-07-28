@@ -4,13 +4,34 @@ import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import Hero from "@/components/hero/Hero";
-import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Brain,
+  Clock,
+  TrendingUp,
+  Users,
+  Star,
+  CheckCircle2,
+  Heart,
+  Activity,
+  Shield,
+  Menu,
+  X,
+  UserRound,
+  LineChart,
+  ClipboardCheck,
+} from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
-import { 
+import {
   Github,
   ExternalLink,
   Sparkles,
@@ -19,9 +40,8 @@ import {
   FileText,
   Lock,
   AlertCircle,
-  Mail
+  Mail,
 } from "lucide-react";
-
 
 const Index = () => {
   const navigate = useNavigate();
@@ -74,21 +94,24 @@ const Index = () => {
     {
       name: "Sarah Johnson",
       role: "Health Enthusiast",
-      content: "This app helped me track my symptoms and understand when to seek medical help. The AI analysis is surprisingly accurate!",
-      rating: 5
+      content:
+        "This app helped me track my symptoms and understand when to seek medical help. The AI analysis is surprisingly accurate!",
+      rating: 5,
     },
     {
       name: "Michael Chen",
       role: "Fitness Coach",
-      content: "I use this daily to monitor my clients' health metrics. The comprehensive tracking and analytics are game-changing.",
-      rating: 5
+      content:
+        "I use this daily to monitor my clients' health metrics. The comprehensive tracking and analytics are game-changing.",
+      rating: 5,
     },
     {
       name: "Dr. Emily Roberts",
       role: "Medical Professional",
-      content: "An excellent tool for preliminary health awareness. It empowers patients to make informed decisions about their health.",
-      rating: 5
-    }
+      content:
+        "An excellent tool for preliminary health awareness. It empowers patients to make informed decisions about their health.",
+      rating: 5,
+    },
   ];
 
   const howItWorksSteps = [
@@ -118,10 +141,7 @@ const Index = () => {
 
     const headerOffset = 90;
 
-    const y =
-      element.getBoundingClientRect().top +
-      window.pageYOffset -
-      headerOffset;
+    const y = element.getBoundingClientRect().top + window.pageYOffset - headerOffset;
 
     window.scrollTo({
       top: y,
@@ -129,253 +149,245 @@ const Index = () => {
     });
   };
   useEffect(() => {
-  const sections = [
-    "features",
-    "how-it-works",
-    "why-choose",
-    "reviews",
-    "faq",
-    "contact",
-  ];
-  const handleScroll = () => {
-    const scrollPosition = window.scrollY + 120;
-    const bottomReached =
-      window.innerHeight + window.scrollY >=
-      document.documentElement.scrollHeight - 10;
+    const sections = ["features", "how-it-works", "why-choose", "reviews", "faq", "contact"];
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 120;
+      const bottomReached =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
 
-    if (bottomReached) {
-      setActiveSection("contact");
-      return;
-    }
-
-    for (const section of sections) {
-      const element = document.getElementById(section);
-
-      if (
-        element &&
-        scrollPosition >= element.offsetTop &&
-        scrollPosition < element.offsetTop + element.offsetHeight
-      ) {
-        setActiveSection(section);
-        break;
+      if (bottomReached) {
+        setActiveSection("contact");
+        return;
       }
-    }
-  };
 
-  window.addEventListener("scroll", handleScroll);
-  handleScroll();
+      for (const section of sections) {
+        const element = document.getElementById(section);
 
-  return () => window.removeEventListener("scroll", handleScroll);
-}, []);
+        if (
+          element &&
+          scrollPosition >= element.offsetTop &&
+          scrollPosition < element.offsetTop + element.offsetHeight
+        ) {
+          setActiveSection(section);
+          break;
+        }
+      }
+    };
 
- /* SCROLL PROGRESSBAR */
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  /* SCROLL PROGRESSBAR */
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
-  stiffness: 120,
-  damping: 25,
-  mass: 0.3,
-  restDelta: 0.001,
-});
+    stiffness: 120,
+    damping: 25,
+    mass: 0.3,
+    restDelta: 0.001,
+  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-
-      <header 
+      <header
         className={`sticky top-0 left-0 w-full px-6 py-0 z-50 ${
           isScrolled
             ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
             : "bg-background/0 border-transparent"
         }`}
       >
-            
         <div className="container mx-auto -mb-[84px]">
           <div className="flex relative overflow-hidden items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-4 py-3 shadow-md">
-          <div
-            className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            <img
-              src="/3.png"
-              alt="Symptom Scribe Logo"
-              className="h-7 w-7 object-contain shrink-0"
-            />
+            <div
+              className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              <img
+                src="/3.png"
+                alt="Symptom Scribe Logo"
+                className="h-7 w-7 object-contain shrink-0"
+              />
 
-            <span className="text-xl font-bold text-primary">
-              Symptom Scribe
-
-            </span>
-          </div>
-          <div className="hidden md:flex items-center gap-3 ml-4">
-            <nav className="flex items-center gap-7 mx-6">
-            <button onClick={()=>scrollToSection("features")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
+              <span className="text-xl font-bold text-primary">Symptom Scribe</span>
+            </div>
+            <div className="hidden md:flex items-center gap-3 ml-4">
+              <nav className="flex items-center gap-7 mx-6">
+                <button
+                  onClick={() => scrollToSection("features")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
             ${
-            activeSection === "features"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}>
-              Features
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
-              ${
-                activeSection === "features"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`} />
-            </button>
-
-            <button onClick={()=>scrollToSection("how-it-works")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
-             ${
-            activeSection === "how-it-works"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}>
-              How It Works
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
-               ${
-                activeSection === "how-it-works"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`}
-              />
-            </button>
-
-            <button onClick={()=>scrollToSection("why-choose")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
-             ${
-            activeSection === "why-choose"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}
-            >
-              Why Choose Us
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
-               ${
-                activeSection === "why-choose"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`}
-              />
-            </button>
-
-            <button onClick={()=>scrollToSection("reviews")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
-             ${
-            activeSection === "reviews"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}
-            >
-              Reviews
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
-                 ${
-                activeSection === "reviews"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`}
-                />
-            </button>
-
-            <button onClick={()=>scrollToSection("faq")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
-               ${
-            activeSection === "faq"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}
-              >
-              FAQ
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
-               ${
-                activeSection === "faq"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`}
-              />
-            </button>
-
-            <button onClick={()=>scrollToSection("contact")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
-             ${
-            activeSection === "contact"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"}`}
-            >
-              Contact
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
-                 ${
-                activeSection === "contact"
-                  ? "w-full"
-                  : "w-0 group-hover:w-full"
-              }`}
-                />
-            </button>
-          </nav>
-          <div className="flex items-center gap-3 ml-6">
-         <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 transition-colors">
-            <AnimatedThemeToggler />
-            </div>
-            </div>
-            {session ? (
-              <Button
-                onClick={() => navigate("/dashboard")}
-                title={displayName}
-                className="h-10 px-5 gap-2"
-              >
-                <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs">
-                  {userInitial}
-                </span>
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-10 px-5 border-primary/30 text-primary hover:bg-primary/5"
-                  onClick={() => navigate("/auth")}
+              activeSection === "features"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary"
+            }`}
                 >
-                  Sign In
-                </Button>
-                <Button
-                  className="h-10 px-5"
-                  onClick={() => navigate("/auth")}
+                  Features
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+              ${activeSection === "features" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+
+                <button
+                  onClick={() => scrollToSection("how-it-works")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+             ${
+               activeSection === "how-it-works"
+                 ? "text-primary"
+                 : "text-muted-foreground hover:text-primary"
+             }`}
                 >
-                  Get Started
+                  How It Works
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+               ${activeSection === "how-it-works" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+
+                <button
+                  onClick={() => scrollToSection("why-choose")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
+             ${
+               activeSection === "why-choose"
+                 ? "text-primary"
+                 : "text-muted-foreground hover:text-primary"
+             }`}
+                >
+                  Why Choose Us
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
+               ${activeSection === "why-choose" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+
+                <button
+                  onClick={() => scrollToSection("reviews")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+             ${
+               activeSection === "reviews"
+                 ? "text-primary"
+                 : "text-muted-foreground hover:text-primary"
+             }`}
+                >
+                  Reviews
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+                 ${activeSection === "reviews" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+
+                <button
+                  onClick={() => scrollToSection("faq")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+               ${
+                 activeSection === "faq"
+                   ? "text-primary"
+                   : "text-muted-foreground hover:text-primary"
+               }`}
+                >
+                  FAQ
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+               ${activeSection === "faq" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+
+                <button
+                  onClick={() => scrollToSection("contact")}
+                  className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
+             ${
+               activeSection === "contact"
+                 ? "text-primary"
+                 : "text-muted-foreground hover:text-primary"
+             }`}
+                >
+                  Contact
+                  <span
+                    className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
+                 ${activeSection === "contact" ? "w-full" : "w-0 group-hover:w-full"}`}
+                  />
+                </button>
+              </nav>
+              <div className="flex items-center gap-3 ml-6">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 hover:bg-primary/10 transition-colors">
+                  <AnimatedThemeToggler />
+                </div>
+              </div>
+              {session ? (
+                <Button
+                  onClick={() => navigate("/dashboard")}
+                  title={displayName}
+                  className="h-10 px-5 gap-2"
+                >
+                  <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs">
+                    {userInitial}
+                  </span>
+                  Go to Dashboard
                 </Button>
-              </>
-            )}
-          </div>
-          {/* Universal Theme-Compatible Scroll Progress Bar */}
-<div className="absolute bottom-0 left-0 w-full h-[3px] bg-foreground/10 overflow-visible">
-  <motion.div
-    style={{ scaleX }}
-    className="relative h-full w-full origin-left"
-  >
-    {/* Gradient fill using theme CSS variables */}
-    <div
-      className="h-full w-full"
-      style={{
-        background:
-          "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent, var(--primary))) 50%, hsl(var(--primary)) 100%)",
-        boxShadow:
-          "0 0 10px hsl(var(--primary) / 0.55), 0 0 20px hsl(var(--primary) / 0.3)",
-      }}
-    />
-    {/* Glowing leading-edge dot */}
-    <motion.div
-      className="absolute top-1/2 right-0 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
-      style={{
-        background:
-          "radial-gradient(circle, hsl(var(--primary-foreground, 0 0% 100%)) 0%, hsl(var(--primary)) 75%)",
-        boxShadow:
-          "0 0 8px 2px hsl(var(--primary) / 0.75), 0 0 16px 4px hsl(var(--primary) / 0.35)",
-      }}
-      animate={{ scale: [1, 1.25, 1] }}
-      transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-    />
-  </motion.div>
-</div>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="h-10 px-5 border-primary/30 text-primary hover:bg-primary/5"
+                    onClick={() => navigate("/auth")}
+                  >
+                    Sign In
+                  </Button>
+                  <Button className="h-10 px-5" onClick={() => navigate("/auth")}>
+                    Get Started
+                  </Button>
+                </>
+              )}
+            </div>
+            {/* Universal Theme-Compatible Scroll Progress Bar */}
+            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-foreground/10 overflow-visible">
+              <motion.div style={{ scaleX }} className="relative h-full w-full origin-left">
+                {/* Gradient fill using theme CSS variables */}
+                <div
+                  className="h-full w-full"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent, var(--primary))) 50%, hsl(var(--primary)) 100%)",
+                    boxShadow:
+                      "0 0 10px hsl(var(--primary) / 0.55), 0 0 20px hsl(var(--primary) / 0.3)",
+                  }}
+                />
+                {/* Glowing leading-edge dot */}
+                <motion.div
+                  className="absolute top-1/2 right-0 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(circle, hsl(var(--primary-foreground, 0 0% 100%)) 0%, hsl(var(--primary)) 75%)",
+                    boxShadow:
+                      "0 0 8px 2px hsl(var(--primary) / 0.75), 0 0 16px 4px hsl(var(--primary) / 0.35)",
+                  }}
+                  animate={{ scale: [1, 1.25, 1] }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </motion.div>
+            </div>
           </div>
 
           <div className="md:hidden">
-            <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X className="w-6 h-6 text-primary" /> : <Menu className="w-6 h-6 text-primary" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6 text-primary" />
+              ) : (
+                <Menu className="w-6 h-6 text-primary" />
+              )}
             </Button>
           </div>
         </div>
 
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -395,7 +407,11 @@ const Index = () => {
                   </Button>
                 ) : (
                   <>
-                    <Button variant="outline" className="w-full justify-center" onClick={() => navigate("/auth")}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => navigate("/auth")}
+                    >
                       Sign In
                     </Button>
                     <Button className="w-full justify-center" onClick={() => navigate("/auth")}>
@@ -409,7 +425,7 @@ const Index = () => {
         </AnimatePresence>
       </header>
       <Hero />
-      
+
       {/* Features Section */}
       <section id="features" className="container mx-auto py-14 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
@@ -422,16 +438,33 @@ const Index = () => {
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Comprehensive Health Tracking</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to monitor, analyze, and improve your health in one powerful platform
+              Everything you need to monitor, analyze, and improve your health in one powerful
+              platform
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: Brain, title: "AI Health Assistant", desc: "Get instant symptom analysis with severity assessment and personalized recommendations" },
-              { icon: TrendingUp, title: "Health Analytics", desc: "Track your health metrics with visual analytics and trend analysis over time" },
-              { icon: Clock, title: "Complete History", desc: "Maintain detailed records of all consultations and health events in one place" },
-              { icon: Shield, title: "Emergency Resources", desc: "Quick access to emergency contacts and critical health information when needed" },
+              {
+                icon: Brain,
+                title: "AI Health Assistant",
+                desc: "Get instant symptom analysis with severity assessment and personalized recommendations",
+              },
+              {
+                icon: TrendingUp,
+                title: "Health Analytics",
+                desc: "Track your health metrics with visual analytics and trend analysis over time",
+              },
+              {
+                icon: Clock,
+                title: "Complete History",
+                desc: "Maintain detailed records of all consultations and health events in one place",
+              },
+              {
+                icon: Shield,
+                title: "Emergency Resources",
+                desc: "Quick access to emergency contacts and critical health information when needed",
+              },
             ].map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -493,7 +526,12 @@ const Index = () => {
                 >
                   {index !== howItWorksSteps.length - 1 && (
                     <div className="hidden md:block absolute top-[148px] left-[calc(100%-10px)] w-20 lg:w-24 h-12 z-20 pointer-events-none">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" fill="none" aria-hidden="true">
+                      <svg
+                        className="w-full h-full overflow-visible"
+                        viewBox="0 0 100 48"
+                        fill="none"
+                        aria-hidden="true"
+                      >
                         <path
                           d="M8 35 C28 6, 72 6, 92 35"
                           stroke="hsl(var(--primary))"
@@ -537,7 +575,7 @@ const Index = () => {
 
       {/* Benefits Section */}
       <section id="why-choose" className="container mx-auto py-20 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -546,7 +584,9 @@ const Index = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Smart Health Tracker</h2>
-            <p className="text-muted-foreground text-lg">Powerful features that make health management effortless</p>
+            <p className="text-muted-foreground text-lg">
+              Powerful features that make health management effortless
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -555,7 +595,8 @@ const Index = () => {
               <div>
                 <h3 className="font-bold text-lg mb-2">AI-Powered Insights</h3>
                 <p className="text-muted-foreground">
-                  Advanced AI algorithms analyze your symptoms and provide evidence-based recommendations instantly
+                  Advanced AI algorithms analyze your symptoms and provide evidence-based
+                  recommendations instantly
                 </p>
               </div>
             </div>
@@ -565,7 +606,8 @@ const Index = () => {
               <div>
                 <h3 className="font-bold text-lg mb-2">Comprehensive Tracking</h3>
                 <p className="text-muted-foreground">
-                  Monitor multiple health metrics including vitals, symptoms, medications, and lifestyle factors
+                  Monitor multiple health metrics including vitals, symptoms, medications, and
+                  lifestyle factors
                 </p>
               </div>
             </div>
@@ -575,7 +617,8 @@ const Index = () => {
               <div>
                 <h3 className="font-bold text-lg mb-2">Privacy & Security</h3>
                 <p className="text-muted-foreground">
-                  Your health data is encrypted and stored securely with industry-leading security standards
+                  Your health data is encrypted and stored securely with industry-leading security
+                  standards
                 </p>
               </div>
             </div>
@@ -585,7 +628,8 @@ const Index = () => {
               <div>
                 <h3 className="font-bold text-lg mb-2">Brain Games</h3>
                 <p className="text-muted-foreground">
-                  Engage in cognitive exercises to keep your mind sharp while tracking mental wellness
+                  Engage in cognitive exercises to keep your mind sharp while tracking mental
+                  wellness
                 </p>
               </div>
             </div>
@@ -605,7 +649,8 @@ const Index = () => {
               <div>
                 <h3 className="font-bold text-lg mb-2">Health Education</h3>
                 <p className="text-muted-foreground">
-                  Access curated health facts and educational content to improve your health literacy
+                  Access curated health facts and educational content to improve your health
+                  literacy
                 </p>
               </div>
             </div>
@@ -613,63 +658,69 @@ const Index = () => {
         </motion.div>
       </section>
 
-          {/* Testimonials Section */}
+      {/* Testimonials Section */}
       <section id="reviews" className="bg-muted py-20 px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5 }}
-              className="max-w-4xl mx-auto"
-            >
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">What Our Users Say</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Join thousands of satisfied users taking control of their health
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              What Our Users Say
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Join thousands of satisfied users taking control of their health
+            </p>
+          </div>
+
+          <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
+            <CardContent className="p-8 md:p-10">
+              <div className="text-center min-h-[220px] flex flex-col justify-center">
+                <div className="flex justify-center gap-1.5 mb-5">
+                  {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+
+                <p className="text-foreground text-lg md:text-xl italic leading-8 max-w-3xl mx-auto mb-7">
+                  "{testimonials[activeTestimonial].content}"
                 </p>
+
+                <div className="mb-6">
+                  <p className="text-foreground text-lg font-bold mb-1">
+                    {testimonials[activeTestimonial].name}
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    {testimonials[activeTestimonial].role}
+                  </p>
+                </div>
+
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  {testimonials.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveTestimonial(i)}
+                      aria-label={`Show testimonial ${i + 1}`}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === activeTestimonial
+                          ? "w-8 h-2 bg-primary"
+                          : "w-2 h-2 bg-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
-
-              <Card className="bg-card border-border rounded-xl shadow-sm overflow-hidden">
-                <CardContent className="p-8 md:p-10">
-                  <div className="text-center min-h-[220px] flex flex-col justify-center">
-                    <div className="flex justify-center gap-1.5 mb-5">
-                      {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
-                        <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-
-                    <p className="text-foreground text-lg md:text-xl italic leading-8 max-w-3xl mx-auto mb-7">
-                      "{testimonials[activeTestimonial].content}"
-                    </p>
-
-                    <div className="mb-6">
-                      <p className="text-foreground text-lg font-bold mb-1">{testimonials[activeTestimonial].name}</p>
-                      <p className="text-muted-foreground text-sm">{testimonials[activeTestimonial].role}</p>
-                    </div>
-
-                    <div className="flex justify-center items-center gap-2 mt-4">
-                      {testimonials.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setActiveTestimonial(i)}
-                          aria-label={`Show testimonial ${i + 1}`}
-                          className={`rounded-full transition-all duration-300 ${
-                            i === activeTestimonial
-                              ? "w-8 h-2 bg-primary"
-                              : "w-2 h-2 bg-muted-foreground/40"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </section>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
 
       {/* FAQ Section */}
-       <section id="faq" className="container mx-auto py-20 px-4">
-        <motion.div 
+      <section id="faq" className="container mx-auto py-20 px-4">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -678,49 +729,81 @@ const Index = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+            <p className="text-muted-foreground text-lg">
+              Everything you need to know about Smart Health Tracker
+            </p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
-              <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                Is this a replacement for visiting a doctor?
+              </AccordionTrigger>
               <AccordionContent>
-                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+                No, Smart Health Tracker is designed to provide general health information and help
+                you understand when to seek professional medical care. It should never replace
+                professional medical advice, diagnosis, or treatment. Always consult with qualified
+                healthcare providers for medical concerns.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-2">
-              <AccordionTrigger className="text-left">How accurate is the AI health analysis?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                How accurate is the AI health analysis?
+              </AccordionTrigger>
               <AccordionContent>
-                Our AI is trained on medical knowledge bases and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.
+                Our AI is trained on medical knowledge bases and provides evidence-based insights.
+                However, it's designed for educational purposes and preliminary assessment only. The
+                accuracy depends on the quality and completeness of information you provide. For
+                definitive diagnosis, always consult healthcare professionals.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-3">
-              <AccordionTrigger className="text-left">Is my health data secure and private?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                Is my health data secure and private?
+              </AccordionTrigger>
               <AccordionContent>
-                Yes, we take data security seriously. All health data is encrypted both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.
+                Yes, we take data security seriously. All health data is encrypted both in transit
+                and at rest. We comply with healthcare data protection standards and never share
+                your personal health information with third parties without your explicit consent.
+                You have full control over your data.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-4">
-              <AccordionTrigger className="text-left">What features are included in the platform?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                What features are included in the platform?
+              </AccordionTrigger>
               <AccordionContent>
-                The platform includes AI-powered symptom analysis, health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.
+                The platform includes AI-powered symptom analysis, health metrics tracking,
+                consultation history, brain games for cognitive health, emergency resources, health
+                education facts, personalized dashboards, and comprehensive analytics. All features
+                are designed to work together for holistic health management.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-5">
-              <AccordionTrigger className="text-left">Can I use this for tracking chronic conditions?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                Can I use this for tracking chronic conditions?
+              </AccordionTrigger>
               <AccordionContent>
-                Yes, the platform is excellent for tracking chronic conditions over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.
+                Yes, the platform is excellent for tracking chronic conditions over time. You can
+                monitor symptoms, track medications, record vitals, and observe trends. This
+                information can be valuable to share with your healthcare provider. However, always
+                follow your doctor's treatment plan for managing chronic conditions.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-6">
-              <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
+              <AccordionTrigger className="text-left">
+                Is there a mobile app available?
+              </AccordionTrigger>
               <AccordionContent>
-                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
+                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on
+                all devices - desktop, tablet, and mobile. You can access it through your web
+                browser and even add it to your home screen for a native app-like experience. No
+                separate app download required!
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -729,7 +812,7 @@ const Index = () => {
 
       {/* Final CTA Section */}
       <section className="bg-muted py-20 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -737,17 +820,28 @@ const Index = () => {
           className="max-w-4xl mx-auto text-center"
         >
           <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Take Control of Your Health?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Ready to Take Control of Your Health?
+          </h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already using Smart Health Tracker to monitor their health, 
-            understand their symptoms, and make informed decisions about their wellbeing.
+            Join thousands of users who are already using Smart Health Tracker to monitor their
+            health, understand their symptoms, and make informed decisions about their wellbeing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+            <Button
+              size="lg"
+              onClick={() => navigate("/auth")}
+              className="gap-2 group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+            >
               Get Started Free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="transition-all duration-300 active:scale-95 hover:bg-muted">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/auth")}
+              className="transition-all duration-300 active:scale-95 hover:bg-muted"
+            >
               Sign In
             </Button>
           </div>
@@ -756,124 +850,263 @@ const Index = () => {
           </p>
         </motion.div>
       </section>
-      <footer id="contact" className="border-t border-border bg-gradient-to-b from-background to-muted/30">
-  <div className="container mx-auto px-4 py-12 ">
-    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-10">
-      {/* Brand Column */}
-<div className="lg:col-span-2">
-  <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-    <Activity className="w-6 h-6 text-primary" />
-    <span className="text-foreground font-bold">
-      Symptom Scribe
-    </span>
-  </h3>
-  <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-sm">
-    Your intelligent health companion for symptom analysis, health tracking, and wellness insights powered by AI.
-  </p>
-  {/* GitHub Link */}
-  <a 
-    href="https://github.com/mohdmaazgani/symptom-scribe-clean.git" 
-    target="_blank" 
-    rel="noopener noreferrer"
-    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-accent transition-all duration-300 text-sm w-fit"
-  >
-    <Github className="w-4 h-4" />
-    <span>View on GitHub</span>
-    <ExternalLink className="w-3 h-3" />
-  </a>
-</div>
-      
-      {/* Platform Column */}
-      <div>
-        <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          Platform
-        </h4>
-        <ul className="space-y-3 text-sm">
-          <li><Link to="/chat" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> AI Symptom Checker</span></Link></li>
-          <li><Link to="/metrics" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Metrics</span></Link></li>
-          <li><Link to="/history" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Consultation History</span></Link></li>
-          <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Brain Training</span></Link></li>
-        </ul>
-      </div>
-      
-      {/* Resources Column */}
-      <div>
-        <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-primary" />
-          Resources
-        </h4>
-        <ul className="space-y-3 text-sm">
-          <li><Link to="/health-library" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Library</span></Link></li>
-          <li><Link to="/emergency" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "><Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Emergency Guide</span></Link></li>
-          <li>
-          <button
-            onClick={() => {
-              const faq = document.getElementById("faq");
-              if (faq) {
-                faq.scrollIntoView({ behavior: "smooth" });
-              } else {
-                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-              }
-            }}
-            className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
-          >
-            <HelpCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
-            <span className="transition-transform duration-300 group-hover:translate-x-1"> FAQ</span>
-          </button>
-        </li>
-          <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Blog</span></Link></li>
-        </ul>
-      </div>
-      
-      {/* Legal Column */}
-      <div>
-        <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
-          <Shield className="w-4 h-4 text-primary" />
-          Legal
-        </h4>
-        <ul className="space-y-3 text-sm">
-          <li><Link to="/privacy" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Privacy Policy</span></Link></li>
-          <li><Link to="/terms" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Terms of Service</span></Link></li>
-          <li><Link to="/disclaimer" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Medical Disclaimer</span></Link></li>
-          <li><Link to="/contact" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Contact Support</span></Link></li>
-        </ul>
-      </div>
-    </div>
-    
-    {/* Bottom Bar - Centered */}
-    <div className="border-t border-border pt-6 mt-4">
-      <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <p className="text-muted-foreground">
-          © 2026 Symptom Scribe. All rights reserved.
-        </p>
-        <div className="flex gap-6">
-          <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Privacy
-          </Link>
-          <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Terms
-          </Link>
-          <Link to="/disclaimer" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Disclaimer
-          </Link>
-          <Link to="/accessibility" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Accessibility
-          </Link>
+      <footer
+        id="contact"
+        className="border-t border-border bg-gradient-to-b from-background to-muted/30"
+      >
+        <div className="container mx-auto px-4 py-12 ">
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-10">
+            {/* Brand Column */}
+            <div className="lg:col-span-2">
+              <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                <Activity className="w-6 h-6 text-primary" />
+                <span className="text-foreground font-bold">Symptom Scribe</span>
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-sm">
+                Your intelligent health companion for symptom analysis, health tracking, and
+                wellness insights powered by AI.
+              </p>
+              {/* GitHub Link */}
+              <a
+                href="https://github.com/mohdmaazgani/symptom-scribe-clean.git"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-accent transition-all duration-300 text-sm w-fit"
+              >
+                <Github className="w-4 h-4" />
+                <span>View on GitHub</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* Platform Column */}
+            <div>
+              <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Platform
+              </h4>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link
+                    to="/chat"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      AI Symptom Checker
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/metrics"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Health Metrics
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/history"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Consultation History
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/brain-games"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Brain Training
+                    </span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary" />
+                Resources
+              </h4>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link
+                    to="/health-library"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Health Library
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/emergency"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "
+                  >
+                    <Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Emergency Guide
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      const faq = document.getElementById("faq");
+                      if (faq) {
+                        faq.scrollIntoView({ behavior: "smooth" });
+                      } else {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                      }
+                    }}
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <HelpCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      FAQ
+                    </span>
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    to="/blog"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Blog
+                    </span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal Column */}
+            <div>
+              <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                Legal
+              </h4>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link
+                    to="/privacy"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Privacy Policy
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/terms"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Terms of Service
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/disclaimer"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Medical Disclaimer
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/contact"
+                    className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
+                  >
+                    <Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      {" "}
+                      Contact Support
+                    </span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar - Centered */}
+          <div className="border-t border-border pt-6 mt-4">
+            <div className="flex flex-col items-center justify-center gap-4 text-center">
+              <p className="text-muted-foreground">© 2026 Symptom Scribe. All rights reserved.</p>
+              <div className="flex gap-6">
+                <Link
+                  to="/privacy"
+                  className="text-muted-foreground hover:text-primary transition-colors text-xs"
+                >
+                  Privacy
+                </Link>
+                <Link
+                  to="/terms"
+                  className="text-muted-foreground hover:text-primary transition-colors text-xs"
+                >
+                  Terms
+                </Link>
+                <Link
+                  to="/disclaimer"
+                  className="text-muted-foreground hover:text-primary transition-colors text-xs"
+                >
+                  Disclaimer
+                </Link>
+                <Link
+                  to="/accessibility"
+                  className="text-muted-foreground hover:text-primary transition-colors text-xs"
+                >
+                  Accessibility
+                </Link>
+              </div>
+            </div>
+
+            {/* Medical Disclaimer - Subtle */}
+            <div className="text-center mt-6 pt-4 border-t border-border/50">
+              <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
+                <AlertCircle className="w-3 h-3" />
+                <span>
+                  For informational purposes only. Always consult a qualified healthcare provider
+                  for medical advice.
+                </span>
+                <Heart className="w-3 h-3" />
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      {/* Medical Disclaimer - Subtle */}
-      <div className="text-center mt-6 pt-4 border-t border-border/50">
-        <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
-          <AlertCircle className="w-3 h-3" />
-          <span>For informational purposes only. Always consult a qualified healthcare provider for medical advice.</span>
-          <Heart className="w-3 h-3" />
-        </p>
-      </div>
-    </div>
-  </div>
-</footer>
+      </footer>
       <BackToTop />
     </div>
   );

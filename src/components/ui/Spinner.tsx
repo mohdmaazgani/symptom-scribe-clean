@@ -14,7 +14,11 @@ const sizeMap = {
 
 const Spinner = ({ size = "md", className, label = "Loading..." }: SpinnerProps) => {
   return (
-    <span role="status" aria-label={label} className={cn("inline-flex items-center justify-center", className)}>
+    <span
+      role="status"
+      aria-label={label}
+      className={cn("inline-flex items-center justify-center", className)}
+    >
       <span
         className={cn(
           "animate-spin rounded-full border-current border-t-transparent",

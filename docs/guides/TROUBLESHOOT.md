@@ -8,17 +8,17 @@ This document provides solutions to common setup, configuration, authentication,
 
 # Table of Contents
 
-* Environment Configuration Issues
-* Dependency Installation Problems
-* Supabase Authentication Issues
-* API Key & Configuration Errors
-* Development Server Issues
-* Port Conflicts
-* Build Failures
-* GitHub API Rate Limits
-* Runtime Errors
-* Debugging Tips
-* Frequently Asked Questions
+- Environment Configuration Issues
+- Dependency Installation Problems
+- Supabase Authentication Issues
+- API Key & Configuration Errors
+- Development Server Issues
+- Port Conflicts
+- Build Failures
+- GitHub API Rate Limits
+- Runtime Errors
+- Debugging Tips
+- Frequently Asked Questions
 
 ---
 
@@ -121,10 +121,10 @@ Use the version recommended in the project documentation.
 
 ### Possible Causes
 
-* Incorrect Supabase URL
-* Invalid anonymous key
-* User account not confirmed
-* Supabase service outage
+- Incorrect Supabase URL
+- Invalid anonymous key
+- User account not confirmed
+- Supabase service outage
 
 ### Solution
 
@@ -137,8 +137,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 Check the Supabase Dashboard:
 
-* Authentication → Users
-* Authentication → Providers
+- Authentication → Users
+- Authentication → Providers
 
 ---
 
@@ -155,7 +155,7 @@ Clear local storage and sign in again.
 Open browser DevTools:
 
 ```javascript
-localStorage.clear()
+localStorage.clear();
 ```
 
 Refresh the page and log in again.
@@ -224,9 +224,9 @@ F12 → Console
 
 Look for:
 
-* Import errors
-* Missing environment variables
-* Failed API requests
+- Import errors
+- Missing environment variables
+- Failed API requests
 
 ---
 
@@ -307,9 +307,9 @@ API rate limit exceeded
 
 ### Solution
 
-* Wait for the rate limit window to reset.
-* Use authenticated GitHub requests if supported.
-* Reduce unnecessary API polling.
+- Wait for the rate limit window to reset.
+- Use authenticated GitHub requests if supported.
+- Reduce unnecessary API polling.
 
 ---
 
@@ -325,10 +325,10 @@ Requests fail unexpectedly.
 
 Check:
 
-* Supabase project status
-* Network connectivity
-* Browser console logs
-* Environment configuration
+- Supabase project status
+- Network connectivity
+- Browser console logs
+- Environment configuration
 
 ---
 
@@ -342,12 +342,12 @@ Supabase edge functions return missing configuration or server credential errors
 
 Keep browser variables in `.env.local`, and configure edge-function secrets in Supabase instead. Common runtime secrets are:
 
-* `GEMINI_API_KEY` for symptom analysis
-* `SUPABASE_URL` and `SUPABASE_ANON_KEY` for auth-validating functions
-* `SUPABASE_SERVICE_ROLE_KEY` for account-deletion functions
-* `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` for emergency SMS alerts
-* `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for optional Upstash-backed rate limiting/cache support
-* `WEBHOOK_SECRET` for optional webhook-triggered cache invalidation
+- `GEMINI_API_KEY` for symptom analysis
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY` for auth-validating functions
+- `SUPABASE_SERVICE_ROLE_KEY` for account-deletion functions
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` for emergency SMS alerts
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for optional Upstash-backed rate limiting/cache support
+- `WEBHOOK_SECRET` for optional webhook-triggered cache invalidation
 
 Do not place these server-side secrets in `.env.local`.
 
@@ -364,8 +364,8 @@ Corrupted local data causes application errors.
 Clear storage:
 
 ```javascript
-localStorage.clear()
-sessionStorage.clear()
+localStorage.clear();
+sessionStorage.clear();
 ```
 
 Reload the application.
@@ -384,9 +384,9 @@ F12 → Console
 
 Monitor:
 
-* JavaScript errors
-* Network requests
-* Authentication failures
+- JavaScript errors
+- Network requests
+- Authentication failures
 
 ---
 
@@ -406,9 +406,9 @@ Fetch/XHR
 
 Review:
 
-* Request payloads
-* Response status codes
-* Failed requests
+- Request payloads
+- Response status codes
+- Failed requests
 
 ---
 
@@ -433,7 +433,7 @@ Your session may have expired or authentication data may be invalid.
 Try:
 
 ```javascript
-localStorage.clear()
+localStorage.clear();
 ```
 
 and sign in again.
@@ -476,11 +476,11 @@ Before opening an issue:
 3. Search existing GitHub Issues.
 4. Include:
 
-   * Operating System
-   * Browser version
-   * Error messages
-   * Steps to reproduce
-   * Screenshots if applicable
+   - Operating System
+   - Browser version
+   - Error messages
+   - Steps to reproduce
+   - Screenshots if applicable
 
 Providing detailed information helps maintainers resolve issues more efficiently.
 

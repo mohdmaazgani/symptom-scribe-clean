@@ -35,10 +35,7 @@ interface AllProvidersProps {
   initialEntries?: string[];
 }
 
-function AllProviders({
-  children,
-  initialEntries = ["/"],
-}: AllProvidersProps) {
+function AllProviders({ children, initialEntries = ["/"] }: AllProvidersProps) {
   const queryClient = createTestQueryClient();
   return (
     <QueryClientProvider client={queryClient}>

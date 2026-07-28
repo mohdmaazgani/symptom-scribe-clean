@@ -29,24 +29,24 @@ export default defineConfig(({ mode }) => ({
           {
             src: "pwa-64x64.png",
             sizes: "64x64",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "pwa-512x512.png",
             sizes: "512x512",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "maskable-icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "maskable"
-          }
+            purpose: "maskable",
+          },
         ],
       },
       workbox: {
@@ -83,12 +83,7 @@ export default defineConfig(({ mode }) => ({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: [
-        "src/**/*.test.{ts,tsx}",
-        "src/test/**",
-        "src/vite-env.d.ts",
-        "src/main.tsx",
-      ],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/vite-env.d.ts", "src/main.tsx"],
       reporter: ["text", "html"],
     },
   },

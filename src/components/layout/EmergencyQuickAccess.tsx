@@ -2,8 +2,15 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  LifeBuoy, X, PhoneCall, BookOpen, Navigation,
-  Loader2, CheckCircle2, AlertTriangle, Phone,
+  LifeBuoy,
+  X,
+  PhoneCall,
+  BookOpen,
+  Navigation,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  Phone,
 } from "lucide-react";
 import { showSuccess, showWarning, showError, showInfo } from "@/lib/toast-helpers";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +57,9 @@ const EmergencyQuickAccess = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           setProfileLoading(false);
           return;
@@ -95,7 +104,9 @@ const EmergencyQuickAccess = () => {
   };
 
   const handleAlertContact = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       showWarning("Authentication Required", "Please sign in to alert your emergency contact");
       return;
@@ -227,7 +238,10 @@ const EmergencyQuickAccess = () => {
                     <div>
                       <p className="font-semibold">No emergency contact configured</p>
                       <button
-                        onClick={() => { setOpen(false); navigate("/profile"); }}
+                        onClick={() => {
+                          setOpen(false);
+                          navigate("/profile");
+                        }}
                         className="underline underline-offset-2 mt-0.5"
                       >
                         Add one in your profile

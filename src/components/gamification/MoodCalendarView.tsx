@@ -25,7 +25,6 @@ const MOOD_COLOR: Record<string, string> = {
   bad: "#f97316",
   terrible: "#ef4444",
 };
- 
 
 export default function MoodCalendarView({ moodLogs, onLogMood }: Props) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -60,14 +59,15 @@ export default function MoodCalendarView({ moodLogs, onLogMood }: Props) {
   }
 
   const firstDow = new Date(days[0].date).getDay();
-  const paddedDays: (typeof days[0] | null)[] = [...Array(firstDow).fill(null), ...days];
+  const paddedDays: ((typeof days)[0] | null)[] = [...Array(firstDow).fill(null), ...days];
 
   const moodCounts: Record<string, number> = {};
-  moodLogs.forEach((m) => { moodCounts[m.mood] = (moodCounts[m.mood] ?? 0) + 1; });
+  moodLogs.forEach((m) => {
+    moodCounts[m.mood] = (moodCounts[m.mood] ?? 0) + 1;
+  });
 
   return (
     <div className="space-y-6">
-
       {/* Mood Logger card */}
       <div className="rounded-xl border border-border bg-card p-6 space-y-5">
         <div>
@@ -89,7 +89,10 @@ export default function MoodCalendarView({ moodLogs, onLogMood }: Props) {
               {MOODS.map((m) => (
                 <button
                   key={m.key}
-                  onClick={() => { setSelectedMood(m.key); setLogStatus("idle"); }}
+                  onClick={() => {
+                    setSelectedMood(m.key);
+                    setLogStatus("idle");
+                  }}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                     selectedMood === m.key
                       ? "border-primary scale-110 bg-primary/10"
@@ -134,34 +137,49 @@ export default function MoodCalendarView({ moodLogs, onLogMood }: Props) {
       <div className="rounded-xl border border-border bg-card p-6 space-y-4">
         <div>
           <h3 className="font-semibold text-foreground">Mood Calendar — Last 30 Days</h3>
-          <p className="text-sm text-muted-foreground">See how your mood has changed over the past month</p>
+          <p className="text-sm text-muted-foreground">
+            See how your mood has changed over the past month
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           {MOODS.map((m) => (
             <span key={m.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: m.color }} />
+              <span
+                className="w-3 h-3 rounded-full inline-block"
+                style={{ backgroundColor: m.color }}
+              />
               {m.label}
             </span>
           ))}
         </div>
 
         <div className="grid grid-cols-7 gap-1.5">
-          {["S","M","T","W","T","F","S"].map((d, i) => (
-            <div key={i} className="text-center text-xs text-muted-foreground font-medium py-1">{d}</div>
+          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            <div key={i} className="text-center text-xs text-muted-foreground font-medium py-1">
+              {d}
+            </div>
           ))}
           {paddedDays.map((day, i) =>
-            day === null ? <div key={`pad-${i}`} /> : (
+            day === null ? (
+              <div key={`pad-${i}`} />
+            ) : (
               <div
                 key={day.date}
                 title={day.mood ? `${day.date}: ${day.mood}` : day.date}
                 className={`h-10 rounded-lg flex items-center justify-center text-xs font-medium transition-all ${
-                  day.date === today ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                  day.date === today
+                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                    : ""
                 }`}
                 style={{
-                  backgroundColor: day.mood ? MOOD_COLOR[day.mood] + "33" : "rgba(255,255,255,0.05)",
+                  backgroundColor: day.mood
+                    ? MOOD_COLOR[day.mood] + "33"
+                    : "rgba(255,255,255,0.05)",
                   color: day.mood ? MOOD_COLOR[day.mood] : "rgb(156,163,175)",
-                  border: day.mood ? `1px solid ${MOOD_COLOR[day.mood]}66` : "1px solid rgba(255,255,255,0.05)",
+                  border: day.mood
+                    ? `1px solid ${MOOD_COLOR[day.mood]}66`
+                    : "1px solid rgba(255,255,255,0.05)",
                 }}
               >
                 {day.dayNum}
@@ -173,10 +191,17 @@ export default function MoodCalendarView({ moodLogs, onLogMood }: Props) {
         {moodLogs.length > 0 ? (
           <div className="grid grid-cols-5 gap-2 pt-2">
             {MOODS.map((m) => (
-              <div key={m.key} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/20">
+              <div
+                key={m.key}
+                className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/20"
+              >
                 <span className="text-xl">{m.emoji}</span>
-                <span className="text-base font-bold text-foreground">{moodCounts[m.key] ?? 0}</span>
-                <span className="text-xs text-muted-foreground text-center leading-tight">{m.label} days</span>
+                <span className="text-base font-bold text-foreground">
+                  {moodCounts[m.key] ?? 0}
+                </span>
+                <span className="text-xs text-muted-foreground text-center leading-tight">
+                  {m.label} days
+                </span>
               </div>
             ))}
           </div>

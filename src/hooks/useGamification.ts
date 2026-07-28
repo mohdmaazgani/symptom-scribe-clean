@@ -18,11 +18,11 @@ function useCurrentUser() {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -82,10 +82,7 @@ export function useChallenges() {
   return useQuery({
     queryKey: ["challenges"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("challenges")
-        .select("*")
-        .order("created_at");
+      const { data, error } = await supabase.from("challenges").select("*").order("created_at");
       if (error) throw error;
       return data as Challenge[];
     },
@@ -139,7 +136,7 @@ export function useCheckInChallenge() {
       if (fetchErr) throw fetchErr;
 
       const now = new Date();
-      const todayDateStr = now.toISOString().split("T")[0]; 
+      const todayDateStr = now.toISOString().split("T")[0];
       const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
 
       const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;

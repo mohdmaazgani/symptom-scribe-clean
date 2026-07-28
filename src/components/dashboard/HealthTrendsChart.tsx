@@ -42,7 +42,11 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
     records.forEach((record) => {
       const dateStr = new Date(record.recorded_at).toISOString().split("T")[0];
       if (dailyValues[dateStr]) {
-        const val = record.value as { value?: number; systolic?: number; diastolic?: number } | null;
+        const val = record.value as {
+          value?: number;
+          systolic?: number;
+          diastolic?: number;
+        } | null;
         if (record.metric_type === "heart_rate" && val?.value) {
           dailyValues[dateStr].hr.push(Number(val.value));
         } else if (record.metric_type === "sleep" && val?.value) {
@@ -66,9 +70,16 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
         return {
           date: dateStr,
           label,
-          "Heart Rate": hrArr.length > 0 ? Math.round(hrArr.reduce((a, b) => a + b, 0) / hrArr.length) : null,
-          "Sleep Duration": sleepArr.length > 0 ? Math.round((sleepArr.reduce((a, b) => a + b, 0) / sleepArr.length) * 10) / 10 : null,
-          "Daily Steps": stepsArr.length > 0 ? Math.round(stepsArr.reduce((a, b) => a + b, 0) / stepsArr.length) : null,
+          "Heart Rate":
+            hrArr.length > 0 ? Math.round(hrArr.reduce((a, b) => a + b, 0) / hrArr.length) : null,
+          "Sleep Duration":
+            sleepArr.length > 0
+              ? Math.round((sleepArr.reduce((a, b) => a + b, 0) / sleepArr.length) * 10) / 10
+              : null,
+          "Daily Steps":
+            stepsArr.length > 0
+              ? Math.round(stepsArr.reduce((a, b) => a + b, 0) / stepsArr.length)
+              : null,
         };
       });
   }, [records]);
@@ -87,7 +98,9 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
     }
 
     const hrVals = chartData.map((d) => d["Heart Rate"]).filter((v): v is number => v !== null);
-    const sleepVals = chartData.map((d) => d["Sleep Duration"]).filter((v): v is number => v !== null);
+    const sleepVals = chartData
+      .map((d) => d["Sleep Duration"])
+      .filter((v): v is number => v !== null);
     const stepVals = chartData.map((d) => d["Daily Steps"]).filter((v): v is number => v !== null);
 
     const parts: string[] = [];
@@ -96,7 +109,8 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
       parts.push(`Average heart rate: ${avgHr} bpm across ${hrVals.length} log days`);
     }
     if (sleepVals.length > 0) {
-      const avgSleep = Math.round((sleepVals.reduce((a, b) => a + b, 0) / sleepVals.length) * 10) / 10;
+      const avgSleep =
+        Math.round((sleepVals.reduce((a, b) => a + b, 0) / sleepVals.length) * 10) / 10;
       parts.push(`Average sleep: ${avgSleep} hours across ${sleepVals.length} log days`);
     }
     if (stepVals.length > 0) {
@@ -187,17 +201,26 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
 
         {!hasData ? (
           <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-muted/20 border border-dashed rounded-xl">
-            <TrendingUp className="w-12 h-12 text-muted-foreground/60 mb-3 animate-pulse" aria-hidden="true" />
+            <TrendingUp
+              className="w-12 h-12 text-muted-foreground/60 mb-3 animate-pulse"
+              aria-hidden="true"
+            />
             <h4 className="font-bold text-sm text-foreground">No Trend Data Available</h4>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-relaxed">
-              No heart rate, sleep duration, or step logs detected for the last 30 days. Log your metrics in the Metrics tab to view your trends.
+              No heart rate, sleep duration, or step logs detected for the last 30 days. Log your
+              metrics in the Metrics tab to view your trends.
             </p>
           </div>
         ) : (
           <div className="h-[300px] w-full mt-2" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  opacity={0.4}
+                />
                 <XAxis
                   dataKey="label"
                   stroke="var(--muted-foreground)"
@@ -206,9 +229,11 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
                   axisLine={false}
                   dy={10}
                 />
-                
+
                 {/* Primary Left Y-Axis for heart rate (bpm) and sleep (hours) */}
-                {(activeFilter === "all" || activeFilter === "heart_rate" || activeFilter === "sleep") && (
+                {(activeFilter === "all" ||
+                  activeFilter === "heart_rate" ||
+                  activeFilter === "sleep") && (
                   <YAxis
                     yAxisId="left"
                     stroke="var(--muted-foreground)"
@@ -242,7 +267,12 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
                   }}
                   itemStyle={{ padding: "2px 0" }}
                 />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "11px" }}
+                />
 
                 {/* Heart Rate Line */}
                 {(activeFilter === "all" || activeFilter === "heart_rate") && (
