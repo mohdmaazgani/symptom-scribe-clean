@@ -60,21 +60,13 @@ class ErrorBoundary extends Component<Props, State> {
           className="min-h-screen flex flex-col items-center justify-center p-6 text-center"
         >
           <h1 className="text-3xl font-bold mb-4">Something went wrong</h1>
-          <p className="mb-4">
-            An unexpected error occurred while rendering the application.
-          </p>
+          <p className="mb-4">An unexpected error occurred while rendering the application.</p>
 
           <div className="flex gap-3 mb-6">
-            <button
-              onClick={this.handleReset}
-              className="px-4 py-2 rounded border"
-            >
+            <button onClick={this.handleReset} className="px-4 py-2 rounded border">
               Try Again
             </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded border"
-            >
+            <button onClick={() => window.location.reload()} className="px-4 py-2 rounded border">
               Reload Application
             </button>
           </div>

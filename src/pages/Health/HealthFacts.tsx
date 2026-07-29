@@ -2,8 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, RefreshCw, BookOpen, Heart, Brain,
-  Dna, ExternalLink, Share2, ThumbsUp, Bookmark
+  Sparkles,
+  RefreshCw,
+  BookOpen,
+  Heart,
+  Brain,
+  Dna,
+  ExternalLink,
+  Share2,
+  ThumbsUp,
+  Bookmark,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showInfo } from "@/lib/toast-helpers";
@@ -26,7 +34,8 @@ const FACTS: HealthFact[] = [
     emoji: "🧠",
     hook: "Your brain eats itself while you sleep",
     fact: "Every night during deep sleep, your brain's glial cells physically shrink to let cerebrospinal fluid flush out toxic waste — including the amyloid plaques linked to Alzheimer's. It's essentially running a dishwasher cycle on itself.",
-    mindBlown: "People who consistently sleep less than 6 hours have up to 4× more amyloid buildup by age 60.",
+    mindBlown:
+      "People who consistently sleep less than 6 hours have up to 4× more amyloid buildup by age 60.",
     wikiTopic: "Glymphatic_system",
     color: "from-purple-500 to-indigo-500",
   },
@@ -36,7 +45,8 @@ const FACTS: HealthFact[] = [
     emoji: "🦠",
     hook: "You are 57% bacteria by cell count",
     fact: "Your body has roughly 30 trillion human cells — but 38 trillion bacterial cells. The bacteria in your gut collectively weigh about 1.5 kg, which is heavier than the average human brain.",
-    mindBlown: "Your gut bacteria produce about 90% of your body's serotonin — the 'happiness chemical' most people think comes from the brain.",
+    mindBlown:
+      "Your gut bacteria produce about 90% of your body's serotonin — the 'happiness chemical' most people think comes from the brain.",
     wikiTopic: "Gut_microbiota",
     color: "from-green-500 to-teal-500",
   },
@@ -46,7 +56,8 @@ const FACTS: HealthFact[] = [
     emoji: "❤️",
     hook: "Your heart creates enough pressure to squirt blood 9 metres",
     fact: "The left ventricle generates enough force with each beat to project blood about 9 metres into the air if the aorta were open. Over a lifetime, your heart beats around 3 billion times — without a single break.",
-    mindBlown: "The heart can keep beating even when disconnected from the body, as long as it has oxygen — it has its own electrical system.",
+    mindBlown:
+      "The heart can keep beating even when disconnected from the body, as long as it has oxygen — it has its own electrical system.",
     wikiTopic: "Cardiac_muscle",
     color: "from-red-500 to-pink-500",
   },
@@ -56,7 +67,8 @@ const FACTS: HealthFact[] = [
     emoji: "🧬",
     hook: "If your DNA were uncoiled, it would stretch to Pluto and back",
     fact: "Every single one of your ~37 trillion cells contains about 2 metres of DNA tightly coiled inside a nucleus 6 micrometres wide. All the DNA in your body, stretched end to end, would cover the distance to Pluto twice over.",
-    mindBlown: "Yet 8% of your entire genome is made up of ancient viral DNA from infections your ancestors survived millions of years ago.",
+    mindBlown:
+      "Yet 8% of your entire genome is made up of ancient viral DNA from infections your ancestors survived millions of years ago.",
     wikiTopic: "Human_genome",
     color: "from-blue-500 to-cyan-500",
   },
@@ -66,7 +78,8 @@ const FACTS: HealthFact[] = [
     emoji: "👁️",
     hook: "Your eyes can detect a single photon of light",
     fact: "Human eyes are sensitive enough to detect a single photon — the smallest possible unit of light. On a perfectly dark night, you could theoretically see a candle flame from 48 kilometres away.",
-    mindBlown: "Your eye moves about 100,000 times a day. To give your leg muscles the same workout, you'd need to walk 80 km.",
+    mindBlown:
+      "Your eye moves about 100,000 times a day. To give your leg muscles the same workout, you'd need to walk 80 km.",
     wikiTopic: "Photoreceptor_cell",
     color: "from-amber-500 to-yellow-500",
   },
@@ -76,7 +89,8 @@ const FACTS: HealthFact[] = [
     emoji: "🦴",
     hook: "Bone is stronger than reinforced concrete — pound for pound",
     fact: "Cubic inch for cubic inch, compact bone tissue can withstand forces of up to 170 MPa — stronger than reinforced concrete (about 40 MPa). Yet it's lightweight because of its hollow, honeycomb-like internal structure.",
-    mindBlown: "You get a completely new skeleton roughly every 10 years. Your bones are constantly being demolished by osteoclasts and rebuilt by osteoblasts in a process called remodelling.",
+    mindBlown:
+      "You get a completely new skeleton roughly every 10 years. Your bones are constantly being demolished by osteoclasts and rebuilt by osteoblasts in a process called remodelling.",
     wikiTopic: "Bone_remodeling",
     color: "from-stone-400 to-zinc-500",
   },
@@ -86,7 +100,8 @@ const FACTS: HealthFact[] = [
     emoji: "⚡",
     hook: "Pain signals travel slower than you'd think — 1 m/s for dull ache",
     fact: "Sharp pain travels at about 20 m/s, but slow throbbing pain crawls along C-fibres at just 0.5–2 m/s. That's why you feel a sharp sting first, then the dull ache arrives a second later — they're literally different signals on different fibres.",
-    mindBlown: "Your fastest nerve signals (touch, proprioception) travel at 120 m/s — roughly the speed of a fighter jet.",
+    mindBlown:
+      "Your fastest nerve signals (touch, proprioception) travel at 120 m/s — roughly the speed of a fighter jet.",
     wikiTopic: "Nerve_conduction_velocity",
     color: "from-yellow-500 to-orange-500",
   },
@@ -96,7 +111,8 @@ const FACTS: HealthFact[] = [
     emoji: "🫁",
     hook: "Your lungs have the surface area of a tennis court",
     fact: "Unfolded, the tiny air sacs (alveoli) in your lungs would cover about 70 square metres — roughly the size of a tennis court. This massive area lets your body exchange oxygen and CO₂ across hundreds of millions of tiny membranes every second.",
-    mindBlown: "You breathe around 22,000 times a day, and each breath moves air through about 2,400 km of airways — roughly the distance from London to Cairo.",
+    mindBlown:
+      "You breathe around 22,000 times a day, and each breath moves air through about 2,400 km of airways — roughly the distance from London to Cairo.",
     wikiTopic: "Pulmonary_alveolus",
     color: "from-sky-500 to-blue-500",
   },
@@ -106,7 +122,8 @@ const FACTS: HealthFact[] = [
     emoji: "🫀",
     hook: "Your liver can regrow from just 25% of itself",
     fact: "The liver is the only internal organ that can fully regenerate. In living donor transplants, surgeons remove up to 75% of a donor's liver — and both the donor's remaining liver and the transplanted portion regrow to full size within 8 weeks.",
-    mindBlown: "Your liver performs over 500 different chemical functions simultaneously, including making all of your blood-clotting proteins and filtering 1.4 litres of blood every single minute.",
+    mindBlown:
+      "Your liver performs over 500 different chemical functions simultaneously, including making all of your blood-clotting proteins and filtering 1.4 litres of blood every single minute.",
     wikiTopic: "Liver_regeneration",
     color: "from-rose-500 to-red-500",
   },
@@ -116,7 +133,8 @@ const FACTS: HealthFact[] = [
     emoji: "🧬",
     hook: "You shed and regrow your entire outer skin every 2–4 weeks",
     fact: "You lose about 30,000–40,000 skin cells every hour. By the time you finish reading this fact, you'll have shed several thousand cells. About 1.5 kg of dead skin cells flake off your body every year.",
-    mindBlown: "The dust in your home is largely made of your own shed skin. Dust mites eat it — so your house is essentially a farm for microscopic creatures feeding off you.",
+    mindBlown:
+      "The dust in your home is largely made of your own shed skin. Dust mites eat it — so your house is essentially a farm for microscopic creatures feeding off you.",
     wikiTopic: "Skin#Layers",
     color: "from-orange-400 to-amber-500",
   },
@@ -126,7 +144,8 @@ const FACTS: HealthFact[] = [
     emoji: "🛡️",
     hook: "Your immune system has memory going back decades",
     fact: "Memory B cells from infections or vaccines can survive for over 60 years inside your bone marrow — some studies have found antibody-producing cells still active in elderly patients from diseases they caught in childhood.",
-    mindBlown: "When a cancer tumour is detected early by immune cells, it can be held in a silent stand-off for years — neither growing nor being eliminated — in a state called 'immune equilibrium'.",
+    mindBlown:
+      "When a cancer tumour is detected early by immune cells, it can be held in a silent stand-off for years — neither growing nor being eliminated — in a state called 'immune equilibrium'.",
     wikiTopic: "Immunological_memory",
     color: "from-emerald-500 to-green-600",
   },
@@ -136,7 +155,8 @@ const FACTS: HealthFact[] = [
     emoji: "😴",
     hook: "You are literally paralysed every night — on purpose",
     fact: "During REM sleep, your brainstem actively sends signals to paralyse your voluntary muscles. This is called REM atonia and it stops you acting out your dreams. People with REM sleep behaviour disorder lack this mechanism and physically punch, kick and shout in their sleep.",
-    mindBlown: "Your brain during REM sleep shows electrical activity almost identical to when you are wide awake — the only reliable difference is the paralysis signal.",
+    mindBlown:
+      "Your brain during REM sleep shows electrical activity almost identical to when you are wide awake — the only reliable difference is the paralysis signal.",
     wikiTopic: "REM_sleep_behavior_disorder",
     color: "from-indigo-500 to-violet-500",
   },
@@ -146,7 +166,8 @@ const FACTS: HealthFact[] = [
     emoji: "🏃",
     hook: "Exercise literally grows new brain cells",
     fact: "Aerobic exercise triggers the release of BDNF (Brain-Derived Neurotrophic Factor), which stimulates neurogenesis — the birth of brand new neurons — primarily in the hippocampus, the region responsible for memory and learning.",
-    mindBlown: "Just 20 minutes of moderate exercise produces measurable improvements in memory and problem-solving for 2–3 hours afterward. It's more reliably effective than most nootropic supplements.",
+    mindBlown:
+      "Just 20 minutes of moderate exercise produces measurable improvements in memory and problem-solving for 2–3 hours afterward. It's more reliably effective than most nootropic supplements.",
     wikiTopic: "Neurobiological_effects_of_physical_exercise",
     color: "from-lime-500 to-green-500",
   },
@@ -156,7 +177,8 @@ const FACTS: HealthFact[] = [
     emoji: "🎯",
     hook: "Swearing actually reduces pain — scientifically proven",
     fact: "A 2009 study at Keele University found that participants who swore while holding their hand in ice-cold water could endure the pain significantly longer than those who repeated a neutral word. Swearing triggers an emotional response that activates the body's fight-or-flight pain-dampening system.",
-    mindBlown: "However, people who swear habitually get less pain relief from it — the effect diminishes with overuse, just like a drug tolerance.",
+    mindBlown:
+      "However, people who swear habitually get less pain relief from it — the effect diminishes with overuse, just like a drug tolerance.",
     wikiTopic: "Hypoalgesia",
     color: "from-fuchsia-500 to-pink-500",
   },
@@ -166,7 +188,8 @@ const FACTS: HealthFact[] = [
     emoji: "🧪",
     hook: "You share 60% of your DNA with a banana",
     fact: "Humans share approximately 60% of their genes with bananas, 85% with mice, and 98.8% with chimpanzees. The genes we share with bananas are largely the ones responsible for basic cellular machinery — like how cells divide and produce energy.",
-    mindBlown: "Two unrelated humans share 99.9% of their DNA. The entire genetic difference between any two people on Earth fits into about 3 million base pairs — out of 3 billion.",
+    mindBlown:
+      "Two unrelated humans share 99.9% of their DNA. The entire genetic difference between any two people on Earth fits into about 3 million base pairs — out of 3 billion.",
     wikiTopic: "Human_genetic_variation",
     color: "from-yellow-400 to-lime-500",
   },
@@ -176,7 +199,8 @@ const FACTS: HealthFact[] = [
     emoji: "👃",
     hook: "You can smell about 1 trillion different odours",
     fact: "A 2014 study in Science found humans can discriminate at least 1 trillion distinct smells — far exceeding the previously assumed 10,000. Your olfactory system has around 400 types of smell receptors that combine like a code to identify virtually unlimited combinations.",
-    mindBlown: "Smell is the only sense that bypasses the thalamus and connects directly to the amygdala and hippocampus — which is why a smell can trigger a vivid memory or strong emotion almost instantaneously.",
+    mindBlown:
+      "Smell is the only sense that bypasses the thalamus and connects directly to the amygdala and hippocampus — which is why a smell can trigger a vivid memory or strong emotion almost instantaneously.",
     wikiTopic: "Olfactory_system",
     color: "from-teal-400 to-cyan-500",
   },
@@ -186,7 +210,8 @@ const FACTS: HealthFact[] = [
     emoji: "💊",
     hook: "Fake surgery works just as well as real surgery — for some conditions",
     fact: "Multiple randomised controlled trials have found that sham knee surgery (where surgeons make incisions but do nothing) produces the same pain relief and functional improvement as actual arthroscopic surgery for osteoarthritis — even two years later.",
-    mindBlown: "The placebo effect works even when patients are told they're taking a placebo. This 'open-label placebo' still reduces IBS symptoms and chronic back pain — the brain doesn't need to be deceived to respond.",
+    mindBlown:
+      "The placebo effect works even when patients are told they're taking a placebo. This 'open-label placebo' still reduces IBS symptoms and chronic back pain — the brain doesn't need to be deceived to respond.",
     wikiTopic: "Placebo",
     color: "from-violet-500 to-purple-600",
   },
@@ -196,7 +221,8 @@ const FACTS: HealthFact[] = [
     emoji: "🩸",
     hook: "Red blood cells have no nucleus — and live only 120 days",
     fact: "Mature red blood cells eject their nucleus during development to maximise space for haemoglobin. This means they can carry ~270 million haemoglobin molecules per cell — but it also means they cannot repair themselves, so they die after ~120 days and are replaced.",
-    mindBlown: "Your bone marrow produces about 2 million new red blood cells every second to keep up with the die-off. In one day, you make roughly 200 billion new red blood cells.",
+    mindBlown:
+      "Your bone marrow produces about 2 million new red blood cells every second to keep up with the die-off. In one day, you make roughly 200 billion new red blood cells.",
     wikiTopic: "Red_blood_cell",
     color: "from-red-500 to-rose-600",
   },
@@ -206,7 +232,8 @@ const FACTS: HealthFact[] = [
     emoji: "🌡️",
     hook: "Normal body temperature is no longer 37°C",
     fact: "A landmark 2020 Stanford study analysed 677,000 temperature measurements and found the average human body temperature has been declining since the 1800s — and now sits closer to 36.6°C. The original 37°C was measured in a Prussian study in 1851 on a population that was chronically inflamed from widespread infections.",
-    mindBlown: "Researchers believe our lower temperatures today reflect reduced systemic inflammation — a result of modern medicine eliminating chronic bacterial infections that kept our immune systems perpetually activated.",
+    mindBlown:
+      "Researchers believe our lower temperatures today reflect reduced systemic inflammation — a result of modern medicine eliminating chronic bacterial infections that kept our immune systems perpetually activated.",
     wikiTopic: "Normal_human_body_temperature",
     color: "from-orange-500 to-red-500",
   },
@@ -216,7 +243,8 @@ const FACTS: HealthFact[] = [
     emoji: "🔬",
     hook: "Bacteria in your gut talk directly to your brain — via a nerve highway",
     fact: "The vagus nerve acts as a direct two-way communication cable between your gut and brain. Gut bacteria produce neurotransmitters (including GABA and serotonin precursors) that travel up this nerve and influence mood, anxiety, and even decision-making.",
-    mindBlown: "Germ-free mice (raised with no gut bacteria) show dramatically higher anxiety and stress responses. When given normal gut bacteria, their behaviour normalises — suggesting gut flora actively shape personality-level traits.",
+    mindBlown:
+      "Germ-free mice (raised with no gut bacteria) show dramatically higher anxiety and stress responses. When given normal gut bacteria, their behaviour normalises — suggesting gut flora actively shape personality-level traits.",
     wikiTopic: "Gut%E2%80%93brain_axis",
     color: "from-green-500 to-emerald-600",
   },
@@ -224,10 +252,26 @@ const FACTS: HealthFact[] = [
 
 const getCategoryIcon = (category: string) => {
   const c = category.toLowerCase();
-  if (c.includes("brain") || c.includes("nerve") || c.includes("sleep") || c.includes("pain")) return Brain;
-  if (c.includes("dna") || c.includes("gene") || c.includes("micro") || c.includes("blood") || c.includes("skin")) return Dna;
-  if (c.includes("research") || c.includes("placebo") || c.includes("nose") || c.includes("temp")) return BookOpen;
-  if (c.includes("exercise") || c.includes("lung") || c.includes("liver") || c.includes("bone") || c.includes("immune")) return Sparkles;
+  if (c.includes("brain") || c.includes("nerve") || c.includes("sleep") || c.includes("pain"))
+    return Brain;
+  if (
+    c.includes("dna") ||
+    c.includes("gene") ||
+    c.includes("micro") ||
+    c.includes("blood") ||
+    c.includes("skin")
+  )
+    return Dna;
+  if (c.includes("research") || c.includes("placebo") || c.includes("nose") || c.includes("temp"))
+    return BookOpen;
+  if (
+    c.includes("exercise") ||
+    c.includes("lung") ||
+    c.includes("liver") ||
+    c.includes("bone") ||
+    c.includes("immune")
+  )
+    return Sparkles;
   return Heart;
 };
 
@@ -328,80 +372,71 @@ const HealthFacts = () => {
       </div>
 
       {/* Current Fact Card */}
-      {currentFact && (() => {
-        const CardIcon = getCategoryIcon(currentFact.category);
-        return (
-          <div className="relative flex justify-center py-4">
-            {/* Decorative background cards — hidden on mobile to avoid overflow */}
-            <div className="absolute top-4 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[-6deg] opacity-40 scale-95 hidden sm:block" />
-            <div className="absolute top-2 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[6deg] opacity-60 scale-[0.98] hidden sm:block" />
+      {currentFact &&
+        (() => {
+          const CardIcon = getCategoryIcon(currentFact.category);
+          return (
+            <div className="relative flex justify-center py-4">
+              {/* Decorative background cards — hidden on mobile to avoid overflow */}
+              <div className="absolute top-4 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[-6deg] opacity-40 scale-95 hidden sm:block" />
+              <div className="absolute top-2 w-full max-w-2xl min-h-[320px] max-h-[70vh] rounded-xl bg-card border rotate-[6deg] opacity-60 scale-[0.98] hidden sm:block" />
 
-            <Card
-              onClick={handleCardClick}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleCardClick();
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              className="relative w-full max-w-2xl h-auto min-h-[320px] max-h-[70vh] cursor-pointer shadow-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              <div className="flashcard-container h-full">
-                <div className={`flashcard ${isFlipped ? "flipped" : ""}`}>
+              <Card
+                onClick={handleCardClick}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCardClick();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="relative w-full max-w-2xl h-auto min-h-[320px] max-h-[70vh] cursor-pointer shadow-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              >
+                <div className="flashcard-container h-full">
+                  <div className={`flashcard ${isFlipped ? "flipped" : ""}`}>
+                    {/* FRONT */}
+                    <div className="flashcard-front">
+                      <CardContent className="h-full flex flex-col items-center justify-between text-center p-6">
+                        <Badge className="text-base px-3 py-1 mt-2">{currentFact.category}</Badge>
 
-                  {/* FRONT */}
-                  <div className="flashcard-front">
-                    <CardContent className="h-full flex flex-col items-center justify-between text-center p-6">
+                        {/* Lucide icon instead of emoji */}
+                        <div
+                          className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center shadow-md`}
+                        >
+                          <CardIcon className="w-10 h-10 text-white" />
+                        </div>
 
-                      <Badge className="text-base px-3 py-1 mt-2">
-                        {currentFact.category}
-                      </Badge>
+                        <h2 className="text-2xl md:text-3xl font-bold leading-snug">
+                          {currentFact.hook}
+                        </h2>
 
-                      {/* Lucide icon instead of emoji */}
-                      <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center shadow-md`}>
-                        <CardIcon className="w-10 h-10 text-white" />
-                      </div>
+                        <p className="text-sm text-muted-foreground mb-2">Tap to Flip</p>
+                      </CardContent>
+                    </div>
 
-                      <h2 className="text-2xl md:text-3xl font-bold leading-snug">
-                        {currentFact.hook}
-                      </h2>
+                    {/* BACK */}
+                    <div className="flashcard-back h-full">
+                      <CardContent className="h-full flex flex-col justify-between p-6">
+                        <p className="text-lg md:text-xl leading-relaxed">{currentFact.fact}</p>
 
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Tap to Flip
-                      </p>
+                        <div className="p-4 rounded-lg bg-primary/10">
+                          <p className="font-medium text-sm md:text-base">
+                            🤯 {currentFact.mindBlown}
+                          </p>
+                        </div>
 
-                    </CardContent>
-                  </div>
-
-                  {/* BACK */}
-                  <div className="flashcard-back h-full">
-                    <CardContent className="h-full flex flex-col justify-between p-6">
-
-                      <p className="text-lg md:text-xl leading-relaxed">
-                        {currentFact.fact}
-                      </p>
-
-                      <div className="p-4 rounded-lg bg-primary/10">
-                        <p className="font-medium text-sm md:text-base">
-                          🤯 {currentFact.mindBlown}
+                        <p className="text-center text-sm text-muted-foreground">
+                          Tap again for next fact →
                         </p>
-                      </div>
-
-                      <p className="text-center text-sm text-muted-foreground">
-                        Tap again for next fact →
-                      </p>
-
-                    </CardContent>
+                      </CardContent>
+                    </div>
                   </div>
-
                 </div>
-              </div>
-            </Card>
-          </div>
-        );
-      })()}
+              </Card>
+            </div>
+          );
+        })()}
 
       {/* Saved Facts */}
       {savedFacts.length > 0 && (
@@ -419,14 +454,19 @@ const HealthFacts = () => {
                 <div key={fact.id} className="p-3 rounded-lg border border-border bg-accent/30">
                   <div className="flex items-start gap-2">
                     {/* Lucide icon instead of emoji */}
-                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}>
+                    <div
+                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}
+                    >
                       <SavedIcon className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{fact.hook}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{fact.fact}</p>
                     </div>
-                    <button onClick={() => handleSave(fact.id)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                    <button
+                      onClick={() => handleSave(fact.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                    >
                       ×
                     </button>
                   </div>
@@ -469,15 +509,21 @@ const HealthFacts = () => {
                   >
                     <div className="flex items-center gap-3">
                       {/* Lucide icon instead of emoji */}
-                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}>
+                      <div
+                        className={`w-9 h-9 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}
+                      >
                         <FactIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{fact.hook}</p>
                         <p className="text-xs text-muted-foreground">{fact.category}</p>
                       </div>
-                      {liked.has(fact.id) && <ThumbsUp className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />}
-                      {saved.has(fact.id) && <Bookmark className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                      {liked.has(fact.id) && (
+                        <ThumbsUp className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                      )}
+                      {saved.has(fact.id) && (
+                        <Bookmark className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      )}
                     </div>
                   </div>
                 );

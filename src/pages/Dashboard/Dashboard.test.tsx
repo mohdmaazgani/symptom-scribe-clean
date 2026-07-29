@@ -124,17 +124,16 @@ function mockAuthUser(user: typeof mockUser | null = mockUser) {
   });
 }
 (supabase.from as Mock).mockReturnValue({
-    select: () => ({
-      eq: () => ({
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        maybeSingle: () =>
-          Promise.resolve({
-            data: { full_name: "User" },
-          }),
-      }),
+  select: () => ({
+    eq: () => ({
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+      maybeSingle: () =>
+        Promise.resolve({
+          data: { full_name: "User" },
+        }),
     }),
-  });
-
+  }),
+});
 
 // ---------------------------------------------------------------------------
 // Sample fixture data
@@ -191,9 +190,7 @@ describe("Dashboard", () => {
     render(<Dashboard />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/No symptom history yet/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No symptom history yet/i)).toBeInTheDocument();
     });
   });
 
@@ -223,7 +220,7 @@ describe("Dashboard", () => {
       // Check that "2" appears somewhere near "Lifetime symptom checks"
       const lifetimeText = screen.getByText(/Lifetime symptom checks/i);
       expect(lifetimeText.closest("div")).toHaveTextContent("2");
-      
+
       const followupText = screen.getByText(/Requiring follow-up/i);
       expect(followupText.closest("div")).toHaveTextContent("1");
     });
@@ -240,7 +237,8 @@ describe("Dashboard", () => {
       // Use a function matcher to find text across elements
       expect(
         screen.getByText((content, element) => {
-          const hasText = element?.textContent?.includes("Persistent headache with nausea") ?? false;
+          const hasText =
+            element?.textContent?.includes("Persistent headache with nausea") ?? false;
           const hasChildren = element ? element.children.length === 0 : false;
           return hasText && hasChildren;
         })
@@ -258,7 +256,7 @@ describe("Dashboard", () => {
     await waitFor(() => {
       // Find the element containing "high" and check its class
       const elements = screen.getAllByText(/high/i);
-      const highBadge = elements.find(el => el.classList.contains("text-destructive"));
+      const highBadge = elements.find((el) => el.classList.contains("text-destructive"));
       expect(highBadge).toBeInTheDocument();
     });
   });
@@ -296,7 +294,9 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("AI Health Predictions")).toBeInTheDocument();
-      expect(screen.getByText("Proactive health risk predictions analyzed from recent symptom logs")).toBeInTheDocument();
+      expect(
+        screen.getByText("Proactive health risk predictions analyzed from recent symptom logs")
+      ).toBeInTheDocument();
       expect(screen.getByText("No Active Risk Markers")).toBeInTheDocument();
     });
   });
@@ -310,7 +310,9 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Weekly Health Score")).toBeInTheDocument();
-      expect(screen.getByText("Gamified logging consistency & vital stability score")).toBeInTheDocument();
+      expect(
+        screen.getByText("Gamified logging consistency & vital stability score")
+      ).toBeInTheDocument();
       expect(screen.getByText("XP Checklist Breakdown")).toBeInTheDocument();
     });
   });

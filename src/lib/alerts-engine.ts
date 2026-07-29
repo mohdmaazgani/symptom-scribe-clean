@@ -85,7 +85,8 @@ export function detectSmartAlerts(
           hrValues.reduce((a, b) => a + b, 0) / 3
         )} bpm.`,
         type: "warning",
-        actionPlan: "Rest in a cool place, drink water, and avoid caffeine. If you experience chest pain, shortness of breath, or dizziness, seek medical help immediately.",
+        actionPlan:
+          "Rest in a cool place, drink water, and avoid caffeine. If you experience chest pain, shortness of breath, or dizziness, seek medical help immediately.",
         metricType: "heart_rate",
         timestamp: latestRecord.recorded_at,
       });
@@ -100,7 +101,8 @@ export function detectSmartAlerts(
           hrValues.reduce((a, b) => a + b, 0) / 3
         )} bpm.`,
         type: "warning",
-        actionPlan: "Avoid sudden posture changes (stand up slowly). Consult a physician if this is accompanied by fatigue, dizziness, or lightheadedness.",
+        actionPlan:
+          "Avoid sudden posture changes (stand up slowly). Consult a physician if this is accompanied by fatigue, dizziness, or lightheadedness.",
         metricType: "heart_rate",
         timestamp: latestRecord.recorded_at,
       });
@@ -113,7 +115,8 @@ export function detectSmartAlerts(
         title: "Rising Heart Rate Trend",
         description: "Your resting heart rate has risen continuously across your last 3 logs.",
         type: "info",
-        actionPlan: "Track your daily stress levels, hydration status, sleep quality, and active rest cycles to find potential triggers.",
+        actionPlan:
+          "Track your daily stress levels, hydration status, sleep quality, and active rest cycles to find potential triggers.",
         metricType: "heart_rate",
         timestamp: latestRecord.recorded_at,
       });
@@ -134,7 +137,8 @@ export function detectSmartAlerts(
         title: "Hypertension Warning",
         description: `Your last 3 blood pressure logs show elevated readings (above 140/90 mmHg).`,
         type: "warning",
-        actionPlan: "Relax for 5 minutes and retake your measurement. Reduce sodium intake and contact your doctor if readings remain high over several days.",
+        actionPlan:
+          "Relax for 5 minutes and retake your measurement. Reduce sodium intake and contact your doctor if readings remain high over several days.",
         metricType: "blood_pressure",
         timestamp: latestRecord.recorded_at,
       });
@@ -145,9 +149,7 @@ export function detectSmartAlerts(
     // so we evaluate with OR logic. Explicit grouping parentheses added for operator precedence clarity.
     if (
       bpValues.every(
-        (v) =>
-          (v.systolic > 0 && v.systolic < 90) ||
-          (v.diastolic > 0 && v.diastolic < 60)
+        (v) => (v.systolic > 0 && v.systolic < 90) || (v.diastolic > 0 && v.diastolic < 60)
       )
     ) {
       alerts.push({
@@ -155,7 +157,8 @@ export function detectSmartAlerts(
         title: "Hypotension Warning",
         description: `Your last 3 blood pressure readings indicate low blood pressure (below 90/60 mmHg).`,
         type: "warning",
-        actionPlan: "Increase water and electrolyte intake. Lie down and elevate your legs if you feel faint or lightheaded.",
+        actionPlan:
+          "Increase water and electrolyte intake. Lie down and elevate your legs if you feel faint or lightheaded.",
         metricType: "blood_pressure",
         timestamp: latestRecord.recorded_at,
       });
@@ -176,7 +179,8 @@ export function detectSmartAlerts(
         title: "Low Oxygen Saturation SpO2",
         description: `Your last 2 blood oxygen readings show SpO2 levels below 95% (${oxValues[0]}%).`,
         type: "critical",
-        actionPlan: "Practice slow, deep breathing and sit upright. If SpO2 drops below 92% or you experience shortness of breath, seek emergency medical care.",
+        actionPlan:
+          "Practice slow, deep breathing and sit upright. If SpO2 drops below 92% or you experience shortness of breath, seek emergency medical care.",
         metricType: "oxygen_saturation",
         timestamp: latestRecord.recorded_at,
       });
@@ -199,7 +203,8 @@ export function detectSmartAlerts(
           bsValues.reduce((a, b) => a + b, 0) / 3
         )} mg/dL.`,
         type: "warning",
-        actionPlan: "Limit carbohydrate consumption, drink plenty of water, and consult your diabetes care plan or provider regarding insulin/medication adjustments.",
+        actionPlan:
+          "Limit carbohydrate consumption, drink plenty of water, and consult your diabetes care plan or provider regarding insulin/medication adjustments.",
         metricType: "blood_sugar",
         timestamp: latestRecord.recorded_at,
       });
@@ -214,7 +219,8 @@ export function detectSmartAlerts(
         title: "Hypoglycemia Warning",
         description: `Your blood glucose is critically low (below 70 mg/dL).`,
         type: "critical",
-        actionPlan: "Follow the 15-15 rule: consume 15g of fast-acting carbs (juice, honey, candy) and re-test blood sugar in 15 minutes.",
+        actionPlan:
+          "Follow the 15-15 rule: consume 15g of fast-acting carbs (juice, honey, candy) and re-test blood sugar in 15 minutes.",
         metricType: "blood_sugar",
         timestamp: latestRecord.recorded_at,
       });
@@ -235,7 +241,8 @@ export function detectSmartAlerts(
         title: "Fever Warning",
         description: `Your body temperature has consistently been above 100.4°F (38°C).`,
         type: "warning",
-        actionPlan: "Stay hydrated, rest, and use cold compresses. You can take over-the-counter fever reducers if appropriate, and monitor for infection symptoms.",
+        actionPlan:
+          "Stay hydrated, rest, and use cold compresses. You can take over-the-counter fever reducers if appropriate, and monitor for infection symptoms.",
         metricType: "temperature",
         timestamp: latestRecord.recorded_at,
       });
@@ -261,7 +268,8 @@ export function detectSmartAlerts(
         title: "High Symptom Burden",
         description: "You have reported 3 or more high-severity symptoms within the last 7 days.",
         type: "warning",
-        actionPlan: "Review your logged consultations in detail and consult a doctor or healthcare professional to evaluate these frequent high-severity symptoms.",
+        actionPlan:
+          "Review your logged consultations in detail and consult a doctor or healthcare professional to evaluate these frequent high-severity symptoms.",
         timestamp: recentHighSeverity[0].created_at,
       });
     }
@@ -274,7 +282,8 @@ export function detectSmartAlerts(
         title: "Unresolved Symptoms Accumulating",
         description: `You have ${unresolved.length} active symptoms in your history marked as unresolved.`,
         type: "info",
-        actionPlan: "Visit your History tab to resolve symptoms that have improved, or consult the AI Health Assistant for ongoing guidance.",
+        actionPlan:
+          "Visit your History tab to resolve symptoms that have improved, or consult the AI Health Assistant for ongoing guidance.",
         timestamp: unresolved[0].created_at,
       });
     }

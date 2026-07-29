@@ -17,8 +17,8 @@ const Chat = () => {
       <Alert className="shrink-0 border-destructive/50 bg-destructive/10">
         <AlertCircle className="h-4 w-4 text-destructive" />
         <AlertDescription className="text-sm">
-          <strong>Medical Disclaimer:</strong> This provides general information only.
-          Always seek professional medical advice for diagnosis or treatment.
+          <strong>Medical Disclaimer:</strong> This provides general information only. Always seek
+          professional medical advice for diagnosis or treatment.
         </AlertDescription>
       </Alert>
     </div>

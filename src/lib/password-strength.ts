@@ -47,7 +47,9 @@ export function evaluatePasswordStrength(
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const hasDigit = /[0-9]/.test(password);
-  const hasSpecialChar = new RegExp(`[${SPECIAL_CHARS.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}]`).test(password);
+  const hasSpecialChar = new RegExp(
+    `[${SPECIAL_CHARS.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}]`
+  ).test(password);
 
   // Calculate score (0-5)
   let score = 0;
@@ -117,7 +119,7 @@ export function getPasswordRequirements(
     requirements.push({
       id: "hasSpecialChar",
       label: `At least one special character (${SPECIAL_CHARS})`,
-      test: (password) => 
+      test: (password) =>
         new RegExp(`[${SPECIAL_CHARS.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}]`).test(password),
     });
   }
@@ -128,9 +130,7 @@ export function getPasswordRequirements(
 /**
  * Generate a strong password meeting the policy
  */
-export function generateStrongPassword(
-  policy: PasswordPolicy = DEFAULT_PASSWORD_POLICY
-): string {
+export function generateStrongPassword(policy: PasswordPolicy = DEFAULT_PASSWORD_POLICY): string {
   const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const lowercase = "abcdefghijklmnopqrstuvwxyz";
   const digits = "0123456789";

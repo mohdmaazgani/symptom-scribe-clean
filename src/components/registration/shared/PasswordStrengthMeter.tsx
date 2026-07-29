@@ -42,7 +42,8 @@ export function PasswordStrengthMeter({
 
   const isControlled = showPasswordState !== undefined;
   const showPassword = isControlled ? showPasswordState : localShowPassword;
-  const setShowPassword = isControlled && onShowPasswordChange ? onShowPasswordChange : setLocalShowPassword;
+  const setShowPassword =
+    isControlled && onShowPasswordChange ? onShowPasswordChange : setLocalShowPassword;
 
   const strength = evaluatePasswordStrength(value, policy);
   const requirements = getPasswordRequirements(policy);
@@ -66,7 +67,12 @@ export function PasswordStrengthMeter({
     <div className="space-y-3">
       {/* Label */}
       <Label htmlFor={id} className="text-sm font-medium text-foreground">
-        {label} {required && <span className="text-red-500" aria-hidden="true">*</span>}
+        {label}{" "}
+        {required && (
+          <span className="text-red-500" aria-hidden="true">
+            *
+          </span>
+        )}
       </Label>
 
       {/* Password Input */}
@@ -96,9 +102,11 @@ export function PasswordStrengthMeter({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Strength</span>
-            <span className={`text-xs font-semibold ${
-              strength.score >= 4 ? "text-green-600" : "text-orange-600"
-            }`}>
+            <span
+              className={`text-xs font-semibold ${
+                strength.score >= 4 ? "text-green-600" : "text-orange-600"
+              }`}
+            >
               {getStrengthLabel(strength.score)}
             </span>
           </div>

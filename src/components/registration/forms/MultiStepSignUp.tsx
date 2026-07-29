@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
@@ -18,18 +17,13 @@ import {
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/lib/toast-helpers";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
-import {
-  DEFAULT_PASSWORD_POLICY,
-  evaluatePasswordStrength,
-} from "@/lib/password-strength";
+import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { setupKeysFromPassword } from "@/lib/encryption";
 
 const STEPS = ["Account", "Personal", "Health", "Emergency", "Review"] as const;
 
 const emailSchema = z.string().email("Invalid email address");
-const signupPasswordSchema = z
-  .string()
-  .min(12, "Password must be at least 12 characters");
+const signupPasswordSchema = z.string().min(12, "Password must be at least 12 characters");
 
 interface RegistrationData {
   email: string;
@@ -70,8 +64,7 @@ const MultiStepSignUp = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RegistrationData>(INITIAL_DATA);
 
-  const update = (fields: Partial<RegistrationData>) =>
-    setData((prev) => ({ ...prev, ...fields }));
+  const update = (fields: Partial<RegistrationData>) => setData((prev) => ({ ...prev, ...fields }));
 
   // Per-step validation. Returns true (and shows a toast on failure) when the
   // current step is allowed to advance.
@@ -87,10 +80,7 @@ const MultiStepSignUp = () => {
         return false;
       }
       if (!evaluatePasswordStrength(data.password, DEFAULT_PASSWORD_POLICY).isStrong) {
-        showError(
-          "Weak Password",
-          "Password does not meet all strength requirements."
-        );
+        showError("Weak Password", "Password does not meet all strength requirements.");
         return false;
       }
       if (data.password !== data.confirmPassword) {
@@ -106,8 +96,7 @@ const MultiStepSignUp = () => {
         return false;
       }
       if (data.date_of_birth) {
-        const age =
-          new Date().getFullYear() - new Date(data.date_of_birth).getFullYear();
+        const age = new Date().getFullYear() - new Date(data.date_of_birth).getFullYear();
         if (age < 0 || age > 120) {
           showError("Invalid Date of Birth", "Please enter a valid date of birth");
           return false;
@@ -139,7 +128,7 @@ const MultiStepSignUp = () => {
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/dashboard`;
-      
+
       // Save full profile details to local storage temporarily to be encrypted once session key is derived
       const pendingProfile = {
         full_name: data.full_name || null,
@@ -193,7 +182,6 @@ const MultiStepSignUp = () => {
           "Your account and health profile are ready."
         );
       }
-
     } catch (error) {
       console.error("Error during registration:", error);
       showError("Sign Up Failed", "Something went wrong. Please try again.");
@@ -223,12 +211,7 @@ const MultiStepSignUp = () => {
       </AnimatePresence>
 
       <div className="flex items-center justify-between gap-2 pt-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={goBack}
-          disabled={step === 0 || loading}
-        >
+        <Button type="button" variant="ghost" onClick={goBack} disabled={step === 0 || loading}>
           <ChevronLeft className="mr-1 h-4 w-4" />
           Back
         </Button>
@@ -282,20 +265,14 @@ const Stepper = ({ currentStep }: { currentStep: number }) => (
               {isComplete ? <Check className="h-4 w-4" /> : index + 1}
             </div>
             <span
-              className={cn(
-                "text-[10px]",
-                isActive ? "text-foreground" : "text-muted-foreground"
-              )}
+              className={cn("text-[10px]", isActive ? "text-foreground" : "text-muted-foreground")}
             >
               {label}
             </span>
           </div>
           {index < STEPS.length - 1 && (
             <div
-              className={cn(
-                "mx-1 h-0.5 flex-1",
-                index < currentStep ? "bg-primary" : "bg-muted"
-              )}
+              className={cn("mx-1 h-0.5 flex-1", index < currentStep ? "bg-primary" : "bg-muted")}
             />
           )}
         </div>
@@ -359,13 +336,13 @@ const PersonalStep = ({ data, update }: StepProps) => (
     </div>
     <div className="space-y-2">
       <Label htmlFor="signup-dob">Date of Birth</Label>
-    <Input
-     id="signup-dob"
-     type="date"
-     max={new Date().toISOString().split("T")[0]}
-     value={data.date_of_birth}
-     onChange={(e) => update({ date_of_birth: e.target.value })}
-     />
+      <Input
+        id="signup-dob"
+        type="date"
+        max={new Date().toISOString().split("T")[0]}
+        value={data.date_of_birth}
+        onChange={(e) => update({ date_of_birth: e.target.value })}
+      />
     </div>
     <div className="space-y-2">
       <Label htmlFor="signup-gender">Gender</Label>
@@ -383,10 +360,7 @@ const PersonalStep = ({ data, update }: StepProps) => (
     </div>
     <div className="space-y-2">
       <Label htmlFor="signup-blood-type">Blood Type</Label>
-      <Select
-        value={data.blood_type}
-        onValueChange={(value) => update({ blood_type: value })}
-      >
+      <Select value={data.blood_type} onValueChange={(value) => update({ blood_type: value })}>
         <SelectTrigger id="signup-blood-type">
           <SelectValue placeholder="Select blood type" />
         </SelectTrigger>
@@ -430,9 +404,7 @@ const HealthStep = ({ data, update }: StepProps) => (
 
 const EmergencyStep = ({ data, update }: StepProps) => (
   <div className="space-y-4">
-    <p className="text-sm text-muted-foreground">
-      Optional. Recommended for safety.
-    </p>
+    <p className="text-sm text-muted-foreground">Optional. Recommended for safety.</p>
     <div className="space-y-2">
       <Label htmlFor="signup-emergency-name">Contact Name</Label>
       <Input

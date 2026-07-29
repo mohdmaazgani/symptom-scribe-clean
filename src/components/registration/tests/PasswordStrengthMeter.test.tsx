@@ -83,9 +83,7 @@ describe("PasswordStrengthMeter", () => {
     await user.click(toggleBtn);
 
     expect(input).toHaveAttribute("type", "text");
-    expect(
-      screen.getByRole("button", { name: /hide password/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hide password/i })).toBeInTheDocument();
   });
 
   // 5. onChange is called with the new value
@@ -104,9 +102,7 @@ describe("PasswordStrengthMeter", () => {
     const onChange = vi.fn();
     render(<PasswordStrengthMeter value="" onChange={onChange} />);
 
-    await user.click(
-      screen.getByRole("button", { name: /generate strong password/i })
-    );
+    await user.click(screen.getByRole("button", { name: /generate strong password/i }));
     expect(onChange).toHaveBeenCalledWith(expect.any(String));
     const generated = onChange.mock.calls[0][0] as string;
     expect(generated.length).toBeGreaterThan(0);
@@ -128,9 +124,7 @@ describe("PasswordStrengthMeter", () => {
   // 8. Weak password shows an error message
   it("shows a validation error for a weak password", () => {
     renderMeter("weak");
-    expect(
-      screen.getByRole("alert")
-    ).toHaveTextContent(/does not meet all requirements/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/does not meet all requirements/i);
   });
 
   // 9. Strong password hides the error message
@@ -148,13 +142,7 @@ describe("PasswordStrengthMeter", () => {
 
   // 11. Custom label is rendered correctly
   it("renders a custom label when the label prop is provided", () => {
-    render(
-      <PasswordStrengthMeter
-        value=""
-        onChange={vi.fn()}
-        label="New Password"
-      />
-    );
+    render(<PasswordStrengthMeter value="" onChange={vi.fn()} label="New Password" />);
     expect(screen.getByText(/new password/i)).toBeInTheDocument();
   });
 });
