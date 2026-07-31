@@ -1,0 +1,229 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit } from "../_shared/rateLimit.ts";
+
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:8080",
+  "https://symptom-scribe.vercel.app",
+  "https://symptom-scribe-clean.netlify.app",
+];
+
+const NETLIFY_PREVIEW_ORIGIN = /^https:\/\/deploy-preview-\d+--symptom-scribe-clean\.netlify\.app$/;
+
+function isAllowedOrigin(origin: string): boolean {
+  return ALLOWED_ORIGINS.includes(origin) || NETLIFY_PREVIEW_ORIGIN.test(origin);
+}
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin":
+    origin && isAllowedOrigin(origin) ? origin : "null",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+});
+
+serve(async (req) => {
+  const origin = req.headers.get("origin");
+
+  if (origin && !isAllowedOrigin(origin)) {
+    return new Response(
+      JSON.stringify({ error: "Origin not allowed" }),
+      {
+        status: 403,
+        headers: getCorsHeaders(origin),
+      }
+    );
+  }
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: getCorsHeaders(origin),
+    });
+  }
+
+  try {
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    const rateLimitResult = await rateLimit(ip);
+    if (!rateLimitResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        {
+          status: 401,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const { deleteMode, recordId } = await req.json();
+
+    if (deleteMode === "single" && recordId) {
+      const { data: record, error: fetchError } = await supabase
+        .from("symptom_history")
+        .select("id, user_id")
+        .eq("id", recordId)
+        .single();
+
+      if (fetchError || !record) {
+        return new Response(
+          JSON.stringify({ error: "Symptom record not found" }),
+          {
+            status: 404,
+            headers: {
+              ...getCorsHeaders(origin),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      if (record.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized to delete this record" }),
+          {
+            status: 403,
+            headers: {
+              ...getCorsHeaders(origin),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      const { error: deleteError } = await supabase
+        .from("symptom_history")
+        .delete()
+        .eq("id", recordId)
+        .eq("user_id", user.id);
+
+      if (deleteError) {
+        return new Response(
+          JSON.stringify({ error: deleteError.message }),
+          {
+            status: 500,
+            headers: {
+              ...getCorsHeaders(origin),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Symptom record deleted successfully",
+        }),
+        {
+          status: 200,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (deleteMode === "all") {
+      const { error: deleteError } = await supabase
+        .from("symptom_history")
+        .delete()
+        .eq("user_id", user.id);
+
+      if (deleteError) {
+        return new Response(
+          JSON.stringify({ error: deleteError.message }),
+          {
+            status: 500,
+            headers: {
+              ...getCorsHeaders(origin),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "All symptom records deleted successfully",
+        }),
+        {
+          status: 200,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: "Invalid delete mode" }),
+      {
+        status: 400,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+});
