@@ -8,6 +8,8 @@ import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
+import { useDuplicateSymptomDetection } from "@/hooks/useDuplicateSymptomDetection";
+import { DuplicateSymptomDialog } from "@/components/history/DuplicateSymptomDialog";
 import {
   Volume2,
   VolumeX,
@@ -80,6 +82,52 @@ const AIHealthAssistant = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const { toast } = useToast();
+
+  const {
+    isDuplicateDialogOpen,
+    setIsDuplicateDialogOpen,
+    duplicateRecord,
+    pendingRecord,
+    checkDuplicate,
+    handleMerge,
+  } = useDuplicateSymptomDetection();
+
+  const handleIgnoreDuplicate = async () => {
+    setIsDuplicateDialogOpen(false);
+    if (pendingRecord) {
+      const keys = await whenKeysReady();
+      const encrypted = await encryptSymptom(pendingRecord, keys.encryptionKey, keys.searchKey);
+      await saveSymptomRecord(encrypted);
+    }
+  };
+
+  const saveSymptomRecord = async (encryptedRecord: OfflineSymptom) => {
+    const { pending_sync, pending_update, pending_delete, ...supabaseRecord } = encryptedRecord;
+    const { error: insertError } = await supabase.from("symptom_history").insert(supabaseRecord);
+
+    if (insertError) {
+      console.warn("Supabase save failed, falling back to local saving:", insertError);
+      await db.symptomHistory.put({
+        ...encryptedRecord,
+        pending_sync: 1,
+        pending_update: 0,
+        pending_delete: 0,
+      });
+      showWarning(
+        "Saved Offline",
+        "Could not connect to server. Saved locally and will sync once connection is restored."
+      );
+    } else {
+      await invalidateCache("symptom_history");
+      await db.symptomHistory.put({
+        ...encryptedRecord,
+        pending_sync: 0,
+        pending_update: 0,
+        pending_delete: 0,
+      });
+      showSuccess("Saved to history", "This analysis has been added to your health records");
+    }
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -314,56 +362,18 @@ const AIHealthAssistant = () => {
               created_at: new Date().toISOString(),
             };
 
-            const keys = await whenKeysReady();
-            const encryptedRecord = await encryptSymptom(
-              record as unknown as OfflineSymptom,
-              keys.encryptionKey,
-              keys.searchKey
-            );
+            const isDuplicate = await checkDuplicate(record as unknown as OfflineSymptom);
 
-            // Strip offline-only fields so we match the Supabase table schema
-            const {
-              pending_sync,
-              pending_update,
-              pending_delete,
-              ...supabaseRecord
-            } = encryptedRecord;
-
-            const { error: insertError } = await supabase
-              .from("symptom_history")
-              .insert(supabaseRecord);
-
-            if (insertError) {
-              console.warn("Supabase save failed, falling back to local saving:", insertError);
-              
-              // Save locally to Dexie immediately with pending_sync: 1
-              await db.symptomHistory.put({
-                ...encryptedRecord,
-                pending_sync: 1,
-                pending_update: 0,
-                pending_delete: 0,
-              });
-
-              showWarning(
-                "Saved Offline",
-                "Could not connect to server. Saved locally and will sync once connection is restored."
+            if (!isDuplicate) {
+              const keys = await whenKeysReady();
+              const encryptedRecord = await encryptSymptom(
+                record as unknown as OfflineSymptom,
+                keys.encryptionKey,
+                keys.searchKey
               );
-            } else {
-              await invalidateCache("symptom_history");
-
-              // Save locally to Dexie immediately
-              await db.symptomHistory.put({
-                ...encryptedRecord,
-                pending_sync: 0,
-                pending_update: 0,
-                pending_delete: 0,
-              });
-
-              showSuccess(
-                "Saved to history",
-                "This analysis has been added to your health records"
-              );
+              await saveSymptomRecord(encryptedRecord);
             }
+
           }
         }
       }
@@ -647,6 +657,14 @@ const AIHealthAssistant = () => {
           </p>
         </div>
       </div>
+
+      <DuplicateSymptomDialog
+        isOpen={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        duplicateRecord={duplicateRecord}
+        onIgnore={handleIgnoreDuplicate}
+        onMerge={handleMerge}
+      />
     </div>
   );
 };

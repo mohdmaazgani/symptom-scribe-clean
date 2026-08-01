@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/lib/toast-helpers";
 import { invalidateCache } from "@/lib/cached-queries";
+import { useDuplicateSymptomDetection } from "@/hooks/useDuplicateSymptomDetection";
+import { DuplicateSymptomDialog } from "@/components/history/DuplicateSymptomDialog";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import {
@@ -61,6 +63,15 @@ const ChatInterface = () => {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  const {
+    isDuplicateDialogOpen,
+    setIsDuplicateDialogOpen,
+    duplicateRecord,
+    pendingRecord,
+    checkDuplicate,
+    handleMerge,
+  } = useDuplicateSymptomDetection();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -99,6 +110,39 @@ const ChatInterface = () => {
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  const saveSymptomRecord = async (encryptedRecord: OfflineSymptom) => {
+    const { pending_sync, pending_update, pending_delete, ...supabaseRecord } = encryptedRecord;
+
+    const { error: insertError } = await supabase.from("symptom_history").insert(supabaseRecord);
+
+    if (insertError) {
+      console.warn("Supabase save failed, falling back to local saving:", insertError);
+      
+      await db.symptomHistory.put({
+        ...encryptedRecord,
+        pending_sync: 1,
+        pending_update: 0,
+        pending_delete: 0,
+      });
+
+      showWarning(
+        "Saved Offline",
+        "Could not connect to server. Saved locally and will sync once connection is restored."
+      );
+    } else {
+      await invalidateCache("symptom_history");
+
+      await db.symptomHistory.put({
+        ...encryptedRecord,
+        pending_sync: 0,
+        pending_update: 0,
+        pending_delete: 0,
+      });
+
+      showSuccess("Saved to history", "This analysis has been added to your health records");
+    }
+  };
 
   const handleSelectSession = (sessionId: string) => {
     const session = sessions.find((s) => s.id === sessionId);
@@ -324,48 +368,16 @@ const ChatInterface = () => {
             created_at: new Date().toISOString(),
           };
 
-          const keys = await whenKeysReady();
-          const encryptedRecord = await encryptSymptom(
-            record as unknown as OfflineSymptom,
-            keys.encryptionKey,
-            keys.searchKey
-          );
-
-          // Strip offline-only fields so we match the Supabase table schema
-          const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
-            encryptedRecord;
-
-          const { error: insertError } = await supabase
-            .from("symptom_history")
-            .insert(supabaseRecord);
-
-          if (insertError) {
-            console.warn("Supabase save failed, falling back to local saving:", insertError);
-            
-            // Save locally to Dexie immediately with pending_sync: 1
-            await db.symptomHistory.put({
-              ...encryptedRecord,
-              pending_sync: 1,
-              pending_update: 0,
-              pending_delete: 0,
-            });
-
-            showWarning(
-              "Saved Offline",
-              "Could not connect to server. Saved locally and will sync once connection is restored."
+          const isDuplicate = await checkDuplicate(record as unknown as OfflineSymptom);
+          
+          if (!isDuplicate) {
+            const keys = await whenKeysReady();
+            const encryptedRecord = await encryptSymptom(
+              record as unknown as OfflineSymptom,
+              keys.encryptionKey,
+              keys.searchKey
             );
-          } else {
-            await invalidateCache("symptom_history");
-
-            // Save locally to Dexie immediately
-            await db.symptomHistory.put({
-              ...encryptedRecord,
-              pending_sync: 0,
-              pending_update: 0,
-              pending_delete: 0,
-            });
-
-            showSuccess("Saved to history", "This analysis has been added to your health records");
+            await saveSymptomRecord(encryptedRecord);
           }
         }
       }
@@ -427,7 +439,6 @@ const ChatInterface = () => {
                 {session.title || "Untitled Session"}
               </button>
 
-              {/* FIX: AlertDialog wraps the trash button so delete requires confirmation */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
@@ -471,7 +482,6 @@ const ChatInterface = () => {
 
   return (
     <div className="flex h-full w-full min-h-0 bg-background/55 text-foreground overflow-hidden">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-slate-950/20 shrink-0">
         <div className="p-4 border-b border-border flex flex-col gap-2">
           <Button
@@ -491,9 +501,7 @@ const ChatInterface = () => {
         </div>
       </aside>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        {/* Mobile Header */}
         <header className="flex items-center justify-between p-3 border-b border-border bg-card/50 md:hidden shrink-0">
           <div className="flex items-center gap-2">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -615,6 +623,14 @@ const ChatInterface = () => {
           </div>
         </div>
       </div>
+      
+      <DuplicateSymptomDialog
+        isOpen={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        duplicateRecord={duplicateRecord}
+        onIgnore={handleIgnoreDuplicate}
+        onMerge={handleMerge}
+      />
     </div>
   );
 };
