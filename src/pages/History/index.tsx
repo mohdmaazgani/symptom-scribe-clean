@@ -310,6 +310,32 @@ const History = () => {
     }
   };
 
+  const deleteAllEntries = async () => {
+    try {
+      if (navigator.onLine) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .delete()
+          .eq("user_id", history[0]?.user_id || "");
+
+        if (error) throw error;
+        await invalidateCache("symptom_history");
+        await db.symptomHistory.clear();
+      } else {
+        const allRecords = await db.symptomHistory.toArray();
+        for (const record of allRecords) {
+          await db.symptomHistory.update(record.id, { pending_delete: 1 });
+        }
+      }
+
+      showSuccess("All records deleted", "Your symptom history has been permanently cleared.");
+      setHistory([]);
+    } catch (error) {
+      console.error("Error deleting all history:", error);
+      showError("Delete failed", "Could not clear your health records.");
+    }
+  };
+
   const exportCSV = () => {
     const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
     const rows = history.map((entry) => [
@@ -430,6 +456,31 @@ const History = () => {
               <FileDown className="w-4 h-4 mr-1" />
               Download PDF
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete All
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all symptom history?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove all {history.length} consultation records. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={deleteAllEntries}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete All Records
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>
