@@ -1,0 +1,136 @@
+name: "Issue Classifier"
+
+on:
+  issues:
+    types: [opened, edited]
+    
+  workflow_dispatch:
+
+jobs:
+  label-issue:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      issues: write
+      
+    steps:
+      - name: Analyze Content and Apply Labels
+      
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          SINGLE_ISSUE_NUM: ${{ github.event.issue.number }}
+          SINGLE_TITLE: ${{ github.event.issue.title }}
+          
+        run: |
+          import os, sys, re, json, urllib.request, time, random
+
+          token = os.getenv('GITHUB_TOKEN')
+          repo = os.getenv('REPO')
+          event_name = os.getenv('EVENT_NAME')
+          
+          rules = {
+              "type:bug": [r"\bbug\b", r"\bcrash\b", r"\berror\b", r"\bfail\b", r"\bbroken\b", r"\bvulnerability\b", r"\bflaw\b"],
+              "type:performance": [r"\bslow\b", r"\bperformance\b", r"\blatency\b", r"\boptimize\b", r"\bspeed\b", r"\bbottleneck\b", r"\btimeout\b", r"\bperf\b"],
+              "type:security": [r"\bsecurity\b", r"\bauth\b", r"\bencryption\b", r"\bssl\b", r"\btoken\b", r"\bhack\b", r"\bdos\b", r"\bsecret\b"],
+              "type:design": [r"\bdesign\b", r"\bui\b", r"\bux\b", r"\bcss\b", r"\bfrontend\b", r"\bstyle\b", r"\btheme\b", r"\bicon\b"],
+              "type:refactor": [r"\brefactor\b", r"\bclean code\b", r"\bstructure\b", r"\brewrite\b", r"\bsimplify\b", r"\bcleanup\b"],
+              "type:accessibility": [r"\baccessibility\b", r"\ba11y\b", r"\bcontrast\b", r"\bscreen reader\b", r"\baria\b", r"\balt text\b"],
+              "type:docs": [r"\bdoc\b", r"\bdocs\b", r"\breadme\b", r"\bcomment\b", r"\btypo\b", r"\bguide\b", r"\bwiki\b"],
+              "type:testing": [r"\btest\b", r"\btests\b", r"\bpytest\b", r"\bunittest\b", r"\bcoverage\b", r"\bmock\b"],
+              "type:feature": [r"\bfeature\b", r"\brequest\b", r"\bimplement\b", r"\bnew idea\b", r"\benhance\b", r"\baddition\b"]
+          }
+
+          def get_labels_for_text(title):
+              title_text = (title or '').lower()
+              matched = []
+              for label, patterns in rules.items():
+                  for pattern in patterns:
+                      if re.search(pattern, title_text):
+                          matched.append(label)
+                          break
+              if "type:bug" in matched and "type:feature" in matched:
+                  matched.remove("type:feature")
+              return matched[:2] if matched else []
+
+          def check_rate_limit(response):
+              remaining = response.headers.get('X-RateLimit-Remaining')
+              reset_time = response.headers.get('X-RateLimit-Reset')
+              if remaining is not None and int(remaining) < 10:
+                  wait = max(1, int(reset_time or 0) - int(time.time()) + 1) if reset_time else 60
+                  print(f"Rate limit low ({remaining} remaining). Sleeping {wait}s...")
+                  time.sleep(wait)
+                  return True
+              return False
+
+          def update_labels_safely(issue_num, newly_calculated_labels):
+              get_url = f"https://api.github.com/repos/{repo}/issues/{issue_num}"
+              req_get = urllib.request.Request(get_url, headers={"Authorization": f"Bearer {token}"})
+              
+              try:
+                  with urllib.request.urlopen(req_get) as resp:
+                      check_rate_limit(resp)
+                      issue_data = json.loads(resp.read().decode())
+                      current_tags = [l['name'] for l in issue_data.get('labels', [])]
+              except Exception as e:
+                  print(f"Failed tracking issue #{issue_num} metadata: {e}")
+                  return
+
+              preserved_tags = [tag for tag in current_tags if not tag.startswith('type:')]
+              final_payload_tags = list(set(preserved_tags + newly_calculated_labels))
+              
+              put_url = f"https://api.github.com/repos/{repo}/issues/{issue_num}/labels"
+              
+              req_put = urllib.request.Request(
+                  put_url, 
+                  data=json.dumps({"labels": final_payload_tags}).encode(),
+                  headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                  method="PUT"
+              )
+              
+              try:
+                  with urllib.request.urlopen(req_put) as put_resp:
+                      check_rate_limit(put_resp)
+                  print(f"Successfully cleaned & updated labels on Issue #{issue_num}: {final_payload_tags}")
+                  
+              except Exception as e:
+                  print(f"Error executing absolute overwrite on Issue #{issue_num}: {e}")
+
+          def fetch_all_open_issues(page=1, per_page=100):
+              list_url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page={per_page}&page={page}"
+              req = urllib.request.Request(list_url, headers={"Authorization": f"Bearer {token}"})
+              
+              with urllib.request.urlopen(req) as response:
+                  check_rate_limit(response)
+                  return json.loads(response.read().decode())
+
+          # ---- EXECUTION ROUTINE ----
+          
+          if event_name == "workflow_dispatch":
+              print("Running deep self-cleaning manual sweep across existing issues...")
+              page = 1
+              processed = 0
+              
+              while True:
+              
+                  issues = fetch_all_open_issues(page=page)
+                  
+                  if not issues:
+                      break
+                  for issue in issues:
+                      if "pull_request" in issue:
+                          continue
+                      labels = get_labels_for_text(issue["title"])
+                      update_labels_safely(issue["number"], labels)
+                      processed += 1
+                      time.sleep(random.uniform(0.5, 1.5))
+                  page += 1
+                  
+              print(f"Sweep complete. Processed {processed} issues.")
+          else:
+              labels = get_labels_for_text(os.getenv('SINGLE_TITLE'))
+              update_labels_safely(os.getenv('SINGLE_ISSUE_NUM'), labels)
+              
+        shell: python
+        
