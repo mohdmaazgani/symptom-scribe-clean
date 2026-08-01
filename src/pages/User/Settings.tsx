@@ -25,6 +25,8 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { clearSafeStorage } from "@/lib/storage";
 import { getKey, getSearchKey, setupKeysFromPassword, triggerKeyRotation } from "@/lib/encryption";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
+import BackupRestore from "@/components/settings/BackupRestore";
+import { HardDrive } from "lucide-react";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -207,7 +209,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
             <span className="hidden sm:inline">Change Password</span>
@@ -217,6 +219,11 @@ const Settings = () => {
             <ShieldCheck className="w-4 h-4" />
             <span className="hidden sm:inline">Two-Factor Auth</span>
             <span className="sm:hidden">2FA</span>
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center gap-2">
+            <HardDrive className="w-4 h-4" />
+            <span className="hidden sm:inline">Backup</span>
+            <span className="sm:hidden">Backup</span>
           </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
@@ -307,6 +314,11 @@ const Settings = () => {
         {/* Two-Factor Auth Tab */}
         <TabsContent value="2fa">
           <TwoFactorAuth />
+        </TabsContent>
+
+        {/* Backup & Restore Tab */}
+        <TabsContent value="backup">
+          <BackupRestore />
         </TabsContent>
 
         {/* Language Tab */}
