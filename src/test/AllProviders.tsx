@@ -35,14 +35,15 @@ interface AllProvidersProps {
   initialEntries?: string[];
 }
 
-function AllProviders({
-  children,
-  initialEntries = ["/"],
-}: AllProvidersProps) {
+import { AccessibilityProvider } from "@/components/accessibility/AccessibilityContext";
+
+function AllProviders({ children, initialEntries = ["/"] }: AllProvidersProps) {
   const queryClient = createTestQueryClient();
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+      <AccessibilityProvider>
+        <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+      </AccessibilityProvider>
     </QueryClientProvider>
   );
 }

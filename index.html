@@ -4,14 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Health Tracker - AI Symptom Analyzer</title>
-    <meta name="description" content="AI-powered symptom checker that provides instant health insights, severity assessment, and self-care recommendations. Get personalized health guidance in seconds." />
+    <meta
+      name="description"
+      content="AI-powered symptom checker that provides instant health insights, severity assessment, and self-care recommendations. Get personalized health guidance in seconds."
+    />
     <meta name="author" content="Smart Health Tracker" />
-    
+
     <link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-<link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -19,21 +22,45 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" sizes="180x180" />
     <meta name="theme-color" content="#22d3ee" />
     <meta property="og:title" content="Smart Health Tracker - AI Symptom Analyzer" />
-    <meta property="og:description" content="Describe your symptoms and get AI-powered health insights with severity levels and self-care advice." />
+    <meta
+      property="og:description"
+      content="Describe your symptoms and get AI-powered health insights with severity levels and self-care advice."
+    />
     <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+
     <script>
-      (function() {
-        const theme = localStorage.getItem('symptom-scribe-theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (theme === 'dark' || (!theme && prefersDark) || (theme === 'system' && prefersDark)) {
-          document.documentElement.classList.add('dark');
+      (function () {
+        const theme = localStorage.getItem("symptom-scribe-theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (theme === "dark" || (!theme && prefersDark) || (theme === "system" && prefersDark)) {
+          document.documentElement.classList.add("dark");
         } else {
-          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.remove("dark");
         }
+
+        try {
+          const raw = localStorage.getItem("symptom-scribe-accessibility");
+          if (raw) {
+            const a11y = JSON.parse(raw);
+            const root = document.documentElement;
+            if (a11y.fontSize && a11y.fontSize !== "normal")
+              root.classList.add("a11y-font-" + a11y.fontSize);
+            if (a11y.highContrast) root.classList.add("a11y-high-contrast");
+            if (a11y.dyslexiaFont) root.classList.add("a11y-dyslexia-font");
+            if (a11y.increasedSpacing) root.classList.add("a11y-increased-spacing");
+            if (a11y.focusHighlight) root.classList.add("a11y-focus-highlight");
+          }
+        } catch (e) {}
       })();
     </script>
   </head>
