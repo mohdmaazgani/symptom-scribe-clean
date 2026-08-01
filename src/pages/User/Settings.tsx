@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, Accessibility } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, Accessibility, ShieldCheck } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
 import { AccessibilityPanel } from "@/components/accessibility/AccessibilityPanel";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
@@ -207,11 +207,16 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
             <span className="hidden sm:inline">Change Password</span>
             <span className="sm:hidden">Password</span>
+          </TabsTrigger>
+          <TabsTrigger value="2fa" className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" />
+            <span className="hidden sm:inline">Two-Factor Auth</span>
+            <span className="sm:hidden">2FA</span>
           </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
@@ -297,6 +302,11 @@ const Settings = () => {
               </form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Two-Factor Auth Tab */}
+        <TabsContent value="2fa">
+          <TwoFactorAuth />
         </TabsContent>
 
         {/* Language Tab */}

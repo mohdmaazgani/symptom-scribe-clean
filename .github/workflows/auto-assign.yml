@@ -1,0 +1,75 @@
+name: Issue Assignment
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    name: Auto-assign contributor
+    runs-on: ubuntu-latest
+    
+    # skip pull request comments
+    if: github.event.issue.pull_request == null
+    
+    steps:
+      - name: Handle assignment request
+        uses: actions/github-script@v7
+        
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          script: |
+            const comment = context.payload.comment.body.toLowerCase().trim();
+            const KEYWORDS = [
+              "/assign",
+              "assign me",
+              "i'd like to work on this",
+              "i want to work on this",
+              "can i work on this",
+              "please assign me"
+            ];
+
+            // 1. Check if the comment matches any assignment keyword
+            
+            if (!KEYWORDS.some(kw => comment.includes(kw))) return;
+            
+            // Skip automated bot comments
+            
+            if (context.payload.comment.user.type === 'Bot') return;
+
+            const { owner, repo } = context.repo;
+            
+            const issueNumber = context.payload.issue.number;
+            
+            const commenter = context.payload.comment.user.login;
+
+            // 2. Fetch live issue data from the GitHub API
+            
+            const { data: issue } = await github.rest.issues.get({
+              owner, repo, issue_number: issueNumber,
+            });
+
+            if (issue.state !== 'open') return;
+
+            // 3. Assign the contributor if unassigned
+            
+            if (!issue.assignees || issue.assignees.length === 0) {
+              await github.rest.issues.addAssignees({
+                owner, repo, issue_number: issueNumber,
+                assignees: [commenter],
+              });
+
+              // 4. Post confirmation message
+              
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNumber,
+                body: `Assigned to @${commenter}! Please drop your PR within **7 days**.`,
+              });
+            }
+
+
+
