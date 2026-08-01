@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { rateLimit } from "../_shared/rateLimit.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -67,6 +68,16 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Invalid authorization token" }),
         { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
+
+    // Rate limit: max 1 emergency broadcast per 5 minutes per IP
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+    const rateLimitResult = await rateLimit(ip);
+    if (!rateLimitResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait before sending another emergency alert." }),
+        { status: 429, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
@@ -172,9 +183,9 @@ serve(async (req) => {
       );
     }
 
-    const rawContactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);
-    const rawContactName = bodyContactName || (profile ? profile.emergency_contact_name : null);
-    const rawSenderName = bodySenderName || (profile ? profile.full_name : null) || "A user";
+    const rawContactPhone = contact_phone;
+    const rawContactName = contact_name;
+    const rawSenderName = sender_name || "A user";
 
     if (!rawContactPhone) {
       return new Response(
