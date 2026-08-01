@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Loader2, ShieldCheck, ShieldOff, Smartphone } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldOff, Smartphone, AlertCircle, RefreshCw } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 
 type Factor = {
@@ -21,16 +21,26 @@ const TwoFactorAuth = () => {
   const [factorId, setFactorId] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
 
   const verifiedFactor = factors.find((f) => f.status === "verified");
 
   const loadFactors = async () => {
     setLoading(true);
-    const { data, error } = await supabase.auth.mfa.listFactors();
-    if (error) {
-      showError("Error", "Could not load 2FA status");
-    } else {
-      setFactors(data?.totp ?? []);
+    setError(null);
+    try {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) {
+        setError("Could not load your 2FA status. Please try again.");
+        showError("Error", "Could not load 2FA status");
+      } else {
+        setFactors(data?.totp ?? []);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Error loading MFA factors:", err);
     }
     setLoading(false);
   };
@@ -41,7 +51,19 @@ const TwoFactorAuth = () => {
 
   const startEnrollment = async () => {
     setSubmitting(true);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+
+    // Clean up any stale unverified factor left over from a previous
+    // incomplete enrollment attempt, since Supabase blocks creating a
+    // new factor with a name that collides with an existing one.
+    const staleFactor = factors.find((f) => f.status !== "verified");
+    if (staleFactor) {
+      await supabase.auth.mfa.unenroll({ factorId: staleFactor.id });
+    }
+
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: `totp-${Date.now()}`,
+    });
     if (error) {
       showError("Enrollment Failed", error.message);
     } else if (data) {
@@ -54,6 +76,11 @@ const TwoFactorAuth = () => {
   };
 
   const confirmEnrollment = async () => {
+    if (lockedUntil && Date.now() < lockedUntil) {
+      const secondsLeft = Math.ceil((lockedUntil - Date.now()) / 1000);
+      showError("Too Many Attempts", `Please wait ${secondsLeft} seconds before trying again`);
+      return;
+    }
     if (verifyCode.length !== 6) {
       showError("Invalid Code", "Enter the 6-digit code from your authenticator app");
       return;
@@ -73,11 +100,20 @@ const TwoFactorAuth = () => {
       code: verifyCode,
     });
     if (verifyError) {
-      showError("Incorrect Code", "The code you entered is incorrect or expired");
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      if (nextAttempts >= 5) {
+        setLockedUntil(Date.now() + 5 * 60 * 1000);
+        showError("Too Many Failed Attempts", "Please try again in 5 minutes");
+      } else {
+        showError("Incorrect Code", `Invalid code. ${5 - nextAttempts} attempts remaining.`);
+      }
     } else {
       showSuccess("2FA Enabled", "Two-factor authentication is now active on your account");
       setEnrolling(false);
       setVerifyCode("");
+      setAttempts(0);
+      setLockedUntil(null);
       await loadFactors();
     }
     setSubmitting(false);
@@ -99,8 +135,24 @@ const TwoFactorAuth = () => {
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-10 flex justify-center">
+        <CardContent className="py-10 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading security settings...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-900">
+        <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
+          <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          <Button variant="outline" onClick={loadFactors}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
         </CardContent>
       </Card>
     );
