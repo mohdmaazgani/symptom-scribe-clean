@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
+
 import {
   Card,
   CardContent,
@@ -583,13 +585,19 @@ const Metrics = () => {
         <CardContent>
           {historyLoading ? (
             historyView === "table" ? <MetricsTableSkeleton /> : <MetricsChartSkeleton />
-          ) : records.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-lg font-medium">No health metrics yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Record your first measurement above to start tracking trends.
-              </p>
-            </div>
+        ) : records.length === 0 ? (
+          <EmptyState
+          icon={
+          <Activity
+            className="w-8 h-8 text-teal-600 dark:text-teal-400"
+            strokeWidth={1.5}
+           />
+           }
+          title="Add your first health metric"
+          description="Record a measurement above to start tracking trends over time."
+          ctaText="Add Metric"
+          onCtaClick={() => setFormOpen(true)}
+          />
           ) : (
             <>
               <div className="flex flex-wrap gap-3 mb-4">

@@ -12,12 +12,15 @@ import {
   Thermometer,
   Brain,
   HeartPulse,
+  MessageSquarePlus,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/lib/toast-helpers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/common/EmptyState";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
@@ -402,22 +405,38 @@ const ChatInterface = () => {
   const isWelcomeState = messages.length === 1 && messages[0] === INITIAL_GREETING;
 
   const renderHistoryList = () => {
-    if (sessionsLoading) {
-      return (
-        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          Loading history...
-        </div>
-      );
-    }
+  if (sessionsLoading) {
+    return (
+      <div className="space-y-2 p-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5"
+          >
+            <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+            <Skeleton className="h-4 flex-1 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-    if (sessions.length === 0) {
-      return (
-        <div className="text-center py-8 text-sm text-muted-foreground px-4">
-          No previous sessions found. Start a conversation to save one!
-        </div>
-      );
-    }
+  if (sessions.length === 0) {
+    return (
+      <EmptyState
+        icon={
+          <MessageSquarePlus
+            className="w-8 h-8 text-teal-600 dark:text-teal-400"
+            strokeWidth={1.5}
+          />
+        }
+        title="Start a new conversation"
+        description="Your saved chat sessions will appear here once you begin talking with the AI assistant."
+        ctaText="New Chat"
+        onCtaClick={handleNewChat}
+      />
+    );
+  }
 
     return (
       <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar">
