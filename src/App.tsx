@@ -81,6 +81,7 @@ const App = () => {
                 const encryptedEmergencyPhone = await encryptProfileField(pendingProfile.emergency_contact_phone, key);
                 const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
                 const encryptedChronicConditions = await encryptProfileArray(pendingProfile.chronic_conditions, key);
+                const encryptedBloodType = await encryptProfileField(pendingProfile.blood_type, key);
 
                 const { error } = await supabase
                   .from("profiles")
@@ -89,7 +90,7 @@ const App = () => {
                     full_name: encryptedFullName,
                     date_of_birth: encryptedDob,
                     gender: pendingProfile.gender || null,
-                    blood_type: pendingProfile.blood_type || null,
+                    blood_type: encryptedBloodType,
                     allergies: encryptedAllergies,
                     chronic_conditions: encryptedChronicConditions,
                     emergency_contact_name: encryptedEmergencyName,
