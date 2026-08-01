@@ -13,6 +13,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
+import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
@@ -120,8 +121,9 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+    <AccessibilityProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -274,8 +276,9 @@ const App = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AccessibilityProvider>
   );
 };
 

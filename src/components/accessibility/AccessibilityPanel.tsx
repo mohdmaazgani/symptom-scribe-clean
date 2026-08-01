@@ -1,5 +1,5 @@
 import React from "react";
-import { useAccessibility, FontSize } from "./AccessibilityContext";
+import { useAccessibility, FontSize } from "./AccessibilityContext.tsx";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";

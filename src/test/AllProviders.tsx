@@ -35,7 +35,7 @@ interface AllProvidersProps {
   initialEntries?: string[];
 }
 
-import { AccessibilityProvider } from "@/components/accessibility/AccessibilityContext";
+import { AccessibilityProvider } from "@/components/accessibility/AccessibilityContext.tsx";
 
 function AllProviders({ children, initialEntries = ["/"] }: AllProvidersProps) {
   const queryClient = createTestQueryClient();

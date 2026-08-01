@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { AccessibilityTriggerButton } from "@/components/accessibility/AccessibilityTriggerButton";
-import { useAccessibility } from "@/components/accessibility/AccessibilityContext";
+import { useAccessibility } from "@/components/accessibility/AccessibilityContext.tsx";
 import { BackToTop } from "@/components/navigation/BackToTop";
 
 interface LayoutProps {

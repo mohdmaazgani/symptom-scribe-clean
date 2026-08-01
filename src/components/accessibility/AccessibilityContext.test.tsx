@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { AccessibilityProvider, useAccessibility } from "./AccessibilityContext";
+import { AccessibilityProvider, useAccessibility } from "./AccessibilityContext.tsx";
 import { AccessibilityPanel } from "./AccessibilityPanel";
 
 const TestConsumer = () => {

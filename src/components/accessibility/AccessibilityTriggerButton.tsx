@@ -1,5 +1,5 @@
 import React from "react";
-import { useAccessibility } from "./AccessibilityContext";
+import { useAccessibility } from "./AccessibilityContext.tsx";
 import { AccessibilityPanel } from "./AccessibilityPanel";
 import { Button } from "@/components/ui/button";
 import { Accessibility } from "lucide-react";
