@@ -1,6 +1,7 @@
-import { Bot, User } from "lucide-react";
+import { Bot, User, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { useState } from "react";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
@@ -8,11 +9,18 @@ interface ChatMessageProps {
 
 const ChatMessage = ({ role, content }: ChatMessageProps) => {
   const isUser = role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div
       className={cn(
-        "flex gap-3 animate-fade-in",
+        "flex gap-3 animate-fade-in group",
         isUser ? "justify-end" : "justify-start"
       )}
     >
@@ -23,6 +31,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
         </div>
       )}
       
+      <div className="relative">
       <div
         className={cn(
           "max-w-[80%] rounded-2xl px-4 py-3 shadow-soft",
@@ -63,6 +72,21 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
     {content.replace(/•/g, "-")}
   </ReactMarkdown>
 </div>
+      </div>
+      {!isUser && (
+        <button
+          onClick={handleCopy}
+          className="absolute -bottom-8 right-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted text-muted-foreground"
+          title="Copy response"
+          aria-label="Copy AI response"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-green-500" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
+        </button>
+      )}
       </div>
       
       {isUser && (
