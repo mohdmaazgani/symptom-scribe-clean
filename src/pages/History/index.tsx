@@ -521,7 +521,7 @@ const History = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in">
           {filteredHistory.map((entry) => (
             <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
               <CardHeader>

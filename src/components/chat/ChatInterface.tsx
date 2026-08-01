@@ -439,7 +439,7 @@ const ChatInterface = () => {
   }
 
     return (
-      <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar">
+       <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar animate-fade-in">
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
           return (

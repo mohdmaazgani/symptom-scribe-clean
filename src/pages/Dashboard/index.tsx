@@ -306,7 +306,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <Card className="border"
         style={{ background: "var(--welcome-bg)" }}>
         <CardContent className="flex items-center justify-between py-6">

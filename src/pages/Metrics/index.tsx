@@ -599,7 +599,7 @@ const Metrics = () => {
           onCtaClick={() => setFormOpen(true)}
           />
           ) : (
-            <>
+            <div className="animate-fade-in">
               <div className="flex flex-wrap gap-3 mb-4">
                 <Select
                   value={historyMetricFilter}
@@ -785,7 +785,7 @@ const Metrics = () => {
                     </ResponsiveContainer>
                   </div>
                 ))}
-            </>
+            </div>
           )}
         </CardContent>
       </Card>
