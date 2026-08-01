@@ -216,3 +216,18 @@ export const useAccessibility = () => {
   }
   return context;
 };
+
+export const useAccessibilityContext = () => {
+  const context = useAccessibility();
+  return {
+    ...context,
+    updateSetting: <K extends keyof AccessibilitySettings>(key: K, value: AccessibilitySettings[K]) => {
+      if (key === "fontSize") context.setFontSize(value as FontSize);
+      else if (key === "highContrast") context.setHighContrast(value as boolean);
+      else if (key === "dyslexiaFont") context.setDyslexiaFont(value as boolean);
+      else if (key === "increasedSpacing") context.setIncreasedSpacing(value as boolean);
+      else if (key === "focusHighlight") context.setFocusHighlight(value as boolean);
+    },
+    resetSettings: context.resetDefaults,
+  };
+};
