@@ -81,6 +81,8 @@ const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(
@@ -119,6 +121,16 @@ const History = () => {
 
           if (severityFilter !== "all") {
             query = query.eq("severity_level", severityFilter);
+          }
+
+          if (dateFrom) {
+            query = query.gte("created_at", dateFrom);
+          }
+
+          if (dateTo) {
+            const endDate = new Date(dateTo);
+            endDate.setHours(23, 59, 59, 999);
+            query = query.lte("created_at", endDate.toISOString());
           }
 
           if (searchTokens.length > 0) {
@@ -404,7 +416,7 @@ const History = () => {
   };
 
   const filteredHistory = history;
-  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all";
+  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all" || dateFrom !== "" || dateTo !== "";
 
   return (
     <div className="space-y-6">
@@ -456,6 +468,22 @@ const History = () => {
           <option value="moderate">Moderate</option>
           <option value="high">High</option>
         </select>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          placeholder="From date"
+          className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Filter from date"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          placeholder="To date"
+          className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Filter to date"
+        />
       </div>
 
       {isFiltering && (
@@ -466,6 +494,8 @@ const History = () => {
             onClick={() => {
               setSearchQuery("");
               setSeverityFilter("all");
+              setDateFrom("");
+              setDateTo("");
             }}
             className="gap-2"
           >
