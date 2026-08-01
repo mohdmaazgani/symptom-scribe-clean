@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Plus, History, Trash2, Menu } from "lucide-react";
+import { Send, Loader2, Plus, History, Trash2, Menu, Download } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +68,22 @@ const ChatInterface = () => {
     if (typeof messagesEndRef.current?.scrollIntoView === "function") {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
+  };
+
+  const handleExportChat = () => {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const lines = messages.map(
+      (m) => `[${m.role === "user" ? "You" : "AI"}]\n${m.content}`
+    );
+    const text = `Chat Export - ${timestamp}\n${"=".repeat(40)}\n\n${lines.join("\n\n")}`;
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat-export-${timestamp}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess("Exported", "Chat conversation downloaded");
   };
 
   useEffect(() => {
@@ -482,6 +498,16 @@ const ChatInterface = () => {
             <Plus className="w-4 h-4" aria-hidden="true" />
             New Chat
           </Button>
+          <Button
+            onClick={handleExportChat}
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center justify-center gap-2"
+            disabled={messages.length <= 1}
+          >
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            Export Chat
+          </Button>
         </div>
         <div className="flex-1 flex flex-col min-h-0 py-2">
           <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -539,6 +565,17 @@ const ChatInterface = () => {
           >
             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
             New
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportChat}
+            aria-label="Export chat conversation"
+            className="text-xs flex items-center gap-1"
+            disabled={messages.length <= 1}
+          >
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            Export
           </Button>
         </header>
 
