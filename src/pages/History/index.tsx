@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, X, Trash2, Search, ClipboardList, FileDown } from "lucide-react";
+import { CheckCircle, X, Trash2, Search, ClipboardList, FileDown, Tag, PieChart, Settings2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +13,10 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
+import { CategoryBadge } from "@/components/dashboard/CategoryBadge";
+import { CategoryManagerDialog } from "@/components/dashboard/CategoryManagerDialog";
+import { CategoryStatistics } from "@/components/dashboard/CategoryStatistics";
+import { getCategories, autoDetectCategory } from "@/lib/symptom-categories";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +33,7 @@ interface SymptomEntry {
   id: string;
   user_id?: string;
   symptoms: string;
+  category?: string;
   severity_level: string;
   possible_causes: string[];
   recommendations: string[];
@@ -77,15 +82,20 @@ const HistorySkeleton = () => (
 
 const History = () => {
   const [history, setHistory] = useState<SymptomEntry[]>([]);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [showStats, setShowStats] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
+
+  const availableCategories = getCategories();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,6 +156,7 @@ const History = () => {
               id: record.id,
               user_id: record.user_id,
               symptoms: record.symptoms || "",
+              category: (record as any).category || autoDetectCategory(record.symptoms || ""),
               severity_level: record.severity_level || "low",
               possible_causes: record.possible_causes,
               recommendations: record.recommendations,
@@ -208,7 +219,10 @@ const History = () => {
               (result): result is PromiseFulfilledResult<(typeof localRecords)[number]> =>
                 result.status === "fulfilled"
             )
-            .map((result) => result.value);
+            .map((result) => ({
+              ...result.value,
+              category: result.value.category || autoDetectCategory(result.value.symptoms || ""),
+            }));
 
           const failedRecords = decryptedResults.filter((result) => result.status === "rejected");
 
@@ -258,6 +272,61 @@ const History = () => {
   useEffect(() => {
     fetchHistory(debouncedQuery);
   }, [debouncedQuery, fetchHistory]);
+
+  const updateEntryCategory = async (id: string, newCategory: string) => {
+    try {
+      setHistory((prev) =>
+        prev.map((entry) => (entry.id === id ? { ...entry, category: newCategory } : entry))
+      );
+
+      // Update in Dexie local storage
+      await db.symptomHistory.update(id, { category: newCategory });
+
+      // Update in Supabase if online
+      if (navigator.onLine) {
+        await supabase
+          .from("symptom_history")
+          .update({ category: newCategory } as any)
+          .eq("id", id);
+        await invalidateCache("symptom_history");
+      }
+
+      toast({
+        title: "Category Updated",
+        description: `Symptom categorized as "${newCategory}"`,
+      });
+    } catch (error) {
+      console.error("Failed to update category:", error);
+    }
+  };
+
+  const handleCategoryRenamed = async (oldName: string, newName: string) => {
+    setHistory((prev) =>
+      prev.map((entry) => (entry.category === oldName ? { ...entry, category: newName } : entry))
+    );
+
+    // Update in Dexie
+    const localRecords = await db.symptomHistory.toArray();
+    for (const record of localRecords) {
+      if (record.category === oldName) {
+        await db.symptomHistory.update(record.id, { category: newName });
+      }
+    }
+
+    // Update in Supabase if online
+    if (navigator.onLine) {
+      await supabase
+        .from("symptom_history")
+        .update({ category: newName } as any)
+        .eq("category", oldName as any);
+      await invalidateCache("symptom_history");
+    }
+
+    toast({
+      title: "Categories Updated",
+      description: `Renamed category "${oldName}" to "${newName}" across symptom records`,
+    });
+  };
 
   const toggleResolved = async (id: string, currentStatus: boolean) => {
     try {
@@ -311,10 +380,11 @@ const History = () => {
   };
 
   const exportCSV = () => {
-    const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
-    const rows = history.map((entry) => [
+    const headers = ["Date", "Symptoms", "Category", "Severity", "Risk Score", "Resolved"];
+    const rows = filteredHistory.map((entry) => [
       new Date(entry.created_at).toLocaleDateString(),
       `"${entry.symptoms.replace(/"/g, '""')}"`,
+      entry.category || autoDetectCategory(entry.symptoms),
       entry.severity_level,
       entry.risk_score,
       entry.resolved ? "Yes" : "No",
@@ -340,23 +410,24 @@ const History = () => {
     const generatedOn = new Date().toLocaleString();
     doc.text(`Generated on: ${generatedOn}`, 14, 25);
 
-    if (history.length > 0) {
+    if (filteredHistory.length > 0) {
       const oldestDate = new Date(
-        Math.min(...history.map((e) => new Date(e.created_at).getTime()))
+        Math.min(...filteredHistory.map((e) => new Date(e.created_at).getTime()))
       ).toLocaleDateString();
       const newestDate = new Date(
-        Math.max(...history.map((e) => new Date(e.created_at).getTime()))
+        Math.max(...filteredHistory.map((e) => new Date(e.created_at).getTime()))
       ).toLocaleDateString();
       doc.text(`Date range: ${oldestDate} - ${newestDate}`, 14, 31);
-      doc.text(`Total entries: ${history.length}`, 14, 37);
+      doc.text(`Total entries: ${filteredHistory.length}`, 14, 37);
     }
 
     autoTable(doc, {
       startY: 44,
-      head: [["Date", "Symptoms", "Severity", "Risk Score", "Status"]],
-      body: history.map((entry) => [
+      head: [["Date", "Symptoms", "Category", "Severity", "Risk Score", "Status"]],
+      body: filteredHistory.map((entry) => [
         new Date(entry.created_at).toLocaleDateString(),
         entry.symptoms,
+        entry.category || autoDetectCategory(entry.symptoms),
         entry.severity_level,
         `${entry.risk_score}/100`,
         entry.resolved ? "Resolved" : "Active",
@@ -364,7 +435,7 @@ const History = () => {
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [20, 130, 120] },
       didParseCell: (data) => {
-        if (data.section === "body" && data.column.index === 2) {
+        if (data.section === "body" && data.column.index === 3) {
           const severity = String(data.cell.raw).toLowerCase();
           if (severity === "high") data.cell.styles.textColor = [200, 40, 40];
           else if (severity === "moderate") data.cell.styles.textColor = [180, 120, 0];
@@ -403,8 +474,17 @@ const History = () => {
     }
   };
 
-  const filteredHistory = history;
-  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all";
+  const filteredHistory = history.filter((entry) => {
+    if (categoryFilter !== "all") {
+      const entryCat = entry.category || autoDetectCategory(entry.symptoms || "");
+      if (entryCat.toLowerCase() !== categoryFilter.toLowerCase()) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all" || categoryFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -419,21 +499,51 @@ const History = () => {
               </span>
             )}
           </div>
-          <p className="text-muted-foreground">Review your past health consultations</p>
+          <p className="text-muted-foreground">Review and categorize your past health consultations</p>
         </div>
-        {history.length > 0 && (
-          <div className="flex gap-2">
-            <Button onClick={exportCSV} variant="outline" size="sm">
-              Export CSV
-            </Button>
-            <Button onClick={exportPDF} variant="outline" size="sm">
-              <FileDown className="w-4 h-4 mr-1" />
-              Download PDF
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setShowStats((prev) => !prev)}
+            variant={showStats ? "secondary" : "outline"}
+            size="sm"
+            className="gap-1.5"
+          >
+            <PieChart className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            {showStats ? "Hide Statistics" : "Category Statistics"}
+          </Button>
+          <Button
+            onClick={() => setCategoryDialogOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+          >
+            <Settings2 className="w-4 h-4" />
+            Manage Categories
+          </Button>
+          {history.length > 0 && (
+            <>
+              <Button onClick={exportCSV} variant="outline" size="sm">
+                Export CSV
+              </Button>
+              <Button onClick={exportPDF} variant="outline" size="sm">
+                <FileDown className="w-4 h-4 mr-1" />
+                Download PDF
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Category Statistics Panel */}
+      {showStats && (
+        <CategoryStatistics
+          symptoms={history}
+          selectedCategory={categoryFilter}
+          onSelectCategoryFilter={(catName) => setCategoryFilter(catName)}
+        />
+      )}
+
+      {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -446,6 +556,22 @@ const History = () => {
             className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        
+        {/* Category Filter Dropdown */}
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="all">All Categories</option>
+          {availableCategories.map((cat) => (
+            <option key={cat.id} value={cat.name}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Severity Filter Dropdown */}
         <select
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value)}
@@ -458,6 +584,7 @@ const History = () => {
         </select>
       </div>
 
+      {/* Clear Filters Button */}
       {isFiltering && (
         <div className="flex justify-end">
           <Button
@@ -466,6 +593,7 @@ const History = () => {
             onClick={() => {
               setSearchQuery("");
               setSeverityFilter("all");
+              setCategoryFilter("all");
             }}
             className="gap-2"
           >
@@ -478,7 +606,6 @@ const History = () => {
       {loading ? (
         <HistorySkeleton />
       ) : history.length === 0 ? (
-        /* ── IMPROVED EMPTY STATE ── */
         <Card>
           <CardContent className="py-14 flex flex-col items-center text-center gap-4">
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-teal-50 dark:bg-teal-950">
@@ -514,6 +641,7 @@ const History = () => {
               onClick={() => {
                 setSearchQuery("");
                 setSeverityFilter("all");
+                setCategoryFilter("all");
               }}
             >
               Clear filters
@@ -522,104 +650,133 @@ const History = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredHistory.map((entry) => (
-            <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg break-words">{entry.symptoms}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(entry.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <Badge variant={getSeverityColor(entry.severity_level)}>
-                      {entry.severity_level}
-                    </Badge>
-                    <Button
-                      variant={entry.resolved ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => toggleResolved(entry.id, entry.resolved)}
-                    >
-                      {entry.resolved ? (
-                        <>
-                          <X className="w-4 h-4 mr-1" />
-                          Reopen
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Resolve
-                        </>
-                      )}
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Permanently delete record"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Symptom History?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to permanently delete this health consultation
-                            record? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteEntry(entry.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          {filteredHistory.map((entry) => {
+            const currentCat = entry.category || autoDetectCategory(entry.symptoms);
+
+            return (
+              <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CardTitle className="text-lg break-words">{entry.symptoms}</CardTitle>
+                        <CategoryBadge category={currentCat} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {/* Inline Category Change Select */}
+                      <select
+                        value={currentCat}
+                        onChange={(e) => updateEntryCategory(entry.id, e.target.value)}
+                        className="h-8 px-2 py-0 text-xs rounded border border-input bg-background text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        title="Change Category"
+                      >
+                        {availableCategories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <Badge variant={getSeverityColor(entry.severity_level)}>
+                        {entry.severity_level}
+                      </Badge>
+                      <Button
+                        variant={entry.resolved ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => toggleResolved(entry.id, entry.resolved)}
+                      >
+                        {entry.resolved ? (
+                          <>
+                            <X className="w-4 h-4 mr-1" />
+                            Reopen
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Resolve
+                          </>
+                        )}
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            title="Permanently delete record"
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Symptom History?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to permanently delete this health consultation
+                              record? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteEntry(entry.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {entry.possible_causes && entry.possible_causes.length > 0 && (
-                    <div>
-                      <p className="text-sm font-semibold mb-1">Possible Causes:</p>
-                      <ul className="text-sm text-muted-foreground list-disc list-inside">
-                        {entry.possible_causes.map((cause, idx) => (
-                          <li key={idx}>{cause}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {entry.recommendations && entry.recommendations.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-semibold mb-1">Recommendations:</p>
-                      <ul className="text-sm text-muted-foreground list-disc list-inside">
-                        {entry.recommendations.map((rec, idx) => (
-                          <li key={idx}>{rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {entry.risk_score !== null && (
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">Risk Score:</p>
-                      <Badge variant="outline">{entry.risk_score}/100</Badge>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {entry.possible_causes && entry.possible_causes.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold mb-1">Possible Causes:</p>
+                        <ul className="text-sm text-muted-foreground list-disc list-inside">
+                          {entry.possible_causes.map((cause, idx) => (
+                            <li key={idx}>{cause}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {entry.recommendations && entry.recommendations.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-semibold mb-1">Recommendations:</p>
+                        <ul className="text-sm text-muted-foreground list-disc list-inside">
+                          {entry.recommendations.map((rec, idx) => (
+                            <li key={idx}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {entry.risk_score !== null && (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold">Risk Score:</p>
+                        <Badge variant="outline">{entry.risk_score}/100</Badge>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
+
+      {/* Category Manager Dialog */}
+      <CategoryManagerDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        onCategoryRenamed={handleCategoryRenamed}
+        onCategoriesChanged={() => fetchHistory(debouncedQuery)}
+      />
     </div>
   );
 };

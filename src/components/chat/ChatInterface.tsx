@@ -10,6 +10,7 @@ import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/li
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import { autoDetectCategory } from "@/lib/symptom-categories";
 import {
   computeRiskScore,
   parseSymptomConsultation,
@@ -315,6 +316,7 @@ const ChatInterface = () => {
             id: recordId,
             user_id: user.id,
             symptoms: userMessage.content,
+            category: autoDetectCategory(userMessage.content),
             ai_analysis: assistantContent,
             severity_level: severityLevel,
             possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
