@@ -12,7 +12,8 @@ import {
 } from "@/lib/encryption";
 
 import { supabase } from "@/integrations/supabase/client";
-import { syncOfflineData } from "@/lib/offline-db";
+import { syncOfflineData, hasPendingOfflineData } from "@/lib/offline-db";
+import { toast } from "sonner";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
@@ -113,9 +114,23 @@ const App = () => {
     );
 
 
+    const handleOnline = async () => {
+      const hasPending = await hasPendingOfflineData();
+      if (!hasPending) return;
+
+      toast.promise(syncOfflineData(), {
+        loading: "Internet restored. Syncing your offline health data...",
+        success: "Offline data synced successfully!",
+        error: "Failed to sync offline data. Retrying later."
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+
     return () => {
       cleanup?.();
       subscription.unsubscribe();
+      window.removeEventListener("online", handleOnline);
     };
   }, []);
 

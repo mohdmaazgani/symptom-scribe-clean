@@ -215,15 +215,35 @@ registerEncryptionHooks({
   },
 });
 
+let syncPromise: Promise<boolean> | null = null;
+
+export const hasPendingOfflineData = async (): Promise<boolean> => {
+  try {
+    const metricsSync = await db.healthMetrics.where("pending_sync").equals(1).count();
+    const metricsDel = await db.healthMetrics.where("pending_delete").equals(1).count();
+    const symptomsSync = await db.symptomHistory.where("pending_sync").equals(1).count();
+    const symptomsUpd = await db.symptomHistory.where("pending_update").equals(1).count();
+    const symptomsDel = await db.symptomHistory.where("pending_delete").equals(1).count();
+
+    return (metricsSync + metricsDel + symptomsSync + symptomsUpd + symptomsDel) > 0;
+  } catch (err) {
+    console.error("Error checking pending offline data:", err);
+    return false;
+  }
+};
+
 export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
+  if (syncPromise) return syncPromise;
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+  syncPromise = (async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
 
-    const key = await whenEncryptionReady();
-    let syncedAny = false;
+      const key = await whenEncryptionReady();
+      let syncedAny = false;
+
 
     // 1. Sync pending health metrics deletions
     const pendingMetricsDeletes = await db.healthMetrics
@@ -326,5 +346,10 @@ export const syncOfflineData = async (): Promise<boolean> => {
   } catch (error) {
     console.error("Error during offline synchronization:", error);
     return false;
+  } finally {
+    syncPromise = null;
   }
+  })();
+
+  return syncPromise;
 };
