@@ -1,3 +1,4 @@
+import { rateLimit } from "../_shared/rateLimit.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -5,11 +6,22 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:8080",
   "https://symptom-scribe.vercel.app",
+  "https://symptom-scribe-clean.netlify.app",
 ];
+
+const NETLIFY_PREVIEW_ORIGIN =
+  /^https:\/\/deploy-preview-\d+--symptom-scribe-clean\.netlify\.app$/;
+
+function isAllowedOrigin(origin: string): boolean {
+  return (
+    ALLOWED_ORIGINS.includes(origin) ||
+    NETLIFY_PREVIEW_ORIGIN.test(origin)
+  );
+}
 
 const getCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin":
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
+    origin && isAllowedOrigin(origin) ? origin : "null",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 });
@@ -22,7 +34,7 @@ function hexToUint8Array(hex: string): Uint8Array {
 serve(async (req) => {
   const origin = req.headers.get("origin");
 
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+  if (origin && !isAllowedOrigin(origin)) {
     return new Response(
       JSON.stringify({ error: "Origin not allowed" }),
       {
@@ -37,6 +49,28 @@ serve(async (req) => {
   }
 
   try {
+      const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown";
+
+  const rateLimitResult = await rateLimit(ip);
+
+  if (!rateLimitResult.success) {
+    return new Response(
+      JSON.stringify({
+        error: "Rate limit exceeded. Please try again later.",
+      }),
+      {
+        status: 429,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
