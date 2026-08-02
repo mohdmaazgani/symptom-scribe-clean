@@ -49,10 +49,13 @@ serve(async (req) => {
   }
 
   try {
-      const ip =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
+const ip =
+  req.headers
+    .get("x-forwarded-for")
+    ?.split(",")[0]
+    .trim() ||
+  req.headers.get("cf-connecting-ip") ||
+  "unknown";
 
   const rateLimitResult = await rateLimit(ip);
 
