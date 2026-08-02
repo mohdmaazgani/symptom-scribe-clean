@@ -93,9 +93,10 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
           Join Challenge
         </button>
       ) : isCompleted ? (
-        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-primary bg-primary/10 border border-primary/20">
-          ✅ Completed!
-        </div>
+<div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-primary bg-primary/10 border border-primary/20 flex items-center justify-center gap-2">
+  <CheckCircle2 className="w-4 h-4" />
+  <span>Completed!</span>
+</div>
       ) : checkedInToday ? (
         <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-muted-foreground bg-muted/40 border border-border">
           ✓ Checked in today
