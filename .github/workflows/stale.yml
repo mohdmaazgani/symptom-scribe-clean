@@ -1,0 +1,82 @@
+name: "Stale Issue & PR Sweeper"
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+    
+  workflow_dispatch:
+
+jobs:
+  stale:
+    name: Mark and Close Stale Issues & PRs
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Run Stale Action
+      
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Inactivity thresholds (14 days warning + 7 days close = 21 days total)
+          days-before-stale: 14
+          
+          days-before-close: 7
+
+          # Labels applied when stale
+          stale-issue-label: "stale"
+          
+          stale-pr-label: "stale"
+
+          # Remove stale label automatically if activity resumes
+          remove-stale-when-updated: true
+
+          # Warning comment posted on stale issues
+          
+          stale-issue-message: >
+            👋 This issue has had no activity for **14 days** and has been
+            marked as `stale`. If this is still relevant, please leave a
+            comment or push an update within the next **7 days**, otherwise
+            it will be closed automatically to keep the tracker clean.
+
+          # Warning comment posted on stale PRs
+          
+          stale-pr-message: >
+            👋 This pull request has had no activity for **14 days** and
+            has been marked as `stale`. If this is still being worked on,
+            please push a commit or leave a comment within the next **7 days**,
+            otherwise it will be closed automatically.
+
+          # Comment posted when a stale issue is closed
+          
+          close-issue-message: >
+            🔒 This issue has been automatically closed after 21 days of
+            inactivity. If still relevant, please open a new issue with
+            updated context. Thank you for contributing to symptom-scribe-clean !
+
+          # Comment posted when a stale PR is closed
+          
+          close-pr-message: >
+            🔒 This pull request has been automatically closed after 21 days
+            of inactivity. Please reopen or raise a fresh PR rebased on the
+            latest main branch if you would like to continue. Thank you!
+
+          # Exemptions (Never touch these)
+          
+          exempt-issue-labels: "pinned,security,critical,in-progress,blocked,help wanted,gssoc:approved"
+          exempt-pr-labels: "pinned,security,critical,in-progress,blocked,do-not-merge,gssoc:approved"
+
+
+          # Cap API calls per run to respect GitHub rate limits
+          operations-per-run: 100
+
+          # Process oldest items first
+          ascending: true
+
+
+
+          

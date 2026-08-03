@@ -470,57 +470,53 @@ export async function decryptProfileArray(
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
+let cachedP2PKeys: { privateKey: CryptoKey; publicKey: CryptoKey } | null = null;
+let cachedP2PKeysPromise: Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> | null = null;
+
 export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
-  const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
-  const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
-
-  if (storedPrivate && storedPublic) {
+  // Remove any legacy P2P private key storage from browser storage.
+  // The private key is now kept only in memory for the current session.
+  // Public identity is session-scoped too, so it no longer persists across browser reloads.
+  if (typeof localStorage !== "undefined") {
     try {
-      const privateJwk = JSON.parse(storedPrivate);
-      const publicJwk = JSON.parse(storedPublic);
-
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        privateJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign"]
-      );
-
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        publicJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["verify"]
-      );
-
-      return { privateKey, publicKey };
+      localStorage.removeItem("symptom_scribe_p2p_private_key");
+      localStorage.removeItem("symptom_scribe_p2p_enc_private_key");
+      localStorage.removeItem("symptom_scribe_p2p_public_key");
     } catch (err) {
-      console.warn("Failed to load stored P2P keys, generating new ones:", err);
+      console.warn("Failed to remove legacy P2P keys:", err);
     }
   }
 
-  // Generate new ECDSA P-256 keypair
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: "ECDSA",
-      namedCurve: "P-256",
-    },
-    true,
-    ["sign", "verify"]
-  );
+  if (cachedP2PKeys) {
+    return cachedP2PKeys;
+  }
 
-  const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  if (cachedP2PKeysPromise) {
+    return cachedP2PKeysPromise;
+  }
 
-  localStorage.setItem("symptom_scribe_p2p_private_key", JSON.stringify(privateJwk));
-  localStorage.setItem("symptom_scribe_p2p_public_key", JSON.stringify(publicJwk));
+  cachedP2PKeysPromise = crypto.subtle
+    .generateKey(
+      {
+        name: "ECDSA",
+        namedCurve: "P-256",
+      },
+      false,
+      ["sign", "verify"]
+    )
+    .then((keyPair) => {
+      cachedP2PKeys = {
+        privateKey: keyPair.privateKey,
+        publicKey: keyPair.publicKey,
+      };
 
-  return {
-    privateKey: keyPair.privateKey,
-    publicKey: keyPair.publicKey,
-  };
+      return cachedP2PKeys;
+    })
+    .finally(() => {
+      cachedP2PKeysPromise = null;
+    });
+
+  return cachedP2PKeysPromise;
 }
 
 export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {

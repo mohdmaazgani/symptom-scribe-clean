@@ -20,7 +20,7 @@
  *                       without crashing.
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, act } from "@testing-library/react";
 import { render } from "@/test/utils";
 import Dashboard from "@/pages/Dashboard/";
 
@@ -32,6 +32,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       getUser: vi.fn(),
       getSession: vi.fn(),
+      onAuthStateChange: vi.fn(),
     },
     from: vi.fn(),
   },
@@ -120,7 +121,9 @@ function mockCachedSymptoms(data: unknown[] | null, error: unknown = null) {
 function mockAuthUser(user: typeof mockUser | null = mockUser) {
   (supabase.auth.getUser as Mock).mockResolvedValue({ data: { user } });
   (supabase.auth.getSession as Mock).mockResolvedValue({
-    data: { session: user ? { access_token: "mock-token" } : null },
+    data: {
+      session: user ? { user, access_token: "mock-token" } : null,
+    },
   });
 }
 (supabase.from as Mock).mockReturnValue({
@@ -192,7 +195,7 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/No symptom history yet/i)
+        screen.getByText(/No health data yet/i)
       ).toBeInTheDocument();
     });
   });
@@ -281,6 +284,29 @@ describe("Dashboard", () => {
     mockAuthUser(null);
 
     render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Health Dashboard")).toBeInTheDocument();
+    });
+  });
+
+  it("waits for an authenticated session before fetching dashboard data", async () => {
+    let authCallback: ((event: string, session: unknown) => void) | undefined;
+    (supabase.auth.getSession as Mock).mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.onAuthStateChange as Mock).mockImplementation((callback: (event: string, session: unknown) => void) => {
+      authCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } } as never;
+    });
+    (supabase.auth.getUser as Mock).mockResolvedValue({ data: { user: mockUser } });
+    mockCachedSymptoms([]);
+
+    render(<Dashboard />);
+
+    expect(supabase.auth.getUser).not.toHaveBeenCalled();
+
+    await act(async () => {
+      authCallback?.("SIGNED_IN", { user: mockUser, access_token: "session-token" });
+    });
 
     await waitFor(() => {
       expect(screen.getByText("Health Dashboard")).toBeInTheDocument();

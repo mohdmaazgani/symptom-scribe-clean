@@ -39,28 +39,25 @@ interface SymptomHistoryRecord {
 async function fetchSymptomHistory(
   userId: string
 ): Promise<{ data: SymptomHistoryRecord[] | null; source: "cache" | "direct" | "none" }> {
-  const { data: cachedData, error } =
-    await getCachedData<SymptomHistoryRecord[]>("symptom_history");
-
-  if (!error && cachedData && cachedData.length > 0) {
-    return { data: cachedData, source: "cache" };
-  }
-
   const { data: directData, error: directError } = await supabase
     .from("symptom_history")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (directError) {
-    if (error) {
-      console.warn("Cached symptom_history fetch failed:", error);
-    }
-    throw directError;
+  if (!directError && directData && directData.length > 0) {
+    return { data: directData as SymptomHistoryRecord[], source: "direct" };
   }
 
-  if (directData && directData.length > 0) {
-    return { data: directData as SymptomHistoryRecord[], source: "direct" };
+  const { data: cachedData, error } = await getCachedData<SymptomHistoryRecord[]>("symptom_history");
+
+  if (!error && cachedData && cachedData.length > 0) {
+    return { data: cachedData, source: "cache" };
+  }
+
+  if (directError) {
+    console.warn("Direct symptom_history fetch failed, cache fallback failed:", directError, error);
+    throw directError;
   }
 
   return { data: [], source: "none" };
@@ -171,28 +168,77 @@ const Dashboard = () => {
   const [decryptedSymptomsList, setDecryptedSymptomsList] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
-  const fetchDashboardData = async () => {
-    try {
+    const initializeDashboardSession = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+
+      if (sessionError) {
+        console.warn("Unable to resolve dashboard session:", sessionError);
         setLoading(false);
         return;
       }
-      setUserId(user.id);
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+
+      if (session?.user?.id) {
+        await fetchDashboardData(session.user.id);
+        return;
+      }
+
+      setLoading(false);
+
+      const authResult = supabase.auth.onAuthStateChange((_event, nextSession) => {
+        if (!isMounted || !nextSession?.user?.id) return;
+        void fetchDashboardData(nextSession.user.id);
+      });
+
+      authSubscription = authResult?.data?.subscription ?? null;
+    };
+
+    void initializeDashboardSession();
+
+    return () => {
+      isMounted = false;
+      authSubscription?.unsubscribe();
+    };
+  }, []);
+
+  const fetchDashboardData = async (providedUserId?: string) => {
+    let activeUserId = providedUserId ?? null;
+
+    try {
+      setLoading(true);
+
+      if (!activeUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        activeUserId = sessionData.session?.user?.id ?? null;
+      }
+
+      if (!activeUserId) {
+        return;
+      }
+
+      setUserId(activeUserId);
+
+      const [profileResult, symptomResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", activeUserId)
+          .maybeSingle(),
+        fetchSymptomHistory(activeUserId),
+      ]);
+
+      const { data: profile } = profileResult;
+      const { data: rawSymptoms, source } = symptomResult;
+      const key = await whenEncryptionReady();
 
       if (profile?.full_name) {
-        const key = await whenEncryptionReady();
-
         try {
           const decryptedFullName = await decryptProfileField(
             profile.full_name,
@@ -205,13 +251,7 @@ const Dashboard = () => {
         }
       }
 
-
-
-      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
-
       if (rawSymptoms && rawSymptoms.length > 0) {
-        const key = await whenEncryptionReady();
-
         const decryptedResults = await Promise.allSettled(
           rawSymptoms.map((s) => decryptSymptom(s as unknown as OfflineSymptom, key))
         );
