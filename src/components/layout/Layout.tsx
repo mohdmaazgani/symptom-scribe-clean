@@ -2,12 +2,17 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
+import { OfflineBanner } from "@/components/common/OfflineBanner";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { syncOfflineData } from "@/lib/offline-db";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const { isOnline, isSyncing } = useNetworkStatus(syncOfflineData);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen overflow-hidden flex w-full max-w-full bg-background">
@@ -19,7 +24,7 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="flex items-center gap-2">
               <AnimatedThemeToggler />
 
-              {/* ✅ Visible ONLY on mobile. Hidden on laptop/desktop. */}
+              {/* Visible ONLY on mobile. Hidden on laptop/desktop. */}
               <div className="md:hidden">
                 <SidebarTrigger />
               </div>
@@ -31,6 +36,7 @@ const Layout = ({ children }: LayoutProps) => {
           <BackToTop />
         </div>
       </div>
+      <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} />
     </SidebarProvider>
   );
 };
