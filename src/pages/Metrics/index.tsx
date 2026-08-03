@@ -34,6 +34,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { showSuccess, showError, showWarning, showInfo } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
 import { db, syncOfflineData, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
+import { useProfile } from "@/contexts/ProfileContext";
 import { whenKeysReady } from "@/lib/encryption";
 import { invalidateCache } from "@/lib/cached-queries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -185,7 +186,7 @@ const Metrics = () => {
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const { toast } = useToast();
-  const [historyUserId, setHistoryUserId] = useState("");
+  const { activeProfile } = useProfile();
 
   const {
     records,
@@ -194,21 +195,7 @@ const Metrics = () => {
     deleteRecord,
     sortOrder,
     setSortOrder,
-  } = useMetricsHistory(historyUserId);
-  
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        setHistoryUserId(user.id);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  } = useMetricsHistory(activeProfile?.id || null);
 
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
@@ -300,7 +287,7 @@ const Metrics = () => {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      setHistoryUserId(user.id);
+      if (!activeProfile) throw new Error("No active profile");
       
       let metricValue: { value?: number; systolic?: number; diastolic?: number } = {};
       if (metricType === "blood_pressure") {
@@ -324,6 +311,7 @@ const Metrics = () => {
       const record = {
         id: recordId,
         user_id: user.id,
+        profile_id: activeProfile.id,
         metric_type: metricType,
         value: metricValue as Json,
         notes: notes || null,

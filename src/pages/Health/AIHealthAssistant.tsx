@@ -6,6 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import { useProfile } from "@/contexts/ProfileContext";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
 import {
@@ -80,6 +81,7 @@ const AIHealthAssistant = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const { toast } = useToast();
+  const { activeProfile } = useProfile();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -304,6 +306,7 @@ const AIHealthAssistant = () => {
             const record = {
               id: recordId,
               user_id: user.id,
+              profile_id: activeProfile?.id,
               symptoms: userMessage,
               ai_analysis: assistantContent,
               severity_level: severityLevel,

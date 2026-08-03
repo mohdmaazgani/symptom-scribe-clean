@@ -11,6 +11,7 @@ import SymptomPredictions from "@/components/dashboard/SymptomPredictions";
 import { getCachedData } from "@/lib/cached-queries";
 import { decryptSymptom, type OfflineSymptom } from "@/lib/offline-db";
 import { whenEncryptionReady, decryptProfileField } from "@/lib/encryption";
+import { useProfile } from "@/contexts/ProfileContext";
 import { motion } from "framer-motion";
 import { SmartAlertsBanner } from "@/components/dashboard/SmartAlertsBanner";
 import CardSkeleton from "@/components/ui/CardSkeleton";
@@ -35,20 +36,30 @@ interface SymptomHistoryRecord {
 }
 
 async function fetchSymptomHistory(
-  userId: string
+  userId: string,
+  profileId?: string
 ): Promise<{ data: SymptomHistoryRecord[] | null; source: "cache" | "direct" | "none" }> {
+  // If no profileId is available, we can't reliably filter by profile yet
+  if (!profileId) return { data: [], source: "none" };
+
   const { data: cachedData, error } =
-    await getCachedData<SymptomHistoryRecord[]>("symptom_history");
+    await getCachedData<SymptomHistoryRecord[]>(`symptom_history_${profileId}`);
 
   if (!error && cachedData && cachedData.length > 0) {
     return { data: cachedData, source: "cache" };
   }
 
-  const { data: directData, error: directError } = await supabase
+  // We should query by profile_id instead of user_id now
+  let query = supabase
     .from("symptom_history")
     .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("user_id", userId);
+
+  if (profileId) {
+    query = query.eq("profile_id", profileId);
+  }
+
+  const { data: directData, error: directError } = await query.order("created_at", { ascending: false });
 
   if (directError) {
     if (error) {
@@ -168,11 +179,18 @@ const Dashboard = () => {
   const [decryptedSymptomsList, setDecryptedSymptomsList] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const { activeProfile, isLoading: profileLoading } = useProfile();
+  
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (activeProfile) {
+      setUserName(activeProfile.full_name || activeProfile.relationship || "User");
+      fetchDashboardData(activeProfile.id);
+    } else if (!profileLoading) {
+      setLoading(false);
+    }
+  }, [activeProfile, profileLoading]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (profileId: string) => {
     try {
       const {
         data: { user },
@@ -182,30 +200,8 @@ const Dashboard = () => {
         return;
       }
       setUserId(user.id);
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
 
-      if (profile?.full_name) {
-        const key = await whenEncryptionReady();
-
-        try {
-          const decryptedFullName = await decryptProfileField(
-            profile.full_name,
-            key
-          );
-
-          setUserName(decryptedFullName);
-        } catch (err) {
-          console.warn("Full name decryption failed", err);
-        }
-      }
-
-
-
-      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
+      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id, profileId);
 
       if (rawSymptoms && rawSymptoms.length > 0) {
         const key = await whenEncryptionReady();
