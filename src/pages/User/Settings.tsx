@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
+import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
@@ -215,16 +216,26 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
             <span className="hidden sm:inline">Change Password</span>
             <span className="sm:hidden">Password</span>
           </TabsTrigger>
+          <TabsTrigger value="2fa" className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" />
+            <span className="hidden sm:inline">Two-Factor Auth</span>
+            <span className="sm:hidden">2FA</span>
+          </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
             <span className="hidden sm:inline">Language</span>
             <span className="sm:hidden">Lang</span>
+          </TabsTrigger>
+          <TabsTrigger value="accessibility" className="flex items-center gap-2">
+            <Accessibility className="w-4 h-4" />
+            <span className="hidden sm:inline">Accessibility</span>
+            <span className="sm:hidden">A11y</span>
           </TabsTrigger>
           <TabsTrigger value="delete" className="flex items-center gap-2">
             <Trash2 className="w-4 h-4" />
@@ -308,9 +319,19 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        {/* Two-Factor Auth Tab */}
+        <TabsContent value="2fa">
+          <TwoFactorAuth />
+        </TabsContent>
+
         {/* Language Tab */}
         <TabsContent value="language">
           <LanguageSwitcher />
+        </TabsContent>
+
+        {/* Accessibility Tab */}
+        <TabsContent value="accessibility">
+          <AccessibilitySettings />
         </TabsContent>
 
         {/* Delete Account Tab */}
