@@ -506,7 +506,7 @@ const Dashboard = () => {
                     }`}
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-sm">{item.symptoms.substring(0, 60)}...</p>
+                    <p className="font-medium text-sm">{item.symptoms?.substring(0, 60)}...</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(item.created_at).toLocaleDateString()}
                     </p>

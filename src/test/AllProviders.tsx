@@ -35,6 +35,8 @@ interface AllProvidersProps {
   initialEntries?: string[];
 }
 
+import { ProfileProvider } from "@/contexts/ProfileContext";
+
 function AllProviders({
   children,
   initialEntries = ["/"],
@@ -42,7 +44,9 @@ function AllProviders({
   const queryClient = createTestQueryClient();
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+      <ProfileProvider>
+        <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+      </ProfileProvider>
     </QueryClientProvider>
   );
 }
