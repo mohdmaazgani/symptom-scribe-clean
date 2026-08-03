@@ -17,6 +17,7 @@ import { AccessibilityProvider } from "@/components/accessibility/AccessibilityP
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
@@ -126,8 +127,9 @@ const App = () => {
         <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <ScrollToTop />
+        <ProfileProvider>
+          <BrowserRouter>
+            <ScrollToTop />
           <Suspense fallback={<LoadingScreen />}>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -276,6 +278,7 @@ const App = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </ProfileProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </AccessibilityProvider>
