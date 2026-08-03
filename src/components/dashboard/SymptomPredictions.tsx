@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, AlertTriangle, CheckCircle, Info, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface Prediction {
   risk: string;
@@ -17,29 +18,60 @@ interface SymptomPredictionsProps {
   symptoms: string[];
 }
 
+/**
+ * Idle time before a changed symptom list is sent for analysis. The dashboard
+ * can refresh this list several times in a row (initial load, cache hydration,
+ * offline sync), and only the final list is worth an edge function call.
+ */
+const PREDICTION_DEBOUNCE_MS = 800;
+
 export default function SymptomPredictions({ userId, symptoms }: SymptomPredictionsProps) {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const symptomsHash = useMemo(() => symptoms.join("|"), [symptoms]);
+  const debouncedSymptomsHash = useDebounce(symptomsHash, PREDICTION_DEBOUNCE_MS);
+
+  // The effect below is keyed on the debounced hash rather than on the array
+  // itself, so a new array carrying the same symptoms never refires it. The ref
+  // hands the effect the matching list without widening its dependencies.
+  const symptomsRef = useRef(symptoms);
+  symptomsRef.current = symptoms;
+
+  // Identifies the request currently in flight, and the one the UI is waiting
+  // on, so the same analysis is never fired twice and a response that arrives
+  // after the symptom list has moved on is discarded.
+  const inFlightRequestRef = useRef<string | null>(null);
+  const latestRequestRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!userId || symptoms.length === 0) {
+    const currentSymptoms = symptomsRef.current;
+    const requestKey = `${userId}:${debouncedSymptomsHash}`;
+    latestRequestRef.current = requestKey;
+
+    if (!userId || currentSymptoms.length === 0) {
       setPredictions([]);
       return;
     }
+
+    // A request for this exact symptom list is already running — reuse it
+    // instead of paying for a second identical call.
+    if (inFlightRequestRef.current === requestKey) return;
+
+    const isStale = () => latestRequestRef.current !== requestKey;
 
     const fetchPredictions = async () => {
       // 1. Check local storage cache
       const cacheKey = `ai_health_predictions_${userId}`;
       const cached = localStorage.getItem(cacheKey);
-      const symptomsHash = symptoms.join("|");
 
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           const age = Date.now() - parsed.timestamp;
           // Refresh if cache is > 24 hours OR if symptoms list changed
-          if (age < 24 * 60 * 60 * 1000 && parsed.symptomsHash === symptomsHash) {
+          if (age < 24 * 60 * 60 * 1000 && parsed.symptomsHash === debouncedSymptomsHash) {
             setPredictions(parsed.predictions);
             return;
           }
@@ -47,6 +79,8 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
           console.warn("Failed to parse cached predictions", e);
         }
       }
+
+      inFlightRequestRef.current = requestKey;
 
       setLoading(true);
       setError(null);
@@ -65,7 +99,7 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
           },
           body: JSON.stringify({
             mode: "predict",
-            symptoms,
+            symptoms: currentSymptoms,
           }),
         });
 
@@ -75,6 +109,8 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
 
           if (response.status === 401 || response.status === 403) {
             errorMessage = "Authentication failed. Please log in again.";
+          } else if (response.status === 429) {
+            errorMessage = "Too many requests. Predictions will refresh shortly.";
           } else if (response.status === 0 || response.type === "opaque" || response.type === "error") {
             errorMessage = "Network error. Please check your connection and try again.";
           } else if (response.status >= 500) {
@@ -100,30 +136,36 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
           cacheKey,
           JSON.stringify({
             predictions: preds,
-            symptomsHash,
+            symptomsHash: debouncedSymptomsHash,
             timestamp: Date.now(),
           })
         );
 
-        setPredictions(preds);
+        if (!isStale()) setPredictions(preds);
       } catch (err) {
         console.error("Error fetching AI predictions:", err);
 
-        // Handle specific error types for better error messages
-        if (err instanceof TypeError && err.message.includes("fetch")) {
-          setError("Network error. Please check your internet connection and try again.");
-        } else if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Failed to load predictions");
+        // Handle specific error types for better error messages. A response for
+        // a symptom list that has since moved on is dropped rather than shown.
+        if (!isStale()) {
+          if (err instanceof TypeError && err.message.includes("fetch")) {
+            setError("Network error. Please check your internet connection and try again.");
+          } else if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError("Failed to load predictions");
+          }
         }
       } finally {
-        setLoading(false);
+        if (inFlightRequestRef.current === requestKey) {
+          inFlightRequestRef.current = null;
+        }
+        if (!isStale()) setLoading(false);
       }
     };
 
     fetchPredictions();
-  }, [userId, symptoms]);
+  }, [userId, debouncedSymptomsHash]);
 
   const getConfidenceColor = (conf: string) => {
     switch (conf) {
