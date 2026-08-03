@@ -6,22 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, Accessibility, ShieldCheck } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
-import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
+import { AccessibilityPanel } from "@/components/accessibility/AccessibilityPanel";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { clearSafeStorage } from "@/lib/storage";
-import {
-  getKey,
-  getSearchKey,
-  setupKeysFromPassword,
-  triggerKeyRotation,
-} from "@/lib/encryption";
+import { getKey, getSearchKey, setupKeysFromPassword, triggerKeyRotation } from "@/lib/encryption";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
+import BackupRestore from "@/components/settings/BackupRestore";
+import { HardDrive } from "lucide-react";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -172,7 +177,7 @@ const Settings = () => {
         // Log out locally (clear session)
         await supabase.auth.signOut();
         showSuccess("Account Deleted", "Your account has been deleted successfully");
-        
+
         // Clear storage and redirect
         clearSafeStorage();
         navigate("/auth");
@@ -182,27 +187,15 @@ const Settings = () => {
       console.error("[DELETE_ACCOUNT_ERROR]", err);
 
       if (err?.message?.includes("Unauthorized")) {
-    showError(
-      "Unauthorized",
-      "You are not authorized to delete this account"
-    );
-  } else if (err?.message?.includes("User not found")) {
-    showError(
-      "User Not Found",
-      "The account could not be found"
-    );
-  } else if (err?.message?.includes("network")) {
-    showError(
-      "Network Error",
-      "Please check your internet connection and try again"
-    );
-  } else {
-    showError(
-      "Deletion Failed",
-      "An unexpected error occurred while deleting your account"
-    );
-  }
-} finally {
+        showError("Unauthorized", "You are not authorized to delete this account");
+      } else if (err?.message?.includes("User not found")) {
+        showError("User Not Found", "The account could not be found");
+      } else if (err?.message?.includes("network")) {
+        showError("Network Error", "Please check your internet connection and try again");
+      } else {
+        showError("Deletion Failed", "An unexpected error occurred while deleting your account");
+      }
+    } finally {
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
     }
@@ -216,7 +209,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
             <span className="hidden sm:inline">Change Password</span>
@@ -226,6 +219,11 @@ const Settings = () => {
             <ShieldCheck className="w-4 h-4" />
             <span className="hidden sm:inline">Two-Factor Auth</span>
             <span className="sm:hidden">2FA</span>
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center gap-2">
+            <HardDrive className="w-4 h-4" />
+            <span className="hidden sm:inline">Backup</span>
+            <span className="sm:hidden">Backup</span>
           </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
@@ -249,9 +247,7 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
+              <CardDescription>Update your password to keep your account secure</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
@@ -300,11 +296,7 @@ const Settings = () => {
                   )}
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={changePasswordLoading}
-                  className="w-full"
-                >
+                <Button type="submit" disabled={changePasswordLoading} className="w-full">
                   {changePasswordLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -324,6 +316,11 @@ const Settings = () => {
           <TwoFactorAuth />
         </TabsContent>
 
+        {/* Backup & Restore Tab */}
+        <TabsContent value="backup">
+          <BackupRestore />
+        </TabsContent>
+
         {/* Language Tab */}
         <TabsContent value="language">
           <LanguageSwitcher />
@@ -331,7 +328,7 @@ const Settings = () => {
 
         {/* Accessibility Tab */}
         <TabsContent value="accessibility">
-          <AccessibilitySettings />
+          <AccessibilityPanel />
         </TabsContent>
 
         {/* Delete Account Tab */}

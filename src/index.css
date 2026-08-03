@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -649,102 +651,74 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   justify-content: center;
 }
 
-/* ─── Accessibility Mode ──────────────────────────────────────────────────── */
-
-/* Font size scaling */
-.a11y-font-large {
-  font-size: 112.5% !important; /* 18px base */
-}
-.a11y-font-x-large {
-  font-size: 125% !important;   /* 20px base */
+/* Accessibility Mode Styles */
+html.a11y-font-medium {
+  font-size: 112.5% !important;
 }
 
-/* High contrast – override CSS custom properties */
-.a11y-high-contrast {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
-  --primary: 220 100% 30%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 20%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 0 0% 90%;
-  --muted-foreground: 0 0% 10%;
-  --accent: 220 100% 85%;
-  --accent-foreground: 0 0% 0%;
-  --border: 0 0% 0%;
-  --input: 0 0% 0%;
-  --ring: 220 100% 30%;
+html.a11y-font-large {
+  font-size: 125% !important;
 }
 
-.dark.a11y-high-contrast {
-  --background: 0 0% 0%;
-  --foreground: 0 0% 100%;
-  --card: 0 0% 8%;
-  --card-foreground: 0 0% 100%;
-  --popover: 0 0% 8%;
-  --popover-foreground: 0 0% 100%;
-  --primary: 60 100% 60%;
-  --primary-foreground: 0 0% 0%;
-  --secondary: 0 0% 80%;
-  --secondary-foreground: 0 0% 0%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 90%;
-  --accent: 60 100% 20%;
-  --accent-foreground: 60 100% 95%;
-  --border: 0 0% 100%;
-  --input: 0 0% 100%;
-  --ring: 60 100% 60%;
+html.a11y-font-xlarge {
+  font-size: 137.5% !important;
 }
 
-/* Dyslexia-friendly font – uses system stack with OpenDyslexic if available,
-   falls back to a rounded sans-serif */
-@font-face {
-  font-family: "OpenDyslexic";
-  src: url("https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/fonts/OpenDyslexic-Regular.otf")
-    format("opentype");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "OpenDyslexic";
-  src: url("https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/fonts/OpenDyslexic-Bold.otf")
-    format("opentype");
-  font-weight: 700;
-  font-display: swap;
+html.a11y-dyslexia-font,
+html.a11y-dyslexia-font * {
+  font-family: "Atkinson Hyperlegible", "OpenDyslexic", "Comic Sans MS", sans-serif !important;
+  letter-spacing: 0.03em;
 }
 
-.a11y-dyslexia-font,
-.a11y-dyslexia-font * {
-  font-family: "OpenDyslexic", "Comic Sans MS", "Comic Sans", cursive !important;
+html.a11y-increased-spacing {
+  line-height: 1.8 !important;
+  letter-spacing: 0.04em !important;
 }
 
-/* Improved spacing */
-.a11y-improved-spacing {
-  letter-spacing: 0.06em;
-  word-spacing: 0.12em;
-  line-height: 1.8;
-}
-.a11y-improved-spacing p,
-.a11y-improved-spacing li,
-.a11y-improved-spacing span,
-.a11y-improved-spacing label {
-  line-height: 1.8;
-  letter-spacing: 0.06em;
-  word-spacing: 0.12em;
+html.a11y-increased-spacing p,
+html.a11y-increased-spacing li,
+html.a11y-increased-spacing span {
+  margin-bottom: 0.5rem;
 }
 
-/* Reduced motion – override all animations & transitions */
-.a11y-reduced-motion *,
-.a11y-reduced-motion *::before,
-.a11y-reduced-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
+html.a11y-high-contrast {
+  --background: 0 0% 0% !important;
+  --foreground: 0 0% 100% !important;
+  --card: 0 0% 5% !important;
+  --card-foreground: 0 0% 100% !important;
+  --popover: 0 0% 5% !important;
+  --popover-foreground: 0 0% 100% !important;
+  --primary: 50 100% 50% !important;
+  --primary-foreground: 0 0% 0% !important;
+  --secondary: 190 100% 50% !important;
+  --secondary-foreground: 0 0% 0% !important;
+  --muted: 0 0% 15% !important;
+  --muted-foreground: 0 0% 90% !important;
+  --accent: 50 100% 50% !important;
+  --accent-foreground: 0 0% 0% !important;
+  --destructive: 0 100% 60% !important;
+  --destructive-foreground: 0 0% 100% !important;
+  --border: 0 0% 100% !important;
+  --input: 0 0% 100% !important;
+  --ring: 50 100% 50% !important;
+}
+
+html.a11y-high-contrast * {
+  border-color: #ffffff !important;
+}
+
+html.a11y-high-contrast button,
+html.a11y-high-contrast a,
+html.a11y-high-contrast input,
+html.a11y-high-contrast select,
+html.a11y-high-contrast textarea {
+  outline: 1px solid #ffffff;
+}
+
+html.a11y-focus-highlight *:focus-visible {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 5px #000000 !important;
 }
 
 /* ──────────────────────────────────────────────
