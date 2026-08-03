@@ -15,7 +15,11 @@ const DISMISSED_ALERTS_KEY = "symptom_scribe_dismissed_alerts";
 export function getDismissedAlerts(): string[] {
   try {
     const stored = localStorage.getItem(DISMISSED_ALERTS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    // Deduplicate IDs using a Set to handle corrupt or duplicate entries in storage
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return [...new Set(parsed.filter((id): id is string => typeof id === "string"))];
   } catch {
     return [];
   }
