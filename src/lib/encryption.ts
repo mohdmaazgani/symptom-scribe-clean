@@ -215,27 +215,40 @@ export async function encryptText(text: string, key: CryptoKey): Promise<string>
   return `${ivHex}:${ciphertextHex}`;
 }
 
+export class DecryptionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DecryptionError";
+  }
+}
+
 export async function decryptText(encryptedText: string, key: CryptoKey): Promise<string> {
   const parts = encryptedText.split(":");
   if (parts.length !== 2) {
-    throw new Error("Invalid encrypted text format");
+    throw new DecryptionError("Invalid encrypted text format");
   }
 
   const [ivHex, ciphertextHex] = parts;
   const iv = hexToUint8Array(ivHex);
   const ciphertext = hexToUint8Array(ciphertextHex);
 
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    {
-      name: "AES-GCM",
-      iv: iv,
-    },
-    key,
-    ciphertext
-  );
+  try {
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv,
+      },
+      key,
+      ciphertext
+    );
 
-  const decoder = new TextDecoder();
-  return decoder.decode(decryptedBuffer);
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedBuffer);
+  } catch (err) {
+    throw new DecryptionError(
+      err instanceof Error ? `Decryption failed: ${err.message}` : "Decryption failed"
+    );
+  }
 }
 
 // Callbacks registered by offline-db
