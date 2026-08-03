@@ -386,7 +386,22 @@ const ChatInterface = () => {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to get AI response. Please try again.";
       showError("Analysis failed", errorMsg);
-      setMessages((prev) => prev.filter((m) => m !== userMessage));
+      setMessages((prev) => {
+        // Remove the user message and any partial assistant message that was
+        // added by upsertAssistant during the failed stream.
+        const userIdx = prev.findIndex(
+          (m) => m === userMessage || (m.role === "user" && m.content === userMessage.content)
+        );
+        if (userIdx === -1) return prev;
+        // Keep everything up to the user message and discard assistant messages
+        // that were appended during this failed streaming attempt.
+        return prev.slice(0, userIdx + 1).filter((m) => {
+          if (m.role === "user") {
+            return m === userMessage || (m.role === "user" && m.content === userMessage.content);
+          }
+          return false;
+        });
+      });
     } finally {
       setIsLoading(false);
     }
