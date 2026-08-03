@@ -247,7 +247,9 @@ const Metrics = () => {
     if (metricType === "heart_rate") {
       const hr = Number(value);
       if (hr < 30 || hr > 250) {
-        alert("Heart Rate must be between 30 and 250 BPM");
+        showWarning(
+  "Invalid Heart Rate",showWarning(
+  "Invalid Temperature","Heart Rate must be between 30 and 250 BPM");
         return;
       }
     }
@@ -255,7 +257,8 @@ const Metrics = () => {
     if (metricType === "temperature") {
       const temp = Number(value);
       if (temp < 86 || temp > 113) {
-        alert("Temperature must be between 86°F and 113°F");
+        showWarning(
+  "Invalid Temperature","Temperature must be between 86°F and 113°F");
         return;
       }
     }
@@ -263,7 +266,8 @@ const Metrics = () => {
     if (metricType === "weight") {
       const wt = Number(value);
       if (wt <= 0 || wt > 500) {
-        alert("Weight must be between 1 and 500 lbs");
+        showWarning(
+  "Invalid Weight","Weight must be between 1 and 500 lbs");
         return;
       }
     }
@@ -271,7 +275,8 @@ const Metrics = () => {
     if (metricType === "blood_sugar") {
       const sugar = Number(value);
       if (sugar < 20 || sugar > 1000) {
-        alert("Blood Sugar must be between 20 and 1000 mg/dL");
+        showWarning(
+  "Invalid Blood Sugar","Blood Sugar must be between 20 and 1000 mg/dL");
         return;
       }
     }
@@ -279,7 +284,8 @@ const Metrics = () => {
     if (metricType === "oxygen_saturation") {
       const oxygen = Number(value);
       if (oxygen < 70 || oxygen > 100) {
-        alert("Oxygen Saturation must be between 70% and 100%");
+        showWarning(
+  "Invalid Oxygen Saturation","Oxygen Saturation must be between 70% and 100%");
         return;
       }
     }
@@ -289,11 +295,36 @@ const Metrics = () => {
       const dia = Number(diastolic);
 
       if (sys < 50 || sys > 300 || dia < 30 || dia > 200) {
-        alert("Blood Pressure values are out of valid range");
+        showWarning(
+  "Invalid Blood Pressure","Blood Pressure values are out of valid range");
         return;
       }
     }
     
+if (metricType === "sleep") {
+  const sleep = Number(value);
+
+  if (sleep < 0 || sleep > 24) {
+    showWarning(
+      "Invalid Sleep Duration",
+      "Sleep duration must be between 0 and 24 hours."
+    );
+    return;
+  }
+}
+
+if (metricType === "steps") {
+  const steps = Number(value);
+
+  if (steps < 0 || steps > 100000) {
+    showWarning(
+      "Invalid Step Count",
+      "Steps must be between 0 and 100000."
+    );
+    return;
+  }
+}
+
     setLoading(true);
     try {
       const {
