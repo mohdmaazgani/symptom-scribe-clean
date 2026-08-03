@@ -172,9 +172,11 @@ serve(async (req) => {
       );
     }
 
-    const rawContactPhone = bodyContactPhone || (profile ? profile.emergency_contact_phone : null);
-    const rawContactName = bodyContactName || (profile ? profile.emergency_contact_name : null);
-    const rawSenderName = bodySenderName || (profile ? profile.full_name : null) || "A user";
+    // FIX: use the values already destructured from the request body instead of
+    // the undefined bodyContactPhone / bodyContactName / bodySenderName / profile identifiers
+    const rawContactPhone = contact_phone ?? null;
+    const rawContactName = contact_name ?? null;
+    const rawSenderName = sender_name || "A user";
 
     if (!rawContactPhone) {
       return new Response(

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import {
   Activity,
+  ArrowLeft,
   Loader2,
   Mail,
   Lock,
@@ -218,7 +219,16 @@ const handleForgotPassword= async () => {
       <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(6,182,212,0.16),transparent_34%,rgba(16,185,129,0.12)_78%)]" />
       <div className="absolute -bottom-32 left-0 h-72 w-full bg-[linear-gradient(165deg,transparent_18%,rgba(45,212,191,0.16)_19%,rgba(45,212,191,0.06)_36%,transparent_37%),linear-gradient(18deg,transparent_42%,rgba(125,211,252,0.12)_43%,rgba(125,211,252,0.04)_60%,transparent_61%)] blur-sm" />
       <div className="absolute inset-0 bg-slate-950/35" />
-
+      {/* Back to Home link */}
+      <div className="relative z-10 mx-auto w-full max-w-6xl pt-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+      </div>
       <main className="relative z-10 mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1fr_460px]">
         <section className="hidden max-w-xl space-y-8 lg:block">
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/15 bg-white/8 px-4 py-2 text-sm font-medium text-cyan-100 shadow-lg shadow-slate-950/20 backdrop-blur-xl">

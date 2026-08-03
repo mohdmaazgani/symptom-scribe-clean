@@ -649,6 +649,104 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   justify-content: center;
 }
 
+/* ─── Accessibility Mode ──────────────────────────────────────────────────── */
+
+/* Font size scaling */
+.a11y-font-large {
+  font-size: 112.5% !important; /* 18px base */
+}
+.a11y-font-x-large {
+  font-size: 125% !important;   /* 20px base */
+}
+
+/* High contrast – override CSS custom properties */
+.a11y-high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 220 100% 30%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 90%;
+  --muted-foreground: 0 0% 10%;
+  --accent: 220 100% 85%;
+  --accent-foreground: 0 0% 0%;
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 220 100% 30%;
+}
+
+.dark.a11y-high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 60 100% 60%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 80%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 90%;
+  --accent: 60 100% 20%;
+  --accent-foreground: 60 100% 95%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 60 100% 60%;
+}
+
+/* Dyslexia-friendly font – uses system stack with OpenDyslexic if available,
+   falls back to a rounded sans-serif */
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/fonts/OpenDyslexic-Regular.otf")
+    format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/fonts/OpenDyslexic-Bold.otf")
+    format("opentype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+.a11y-dyslexia-font,
+.a11y-dyslexia-font * {
+  font-family: "OpenDyslexic", "Comic Sans MS", "Comic Sans", cursive !important;
+}
+
+/* Improved spacing */
+.a11y-improved-spacing {
+  letter-spacing: 0.06em;
+  word-spacing: 0.12em;
+  line-height: 1.8;
+}
+.a11y-improved-spacing p,
+.a11y-improved-spacing li,
+.a11y-improved-spacing span,
+.a11y-improved-spacing label {
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+  word-spacing: 0.12em;
+}
+
+/* Reduced motion – override all animations & transitions */
+.a11y-reduced-motion *,
+.a11y-reduced-motion *::before,
+.a11y-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* ──────────────────────────────────────────────
    Chat Interface — UI Enhancement (#427)
    ────────────────────────────────────────────── */

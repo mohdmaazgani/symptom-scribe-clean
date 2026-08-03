@@ -1,6 +1,5 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
 
 interface LayoutProps {
@@ -13,16 +12,10 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="min-h-screen overflow-hidden flex w-full max-w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-h-0">
-          <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
-            <div className="ml-auto flex items-center"></div>
-
-            <div className="flex items-center gap-2">
-              <AnimatedThemeToggler />
-
-              {/* ✅ Visible ONLY on mobile. Hidden on laptop/desktop. */}
-              <div className="md:hidden">
-                <SidebarTrigger />
-              </div>
+          {/* ✅ Header only renders on mobile now — on desktop it had no content and was just leaving an empty h-14 bar at the top of every page */}
+          <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 md:hidden">
+            <div className="ml-auto flex items-center">
+              <SidebarTrigger />
             </div>
           </header>
           <main id="main-scroll" className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 md:p-6">
