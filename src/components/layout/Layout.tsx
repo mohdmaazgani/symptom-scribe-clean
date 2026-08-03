@@ -34,9 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
             className="flex h-14 items-center justify-between border-b border-border bg-card px-4"
             role="banner"
           >
-            <div className="ml-auto flex items-center"></div>
-
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <AccessibilityTriggerButton />
               <AnimatedThemeToggler />
 

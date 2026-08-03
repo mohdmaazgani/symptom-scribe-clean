@@ -166,6 +166,7 @@ const Dashboard = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [symptoms, setSymptoms] = useState<OfflineSymptom[]>([]);
   const [decryptedSymptomsList, setDecryptedSymptomsList] = useState<string[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -266,6 +267,7 @@ const Dashboard = () => {
       showError("Connection Error", "Failed to load dashboard data");
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
     }
   };
 
@@ -324,6 +326,11 @@ const Dashboard = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Health Dashboard</h1>
         <p className="text-muted-foreground">Overview of your health tracking journey</p>
+        {lastUpdated && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </p>
+        )}
       </div>
 
       {userId && (

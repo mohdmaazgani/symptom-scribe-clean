@@ -27,7 +27,7 @@ export async function getCachedData<T = unknown>(
 
     if (error) {
       const message = await extractFunctionError(error);
-      console.error(`get-cached-data error for table ${table}:`, message);
+      console.warn(`get-cached-data error for table ${table}:`, message);
       return { data: null, cachedAt: null, error: message };
     }
 
@@ -42,7 +42,7 @@ export async function getCachedData<T = unknown>(
     };
   } catch (err) {
     const message = await extractFunctionError(err);
-    console.error(`Error invoking get-cached-data for table ${table}:`, message);
+    console.warn(`Error invoking get-cached-data for table ${table}:`, message);
     return { data: null, cachedAt: null, error: message };
   }
 }
@@ -57,14 +57,14 @@ export async function invalidateCache(
 
     if (error) {
       const message = await extractFunctionError(error);
-      console.error(`invalidate-cache error for table ${table}:`, message);
+      console.warn(`invalidate-cache error for table ${table}:`, message);
       return { success: false, error: message };
     }
 
     return { success: Boolean(data?.success), error: null };
   } catch (err) {
     const message = await extractFunctionError(err);
-    console.error(`Error invoking invalidate-cache for table ${table}:`, message);
+    console.warn(`Error invoking invalidate-cache for table ${table}:`, message);
     return { success: false, error: message };
   }
 }
