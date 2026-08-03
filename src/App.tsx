@@ -29,6 +29,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Emergency = lazy(() => import("./pages/Health/Emergency.tsx"));
 const BrainGames = lazy(() => import("./pages/Games/BrainGames.tsx"));
 const HealthFacts = lazy(() => import("./pages/Health/HealthFacts.tsx"));
+const HealthStatistics = lazy(() => import("./pages/Health/HealthStatistics.tsx"));
 const Settings = lazy(() => import("./pages/User/Settings.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound/index.tsx"));
 const AIHealthAssistant = lazy(() => import("./pages/Health/AIHealthAssistant.tsx"));
@@ -61,58 +62,66 @@ const App = () => {
   useEffect(() => {
     const cleanup = initializeEncryption();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+        if (navigator.onLine) {
+          await syncOfflineData().catch((err) =>
+            console.error("Failed to sync offline data on session ready:", err)
+          );
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
-          if (navigator.onLine) {
-            await syncOfflineData().catch((err) =>
-              console.error("Failed to sync offline data on session ready:", err)
-            );
+          // Handle pending profile details (from MultiStepSignUp)
+          const pendingProfileStr = localStorage.getItem("symptom_scribe_pending_profile");
+          if (pendingProfileStr) {
+            try {
+              const pendingProfile = JSON.parse(pendingProfileStr);
+              const key = await whenEncryptionReady();
+              const encryptedFullName = await encryptProfileField(pendingProfile.full_name, key);
+              const encryptedDob = await encryptProfileField(pendingProfile.date_of_birth, key);
+              const encryptedEmergencyName = await encryptProfileField(
+                pendingProfile.emergency_contact_name,
+                key
+              );
+              const encryptedEmergencyPhone = await encryptProfileField(
+                pendingProfile.emergency_contact_phone,
+                key
+              );
+              const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
+              const encryptedChronicConditions = await encryptProfileArray(
+                pendingProfile.chronic_conditions,
+                key
+              );
 
-            // Handle pending profile details (from MultiStepSignUp)
-            const pendingProfileStr = localStorage.getItem("symptom_scribe_pending_profile");
-            if (pendingProfileStr) {
-              try {
-                const pendingProfile = JSON.parse(pendingProfileStr);
-                const key = await whenEncryptionReady();
-                const encryptedFullName = await encryptProfileField(pendingProfile.full_name, key);
-                const encryptedDob = await encryptProfileField(pendingProfile.date_of_birth, key);
-                const encryptedEmergencyName = await encryptProfileField(pendingProfile.emergency_contact_name, key);
-                const encryptedEmergencyPhone = await encryptProfileField(pendingProfile.emergency_contact_phone, key);
-                const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
-                const encryptedChronicConditions = await encryptProfileArray(pendingProfile.chronic_conditions, key);
+              const { error } = await supabase.from("profiles").upsert(
+                {
+                  user_id: session.user.id,
+                  full_name: encryptedFullName,
+                  date_of_birth: encryptedDob,
+                  gender: pendingProfile.gender || null,
+                  blood_type: pendingProfile.blood_type || null,
+                  allergies: encryptedAllergies,
+                  chronic_conditions: encryptedChronicConditions,
+                  emergency_contact_name: encryptedEmergencyName,
+                  emergency_contact_phone: encryptedEmergencyPhone,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "user_id" }
+              );
 
-                const { error } = await supabase
-                  .from("profiles")
-                  .upsert({
-                    user_id: session.user.id,
-                    full_name: encryptedFullName,
-                    date_of_birth: encryptedDob,
-                    gender: pendingProfile.gender || null,
-                    blood_type: pendingProfile.blood_type || null,
-                    allergies: encryptedAllergies,
-                    chronic_conditions: encryptedChronicConditions,
-                    emergency_contact_name: encryptedEmergencyName,
-                    emergency_contact_phone: encryptedEmergencyPhone,
-                    updated_at: new Date().toISOString(),
-                  }, { onConflict: "user_id" });
-
-                if (error) {
-                  console.error("Failed to sync pending profile details:", error);
-                } else {
-                  localStorage.removeItem("symptom_scribe_pending_profile");
-                  console.log("Successfully encrypted and synced pending profile details");
-                }
-              } catch (err) {
-                console.error("Failed parsing or encrypting pending profile:", err);
+              if (error) {
+                console.error("Failed to sync pending profile details:", error);
+              } else {
+                localStorage.removeItem("symptom_scribe_pending_profile");
+                console.log("Successfully encrypted and synced pending profile details");
               }
+            } catch (err) {
+              console.error("Failed parsing or encrypting pending profile:", err);
             }
           }
         }
       }
-    );
-
+    });
 
     return () => {
       cleanup?.();
@@ -169,6 +178,16 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <History />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/health-statistics"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <HealthStatistics />
                     </Layout>
                   </ProtectedRoute>
                 }
@@ -244,30 +263,10 @@ const App = () => {
                 }
               />
 
-              <Route
-                path="/privacy"
-                element={
-                  <Privacy />
-                }
-              />
-              <Route
-                path="/terms"
-                element={
-                  <Terms />
-                }
-              />
-              <Route
-                path="/disclaimer"
-                element={
-                  <Disclaimer />
-                }
-              />
-              <Route
-                path="/accessibility"
-                element={
-                  <Accessibility />
-                }
-              />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/accessibility" element={<Accessibility />} />
               <Route path="/health-library" element={<HealthLibrary />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
