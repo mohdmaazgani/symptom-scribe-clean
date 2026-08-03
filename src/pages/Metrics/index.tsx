@@ -481,6 +481,13 @@ if (metricType === "steps") {
 
   return (
     <div className="space-y-6">
+      <div
+  aria-live="polite"
+  aria-atomic="true"
+  className="sr-only"
+>
+  Health metric updates will be announced here.
+</div>
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
@@ -537,7 +544,12 @@ if (metricType === "steps") {
             <DialogDescription>Enter your latest reading below.</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+  onSubmit={handleSubmit}
+  className="space-y-4"
+  role="form"
+  aria-label="Health metric entry form"
+>
             {metricType === "blood_pressure" ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -549,7 +561,12 @@ if (metricType === "steps") {
                     value={systolic}
                     onChange={(e) => setSystolic(e.target.value)}
                     required
+                    aria-required="true"
+aria-describedby="systolic-help"
                   />
+                  <p id="systolic-help" className="sr-only">
+  Enter systolic blood pressure in mmHg.
+</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="diastolic">Diastolic</Label>
@@ -560,7 +577,12 @@ if (metricType === "steps") {
                     value={diastolic}
                     onChange={(e) => setDiastolic(e.target.value)}
                     required
+                    aria-required="true"
+                    aria-describedby="diastolic-help"
                   />
+                  <p id="diastolic-help" className="sr-only">
+  Enter diastolic blood pressure in mmHg.
+</p>
                 </div>
               </div>
             ) : (
@@ -574,7 +596,12 @@ if (metricType === "steps") {
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-describedby="value-help"
                 />
+                <p id="value-help" className="sr-only">
+  Enter the measurement value in {selectedMetric?.unit}.
+</p>
               </div>
             )}
 
@@ -586,10 +613,19 @@ if (metricType === "steps") {
                 placeholder="Any additional notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                aria-describedby="notes-help"
               />
+              <p id="notes-help" className="sr-only">
+  Enter any additional notes about the measurement.
+</p>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+           <Button
+  type="submit"
+  disabled={loading}
+  className="w-full"
+  aria-label="Add health metric"
+>
               {loading ? "Saving..." : "Record Metric"}
             </Button>
           </form>
@@ -605,7 +641,7 @@ if (metricType === "steps") {
             </CardDescription>
           </div>
           {historyView === "chart" && (
-            <Button onClick={downloadChart}>
+            <Button onClick={downloadChart} aria-label="Download chart">
               Download Chart
             </Button>
           )}
@@ -628,7 +664,10 @@ if (metricType === "steps") {
                   value={historyMetricFilter}
                   onValueChange={setHistoryMetricFilter}
                 >
-                  <SelectTrigger className="w-[180px]">
+                 <SelectTrigger
+  className="w-[180px]"
+  aria-label="Filter metrics by type"
+>
                     <SelectValue placeholder="Filter metric" />
                   </SelectTrigger>
                   <SelectContent>
@@ -645,7 +684,7 @@ if (metricType === "steps") {
                   value={timeframeFilter}
                   onValueChange={setTimeframeFilter}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px]" aria-label="Filter metrics by timeframe">
                     <SelectValue placeholder="Select timeframe" />
                   </SelectTrigger>
                   <SelectContent>
@@ -660,6 +699,7 @@ if (metricType === "steps") {
                     variant={sortOrder === "newest" ? "default" : "outline"}
                     onClick={() => setSortOrder("newest")}
                     className="gap-2"
+                    aria-label="Sort metrics by newest first"
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     Newest First
@@ -668,6 +708,7 @@ if (metricType === "steps") {
                     variant={sortOrder === "oldest" ? "default" : "outline"}
                     onClick={() => setSortOrder("oldest")}
                     className="gap-2"
+                    aria-label="Sort metrics by oldest first"
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     Oldest First
@@ -676,15 +717,29 @@ if (metricType === "steps") {
               </div>
 
               <div className="flex gap-2 mb-4">
-                <Button
-                  variant={historyView === "table" ? "default" : "outline"}
-                  onClick={() => setHistoryView("table")}
-                >
+               <Button
+  variant={historyView === "table" ? "default" : "outline"}
+  onClick={() => setHistoryView("table")}
+  aria-label="Switch to table view"
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setHistoryView("table");
+    }
+  }}
+>
                   Table
                 </Button>
                 <Button
                   variant={historyView === "chart" ? "default" : "outline"}
                   onClick={() => setHistoryView("chart")}
+                  aria-label="Switch to chart view"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setHistoryView("chart");
+                    }
+                  }}
                 >
                   Chart
                 </Button>
@@ -720,7 +775,11 @@ if (metricType === "steps") {
                           <TableCell>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon">
+                                <Button
+                               variant="destructive"
+                              size="icon"
+                               aria-label={`Delete ${record.metric_type} record`}
+>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
