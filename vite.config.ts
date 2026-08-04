@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon-180x180.png", "maskable-icon-512x512.png"],
+      includeAssets: ["logo.png"],
       manifest: {
         name: "Symptom Scribe",
         short_name: "Symptom Scribe",
@@ -27,22 +27,22 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "pwa-64x64.png",
+            src: "logo.png",
             sizes: "64x64",
             type: "image/png"
           },
           {
-            src: "pwa-192x192.png",
+            src: "logo.png",
             sizes: "192x192",
             type: "image/png"
           },
           {
-            src: "pwa-512x512.png",
+            src: "logo.png",
             sizes: "512x512",
             type: "image/png"
           },
           {
-            src: "maskable-icon-512x512.png",
+            src: "logo.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable"
