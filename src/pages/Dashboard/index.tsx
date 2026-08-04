@@ -15,6 +15,8 @@ import { motion } from "framer-motion";
 import { SmartAlertsBanner } from "@/components/dashboard/SmartAlertsBanner";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { WeeklyHealthScoreCard } from "@/components/dashboard/WeeklyHealthScoreCard";
+import { useNavigate } from "react-router-dom";
+import { EmptyState } from "@/components/common/EmptyState";
 
 interface Stats {
   totalSymptoms: number;
@@ -154,6 +156,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({
     totalSymptoms: 0,
     unresolvedSymptoms: 0,
@@ -305,7 +308,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <Card className="border"
         style={{ background: "var(--welcome-bg)" }}>
         <CardContent className="flex items-center justify-between py-6">
@@ -490,10 +493,14 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           {recentHistory.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No symptom history yet. Start by consulting with the AI Assistant!
-            </p>
-          ) : (
+              <EmptyState
+                  icon={<Activity className="w-8 h-8 text-teal-600 dark:text-teal-400" strokeWidth={1.5} />}
+                 title="No health data yet — start tracking!"
+                  description="Consult the AI Assistant to log your first symptom check."
+                  ctaText="Start Tracking"
+                  onCtaClick={() => navigate("/ai-health-assistant")}
+                  />
+                  ) : (
             <div className="space-y-4">
               {recentHistory.map((item) => (
                 <div

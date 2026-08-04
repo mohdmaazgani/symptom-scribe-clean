@@ -192,7 +192,7 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/No symptom history yet/i)
+        screen.getByText(/No health data yet/i)
       ).toBeInTheDocument();
     });
   });
