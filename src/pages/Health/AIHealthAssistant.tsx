@@ -9,6 +9,7 @@ import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import { useProfile } from "@/contexts/ProfileContext";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
+import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
 import {
   Volume2,
   VolumeX,
@@ -22,7 +23,9 @@ import {
   Brain,
   Utensils,
   BatteryLow,
-  HeartPulse
+  HeartPulse,
+  ImagePlus,
+  X
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -77,11 +80,37 @@ const AIHealthAssistant = () => {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [currentlyReadingText, setCurrentlyReadingText] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<{file: File, preview: string}[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { activeProfile } = useProfile();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const processedFiles = await Promise.all(
+        newFiles.map(async (f) => {
+          const compressed = await compressImage(f);
+          return {
+            file: compressed,
+            preview: URL.createObjectURL(compressed)
+          };
+        })
+      );
+      setAttachments(prev => [...prev, ...processedFiles]);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -185,8 +214,10 @@ const AIHealthAssistant = () => {
     const userMessage = (text ?? symptoms).trim();
     if (!userMessage || loading) return;
 
+    const currentAttachments = [...attachments];
     setSymptoms("");
     setCharCount(0);
+    setAttachments([]);
     const time = getTime();
     setMessages((prev) => [...prev, { role: "user", text: userMessage, time }]);
     setLoading(true);
@@ -302,6 +333,16 @@ const AIHealthAssistant = () => {
                 : rngScore(30, 10);
 
           if (shouldPersistConsultation(assistantContent)) {
+            let imageUrls: string[] = [];
+            if (currentAttachments.length > 0) {
+              try {
+                imageUrls = await Promise.all(currentAttachments.map(att => uploadSymptomImage(att.file, user.id)));
+              } catch (uploadError) {
+                console.error("Image upload failed:", uploadError);
+                showWarning("Upload Failed", "Could not upload attached images. Proceeding without them.");
+              }
+            }
+
             const recordId = crypto.randomUUID();
             const record = {
               id: recordId,
@@ -315,6 +356,7 @@ const AIHealthAssistant = () => {
               risk_score: riskScore,
               resolved: false,
               created_at: new Date().toISOString(),
+              images: imageUrls.length > 0 ? imageUrls : null,
             };
 
             const keys = await whenKeysReady();
@@ -582,7 +624,41 @@ const AIHealthAssistant = () => {
       {/* Input — pinned at bottom */}
       <div className="flex-shrink-0 w-full px-3 sm:px-4 py-3 bg-background">
         <div className="max-w-4xl mx-auto w-full min-w-0">
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2 p-2 bg-muted/30 rounded-lg border border-border/50">
+              {attachments.map((att, index) => (
+                <div key={index} className="relative group">
+                  <img src={att.preview} alt="Attachment" className="w-16 h-16 object-cover rounded-md border border-border" />
+                  <button
+                    onClick={() => removeAttachment(index)}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-muted/60 backdrop-blur-md border border-border/60 rounded-2xl px-3 sm:px-4 py-2.5 shadow-sm focus-within:border-teal-500/50 focus-within:ring-1 focus-within:ring-teal-500/20 focus-within:shadow-md transition-all duration-200 min-h-[48px]">
+            {/* Image upload button */}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              title="Attach images"
+              className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all text-muted-foreground hover:text-teal-500 hover:bg-teal-500/10 disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Attach images"
+            >
+              <ImagePlus className="w-4 h-4" />
+            </button>
+
             {/* Voice button */}
             <button
               onClick={handleVoiceInput}
@@ -635,7 +711,7 @@ const AIHealthAssistant = () => {
 
             <button
               onClick={() => handleAnalyze()}
-              disabled={loading || !symptoms.trim() || charCount >= MAX_CHARS}
+              disabled={loading || (!symptoms.trim() && attachments.length === 0) || charCount >= MAX_CHARS}
               className="w-8 h-8 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md hover:shadow-teal-500/30 hover:scale-110 active:scale-90"
               aria-label="Send"
             >

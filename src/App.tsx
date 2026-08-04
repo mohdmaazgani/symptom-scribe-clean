@@ -138,11 +138,9 @@ const App = () => {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
                     <Layout>
                       <Dashboard />
                     </Layout>
-                  </ProtectedRoute>
                 }
               />
               <Route
@@ -158,41 +156,33 @@ const App = () => {
               <Route
                 path="/metrics"
                 element={
-                  <ProtectedRoute>
                     <Layout>
                       <Metrics />
                     </Layout>
-                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/history"
                 element={
-                  <ProtectedRoute>
                     <Layout>
                       <History />
                     </Layout>
-                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute>
                     <Layout>
                       <Profile />
                     </Layout>
-                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/emergency"
                 element={
-                  <ProtectedRoute>
                     <Layout>
                       <Emergency />
                     </Layout>
-                  </ProtectedRoute>
                 }
               />
               <Route

@@ -40,6 +40,7 @@ export interface OfflineSymptom {
   pending_delete: number;
   ai_analysis?: string;
   search_tokens?: string[] | null;
+  images?: string[] | null;
 }
 
 export interface MeshAlert {
@@ -116,6 +117,14 @@ export async function encryptSymptom(
       `enc:json:${await encryptText(JSON.stringify(record.recommendations), key)}`,
     ];
   }
+  if (
+    record.images &&
+    !(record.images.length === 1 && record.images[0].startsWith("enc:json:"))
+  ) {
+    encrypted.images = [
+      `enc:json:${await encryptText(JSON.stringify(record.images), key)}`,
+    ];
+  }
   return encrypted;
 }
 
@@ -144,6 +153,14 @@ export async function decryptSymptom(record: OfflineSymptom, key: CryptoKey): Pr
   ) {
     const rawEnc = record.recommendations[0].substring(9);
     decrypted.recommendations = JSON.parse(await decryptText(rawEnc, key));
+  }
+  if (
+    record.images &&
+    record.images.length === 1 &&
+    record.images[0].startsWith("enc:json:")
+  ) {
+    const rawEnc = record.images[0].substring(9);
+    decrypted.images = JSON.parse(await decryptText(rawEnc, key));
   }
   return decrypted;
 }

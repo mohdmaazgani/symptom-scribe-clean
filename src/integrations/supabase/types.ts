@@ -152,6 +152,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           profile_id: string | null
+          images: string[] | null
         }
         Insert: {
           ai_analysis: string
@@ -167,6 +168,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           profile_id?: string | null
+          images?: string[] | null
         }
         Update: {
           ai_analysis?: string
@@ -182,6 +184,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           profile_id?: string | null
+          images?: string[] | null
         }
         Relationships: []
       }

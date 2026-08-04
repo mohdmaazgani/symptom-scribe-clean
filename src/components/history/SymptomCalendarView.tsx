@@ -36,6 +36,7 @@ export interface SymptomEntry {
   resolved: boolean;
   created_at: string;
   ai_analysis?: string;
+  images?: string[] | null;
 }
 
 interface SymptomCalendarViewProps {
@@ -567,6 +568,23 @@ export const SymptomCalendarView = ({
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+
+                      {entry.images && entry.images.length > 0 && (
+                        <div>
+                          <span className="font-semibold text-foreground">Attached Images:</span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {entry.images.map((imgUrl, idx) => (
+                              <a key={idx} href={imgUrl} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={imgUrl}
+                                  alt="Symptom attachment"
+                                  className="w-16 h-16 object-cover rounded-md border border-border hover:opacity-80 transition-opacity"
+                                />
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       )}
 
