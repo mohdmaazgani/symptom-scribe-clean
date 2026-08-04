@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Hero from "@/components/hero/Hero";
 import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart, Activity, Shield, Menu, X, UserRound, LineChart, ClipboardCheck } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
+import { useTranslation } from "react-i18next";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
 import { 
@@ -25,6 +26,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState("");
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -95,20 +97,20 @@ const Index = () => {
     {
       num: "01",
       icon: UserRound,
-      title: "Sign Up & Set Profile",
-      desc: "Create your account and set up your health profile with basic information and health goals.",
+      title: t("home.howItWorksStep1Title"),
+      desc: t("home.howItWorksStep1Desc"),
     },
     {
       num: "02",
       icon: LineChart,
-      title: "Track & Analyze",
-      desc: "Input your symptoms, track your metrics, and let our AI analyze your health data for insights.",
+      title: t("home.howItWorksStep2Title"),
+      desc: t("home.howItWorksStep2Desc"),
     },
     {
       num: "03",
       icon: ClipboardCheck,
-      title: "Get Recommendations",
-      desc: "Receive personalized health recommendations and know when to seek professional care.",
+      title: t("home.howItWorksStep3Title"),
+      desc: t("home.howItWorksStep3Desc"),
     },
   ];
   const scrollToSection = (id: string) => {
@@ -211,7 +213,7 @@ const Index = () => {
             activeSection === "features"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
-              Features
+              {t("home.navFeatures")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
               ${
                 activeSection === "features"
@@ -225,7 +227,7 @@ const Index = () => {
             activeSection === "how-it-works"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
-              How It Works
+              {t("home.navHowItWorks")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
                ${
                 activeSection === "how-it-works"
@@ -241,7 +243,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
             >
-              Why Choose Us
+              {t("home.navWhyChoose")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                ${
                 activeSection === "why-choose"
@@ -313,7 +315,7 @@ const Index = () => {
                 <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs">
                   {userInitial}
                 </span>
-                Go to Dashboard
+                {t("home.goToDashboard")}
               </Button>
             ) : (
               <>
@@ -322,13 +324,13 @@ const Index = () => {
                   className="h-10 px-5 border-primary/30 text-primary hover:bg-primary/5"
                   onClick={() => navigate("/auth")}
                 >
-                  Sign In
+                  {t("home.signIn")}
                 </Button>
                 <Button
                   className="h-10 px-5"
                   onClick={() => navigate("/auth")}
                 >
-                  Get Started
+                  {t("home.getStarted")}
                 </Button>
               </>
             )}
@@ -366,15 +368,15 @@ const Index = () => {
                     <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs shrink-0">
                       {userInitial}
                     </span>
-                    Go to Dashboard
+                    {t("home.goToDashboard")}
                   </Button>
                 ) : (
                   <>
                     <Button variant="outline" className="w-full justify-center" onClick={() => navigate("/auth")}>
-                      Sign In
+                      {t("home.signIn")}
                     </Button>
                     <Button className="w-full justify-center" onClick={() => navigate("/auth")}>
-                      Get Started
+                      {t("home.getStarted")}
                     </Button>
                   </>
                 )}
@@ -395,18 +397,18 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Comprehensive Health Tracking</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">{t("home.featuresTitle")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to monitor, analyze, and improve your health in one powerful platform
+              {t("home.featuresDesc")}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: Brain, title: "AI Health Assistant", desc: "Get instant symptom analysis with severity assessment and personalized recommendations" },
-              { icon: TrendingUp, title: "Health Analytics", desc: "Track your health metrics with visual analytics and trend analysis over time" },
-              { icon: Clock, title: "Complete History", desc: "Maintain detailed records of all consultations and health events in one place" },
-              { icon: Shield, title: "Emergency Resources", desc: "Quick access to emergency contacts and critical health information when needed" },
+              { icon: Brain, title: t("home.featureAiTitle"), desc: t("home.featureAiDesc") },
+              { icon: TrendingUp, title: t("home.featureAnalyticsTitle"), desc: t("home.featureAnalyticsDesc") },
+              { icon: Clock, title: t("home.featureHistoryTitle"), desc: t("home.featureHistoryDesc") },
+              { icon: Shield, title: t("home.featureEmergencyTitle"), desc: t("home.featureEmergencyDesc") },
             ].map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -443,14 +445,14 @@ const Index = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.howItWorksTitle")}</h2>
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="w-10 h-0.5 rounded-full bg-primary" />
               <div className="w-2.5 h-2.5 rounded-full bg-primary" />
               <div className="w-10 h-0.5 rounded-full bg-primary" />
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Three simple steps to better health management
+              {t("home.howItWorksDesc")}
             </p>
           </div>
 
@@ -558,17 +560,17 @@ const Index = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Smart Health Tracker</h2>
-            <p className="text-muted-foreground text-lg">Powerful features that make health management effortless</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.whyChooseTitle")}</h2>
+            <p className="text-muted-foreground text-lg">{t("home.whyChooseDesc")}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">AI-Powered Insights</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitAiTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Advanced AI algorithms analyze your symptoms and provide evidence-based recommendations instantly
+                  {t("home.benefitAiDesc")}
                 </p>
               </div>
             </div>
@@ -576,9 +578,9 @@ const Index = () => {
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">Comprehensive Tracking</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitTrackingTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Monitor multiple health metrics including vitals, symptoms, medications, and lifestyle factors
+                  {t("home.benefitTrackingDesc")}
                 </p>
               </div>
             </div>
@@ -586,9 +588,9 @@ const Index = () => {
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">Privacy & Security</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitPrivacyTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Your health data is encrypted and stored securely with industry-leading security standards
+                  {t("home.benefitPrivacyDesc")}
                 </p>
               </div>
             </div>
@@ -596,9 +598,9 @@ const Index = () => {
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">Brain Games</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitBrainGamesTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Engage in cognitive exercises to keep your mind sharp while tracking mental wellness
+                  {t("home.benefitBrainGamesDesc")}
                 </p>
               </div>
             </div>
@@ -606,9 +608,9 @@ const Index = () => {
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">Emergency Access</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitEmergencyTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Quick access to emergency numbers and nearby hospitals when every second counts
+                  {t("home.benefitEmergencyDesc")}
                 </p>
               </div>
             </div>
@@ -616,9 +618,9 @@ const Index = () => {
             <div className="flex gap-4">
               <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-lg mb-2">Health Education</h3>
+                <h3 className="font-bold text-lg mb-2">{t("home.benefitEducationTitle")}</h3>
                 <p className="text-muted-foreground">
-                  Access curated health facts and educational content to improve your health literacy
+                  {t("home.benefitEducationDesc")}
                 </p>
               </div>
             </div>
@@ -636,9 +638,9 @@ const Index = () => {
               className="max-w-4xl mx-auto"
             >
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">What Our Users Say</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{t("home.reviewsTitle")}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Join thousands of satisfied users taking control of their health
+                  {t("home.reviewsDesc")}
                 </p>
               </div>
 
@@ -690,50 +692,50 @@ const Index = () => {
           className="max-w-3xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.faqTitle")}</h2>
+            <p className="text-muted-foreground text-lg">{t("home.faqDesc")}</p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
-              <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ1")</AccordionTrigger>
               <AccordionContent>
-                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+                t("home.faqA1") and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-2">
-              <AccordionTrigger className="text-left">How accurate is the AI health analysis?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ2")</AccordionTrigger>
               <AccordionContent>
-                Our AI is trained on medical knowledge bases and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.
+                t("home.faqA2") and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-3">
-              <AccordionTrigger className="text-left">Is my health data secure and private?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ3")</AccordionTrigger>
               <AccordionContent>
-                Yes, we take data security seriously. All health data is encrypted both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.
+                t("home.faqA3") both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-4">
-              <AccordionTrigger className="text-left">What features are included in the platform?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ4")</AccordionTrigger>
               <AccordionContent>
-                The platform includes AI-powered symptom analysis, health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.
+                t("home.faqA4"), health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-5">
-              <AccordionTrigger className="text-left">Can I use this for tracking chronic conditions?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ5")</AccordionTrigger>
               <AccordionContent>
-                Yes, the platform is excellent for tracking chronic conditions over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.
+                t("home.faqA5") over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-6">
-              <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
+              <AccordionTrigger className="text-left">t("home.faqQ6")</AccordionTrigger>
               <AccordionContent>
-                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
+                t("home.faqA6") (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -750,14 +752,13 @@ const Index = () => {
           className="max-w-4xl mx-auto text-center"
         >
           <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Take Control of Your Health?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.ctaTitle")}</h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already using Smart Health Tracker to monitor their health, 
-            understand their symptoms, and make informed decisions about their wellbeing.
+            {t("home.ctaDesc")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
-              Get Started Free
+              {t("home.getStarted")}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" />
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="transition-all duration-300 active:scale-95 hover:bg-muted">
@@ -880,7 +881,7 @@ const Index = () => {
       <div className="text-center mt-6 pt-4 border-t border-border/50">
         <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
           <AlertCircle className="w-3 h-3" />
-          <span>For informational purposes only. Always consult a qualified healthcare provider for medical advice.</span>
+          <span>{t("home.footerDisclaimer")}</span>
           <Heart className="w-3 h-3" />
         </p>
       </div>
