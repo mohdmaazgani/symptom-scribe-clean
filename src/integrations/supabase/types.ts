@@ -22,6 +22,7 @@ export type Database = {
           title: string | null
           updated_at: string | null
           user_id: string
+          profile_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -30,6 +31,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           user_id: string
+          profile_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           user_id?: string
+          profile_id?: string | null
         }
         Relationships: []
       }
@@ -50,6 +53,7 @@ export type Database = {
           recorded_at: string | null
           user_id: string
           value: Json
+          profile_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -59,6 +63,7 @@ export type Database = {
           recorded_at?: string | null
           user_id: string
           value: Json
+          profile_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -68,6 +73,7 @@ export type Database = {
           recorded_at?: string | null
           user_id?: string
           value?: Json
+          profile_id?: string | null
         }
         Relationships: []
       }
@@ -88,6 +94,8 @@ export type Database = {
           xp: number
           level: number
           encryption_salt: string | null
+          relationship: string | null
+          is_primary: boolean | null
         }
         Insert: {
           allergies?: string[] | null
@@ -105,6 +113,8 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          relationship?: string | null
+          is_primary?: boolean | null
         }
         Update: {
           allergies?: string[] | null
@@ -122,6 +132,8 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          relationship?: string | null
+          is_primary?: boolean | null
         }
         Relationships: []
       }
@@ -139,6 +151,7 @@ export type Database = {
           symptoms: string
           updated_at: string | null
           user_id: string
+          profile_id: string | null
         }
         Insert: {
           ai_analysis: string
@@ -153,6 +166,7 @@ export type Database = {
           symptoms: string
           updated_at?: string | null
           user_id: string
+          profile_id?: string | null
         }
         Update: {
           ai_analysis?: string
@@ -167,6 +181,7 @@ export type Database = {
           symptoms?: string
           updated_at?: string | null
           user_id?: string
+          profile_id?: string | null
         }
         Relationships: []
       }

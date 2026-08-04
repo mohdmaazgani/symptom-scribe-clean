@@ -4,13 +4,13 @@ import { db, type OfflineMetric, encryptMetric, decryptMetric } from "@/lib/offl
 import { whenEncryptionReady } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 
-export function useMetricsHistory(userId: string | null) {
+export function useMetricsHistory(profileId: string | null) {
   const [records, setRecords] = useState<OfflineMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const fetchHistory = useCallback(async () => {
-    if (!userId) return;
+    if (!profileId) return;
 
     setLoading(true);
 
@@ -25,6 +25,7 @@ export function useMetricsHistory(userId: string | null) {
             const localEntries = data.map((record) => ({
               id: record.id,
               user_id: record.user_id,
+              profile_id: record.profile_id,
               metric_type: record.metric_type,
               value: record.value,
               notes: record.notes,
@@ -43,8 +44,8 @@ export function useMetricsHistory(userId: string | null) {
               const remoteIds = new Set(data.map((record) => record.id));
 
               const existingSynced = await db.healthMetrics
-                .where("user_id")
-                .equals(userId)
+                .where("profile_id")
+                .equals(profileId)
                 .filter((record) => record.pending_sync === 0 && record.pending_delete === 0)
                 .toArray();
 
@@ -64,8 +65,8 @@ export function useMetricsHistory(userId: string | null) {
       }
 
       const localRecords = await db.healthMetrics
-        .where("user_id")
-        .equals(userId)
+        .where("profile_id")
+        .equals(profileId)
         .filter((record) => record.pending_delete === 0)
         .toArray();
 
@@ -91,7 +92,7 @@ export function useMetricsHistory(userId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [userId, sortOrder]);
+  }, [profileId, sortOrder]);
 
   const deleteRecord = async (id: string) => {
     if (navigator.onLine) {
@@ -113,14 +114,14 @@ export function useMetricsHistory(userId: string | null) {
   };
 
   useEffect(() => {
-    if (userId) {
+    if (profileId) {
       fetchHistory();
     }
-  }, [userId, fetchHistory]);
+  }, [profileId, fetchHistory]);
 
   return {
     records,
-    loading: loading || !userId,
+    loading: loading || !profileId,
     refresh: fetchHistory,
     deleteRecord,
     setSortOrder,
