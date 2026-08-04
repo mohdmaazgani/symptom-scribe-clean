@@ -185,30 +185,30 @@ const Dashboard = () => {
         return;
       }
       setUserId(user.id);
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
 
+      // Fetch profile and symptom history in parallel
+      const [profileResult, symptomResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        fetchSymptomHistory(user.id),
+      ]);
+
+      const { data: profile } = profileResult;
+      const { data: rawSymptoms, source } = symptomResult;
+
+      // Wait for encryption key once, then decrypt profile name
       if (profile?.full_name) {
         const key = await whenEncryptionReady();
-
         try {
-          const decryptedFullName = await decryptProfileField(
-            profile.full_name,
-            key
-          );
-
+          const decryptedFullName = await decryptProfileField(profile.full_name, key);
           setUserName(decryptedFullName);
         } catch (err) {
           console.warn("Full name decryption failed", err);
         }
       }
-
-
-
-      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
 
       if (rawSymptoms && rawSymptoms.length > 0) {
         const key = await whenEncryptionReady();
