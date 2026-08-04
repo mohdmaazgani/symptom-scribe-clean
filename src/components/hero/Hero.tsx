@@ -181,7 +181,7 @@ const Hero = () => {
         duration: 0.8,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className="relative overflow-hidden bg-background pt-16 pb-24 md:pt-24 md:pb-32 px-4 group"
+      className="relative bg-background pt-16 pb-24 md:pt-24 md:pb-32 px-4 group"
       onMouseMove={handleMouseMove}
     >
       {/* Interactive Mouse Spotlight */}
