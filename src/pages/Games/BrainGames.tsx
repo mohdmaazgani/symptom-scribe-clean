@@ -325,7 +325,7 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
         <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
           {message}
         </p>
-        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+        <div className="grid grid-cols-2 gap-5 w-full max-w-sm">
           {SIMON_PADS.map((pad, i) => (
             <button
               key={pad.name}
@@ -1897,7 +1897,7 @@ const BrainGames = () => {
         )}
 
         <div
-          className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm mx-auto"
+          className="grid grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto"
           onTouchStart={handle2048TouchStart}
           onTouchEnd={handle2048TouchEnd}
           role="group"
@@ -2109,7 +2109,7 @@ const BrainGames = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className={`flex items-center justify-center gap-3 p-4 rounded-2xl max-w-xs mx-auto border-2 ${questionTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
+                className={`flex items-center justify-center gap-3 p-4 rounded-2xl max-w-sm mx-auto border-2 ${questionTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
               >
                 <Timer className={`w-6 h-6 ${questionTimeLeft <= 5 ? "animate-spin-slow" : ""}`} />
                 <span className="text-3xl font-black tracking-tighter">{questionTimeLeft}</span>
@@ -2726,7 +2726,7 @@ const BrainGames = () => {
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className={`flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] max-w-xs mx-auto border-2 shadow-lg ${mathTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
+                    className={`flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] max-w-sm mx-auto border-2 shadow-lg ${mathTimeLeft <= 5 ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-primary/5 border-primary/20 text-primary"}`}
                   >
                     <Timer className={`w-6 h-6 sm:w-8 sm:h-8 ${mathTimeLeft <= 5 ? "animate-spin-slow" : ""}`} />
                     <span className="text-2xl sm:text-4xl font-black tracking-tighter">{mathTimeLeft}</span>
