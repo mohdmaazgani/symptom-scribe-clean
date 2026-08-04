@@ -12,6 +12,8 @@ import {
   Thermometer,
   Brain,
   HeartPulse,
+  Camera,
+  X,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +28,7 @@ import {
   parseSymptomConsultation,
   shouldPersistConsultation,
 } from "@/lib/symptom-consultation";
+import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
@@ -71,9 +74,21 @@ const ChatInterface = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const scrollToBottom = () => {
     if (typeof messagesEndRef.current?.scrollIntoView === "function") {
@@ -321,6 +336,22 @@ const ChatInterface = () => {
         );
 
         if (shouldPersistConsultation(assistantContent)) {
+          let uploadedImages: string[] | null = null;
+          if (selectedFiles.length > 0) {
+            try {
+              uploadedImages = [];
+              for (const file of selectedFiles) {
+                const compressed = await compressImage(file);
+                const url = await uploadSymptomImage(compressed, user.id);
+                uploadedImages.push(url);
+              }
+            } catch (err) {
+              console.error("Image upload failed:", err);
+              showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
+              uploadedImages = null;
+            }
+          }
+
           const recordId = crypto.randomUUID();
           const record = {
             id: recordId,
@@ -333,6 +364,7 @@ const ChatInterface = () => {
             risk_score: riskScore,
             resolved: false,
             created_at: new Date().toISOString(),
+            images: uploadedImages,
           };
 
           const keys = await whenKeysReady();
@@ -389,6 +421,8 @@ const ChatInterface = () => {
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
       setIsLoading(false);
+      setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -607,7 +641,46 @@ const ChatInterface = () => {
 
         {/* Input Panel — FIX: char counter + Enter hint */}
         <div className="border-t border-border/40 bg-card/40 backdrop-blur-md p-4 shrink-0">
+          {selectedFiles.length > 0 && (
+            <div className="flex gap-2 mb-3 overflow-x-auto p-2 border border-border/50 rounded-xl bg-background/50">
+              {selectedFiles.map((file, idx) => (
+                <div key={idx} className="relative shrink-0">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Preview ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-md border border-border"
+                  />
+                  <button
+                    onClick={() => removeFile(idx)}
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/90 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-3 items-start">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="h-[60px] w-[60px] flex-shrink-0 rounded-xl bg-background/60 border-border/50 hover:bg-muted/50"
+              aria-label="Attach images"
+            >
+              <Camera className="w-5 h-5 text-muted-foreground" />
+            </Button>
             <div className="flex-1 flex flex-col gap-1.5 chat-input-glow rounded-xl transition-all duration-200">
               <Textarea
                 value={input}
