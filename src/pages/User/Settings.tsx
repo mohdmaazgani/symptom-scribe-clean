@@ -370,7 +370,9 @@ const Settings = () => {
 
               {/* Password Confirmation */}
               <div className="space-y-2">
-                <Label htmlFor="delete-password">{t("settings.delete.confirmLabel")}</Label>
+                <Label htmlFor="delete-password" className="text-red-700 dark:text-red-300">
+                  {t("settings.delete.confirmLabel")}
+                </Label>
                 <Input
                   id="delete-password"
                   type="password"
