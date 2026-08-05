@@ -8,6 +8,17 @@ let lastToken: string | null = null;
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
 let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null = null;
 
+/*
+ * Security Trade-off:
+ *
+ * Persisting key material improves user experience because encrypted
+ * data remains readable after page reloads.
+ *
+ * Stronger persistence mechanisms (such as non-extractable keys or
+ * encrypted local storage) may be considered in future revisions,
+ * but would require migration logic to preserve compatibility.
+ */
+
 function resetReadyPromise() {
   readyPromise = new Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }>((resolve) => {
     readyResolver = resolve;
@@ -72,6 +83,22 @@ function hexToUint8Array(hex: string): Uint8Array {
 // A random 16-byte salt is generated once per user and stored in localStorage
 // keyed by user ID. This prevents cross-user precomputation attacks that would
 // be possible with a hardcoded global salt.
+//
+// Persistence rationale:
+// - What is stored: a 16-byte random value, hex-encoded, under
+//   `SALT_KEY_PREFIX + userId` in localStorage.
+// - Why it is stored: PBKDF2 must be run with the *same* salt every time to
+//   re-derive the same AES/HMAC keys from the master seed. If the salt were
+//   regenerated on each session, previously encrypted/indexed data would
+//   become undecryptable and unsearchable.
+// - When it is restored: on every session change, before keys are derived
+//   (see `handleSessionChange`), and is also synced from the user's Supabase
+//   profile (`encryption_salt`) so the same salt is available across devices.
+// - Why changing it would break existing data: the salt is a direct input to
+//   key derivation. Rotating or discarding a user's salt without a
+//   re-encryption migration will silently produce a different key and make
+//   all previously encrypted fields and blind-index search tokens
+//   unreadable/unmatchable.
 
 const SALT_KEY_PREFIX = "symptom_scribe_pbkdf2_salt_";
 
@@ -261,6 +288,38 @@ export function registerEncryptionHooks(callbacks: {
   onTokenRefreshCallback = callbacks.onTokenRefresh;
 }
 
+// ─── Persisted Master Seed ───────────────────────────────────────────────────
+// The master seed is a PBKDF2-derived value (password + email) that all
+// encryption/search keys are ultimately re-derived from. It is persisted in
+// localStorage, keyed by user ID, under `SEED_KEY_PREFIX`.
+//
+// Persistence rationale:
+// - What is stored: the hex-encoded output of `deriveSeedFromPassword`, i.e.
+//   a value derived from the user's password and email, not the raw
+//   password itself.
+// - Why it is stored: the Supabase session (access token) persists across
+//   reloads independently of this seed, but the encryption key is derived
+//   from the password-based seed, not the session token. Without persisting
+//   the seed locally, a page refresh or new tab would leave the app holding
+//   a valid session but no way to re-derive the encryption key without
+//   asking the user to re-enter their password.
+// - When it is restored: read in `handleSessionChange`, whenever the
+//   Supabase auth state fires (initial load, token refresh, tab focus,
+//   etc.), and used to re-derive the AES-GCM and HMAC keys.
+// - Why it is required: encrypted records and blind-index search tokens are
+//   only ever derived from this seed. There is no server-side copy — losing
+//   it (without the password) means existing encrypted data cannot be
+//   decrypted.
+// - Why changing this would break existing data: any change to how the seed
+//   is derived, stored, or looked up changes the key that
+//   `deriveKeyFromToken`/`deriveSearchKeyFromToken` produce. Since AES-GCM
+//   ciphertext and HMAC blind indexes are only valid under the exact key
+//   they were created with, existing rows would become undecryptable and
+//   unsearchable unless a re-encryption migration accompanies the change.
+//   This is intentionally left untouched here; see `handleSessionChange`
+//   below for a related fallback behavior worth reviewing before any future
+//   redesign.
+
 const SEED_KEY_PREFIX = "symptom_scribe_master_seed_";
 
 // Helper to derive stable master seed from password + email using PBKDF2
@@ -291,6 +350,9 @@ export async function deriveSeedFromPassword(password: string, email: string): P
 // Function called during login/signup/password-change to store seed and active keys
 export async function setupKeysFromPassword(password: string, email: string, userId: string): Promise<void> {
   const seed = await deriveSeedFromPassword(password, email);
+  // Persisted so the seed survives reloads/new sessions without requiring
+  // the password again — see "Persisted Master Seed" note above for the
+  // full rationale and backward-compatibility considerations.
   localStorage.setItem(SEED_KEY_PREFIX + userId, seed);
 
   const newKey = await deriveKeyFromToken(seed, userId);
@@ -318,7 +380,13 @@ async function handleSessionChange(session: Session) {
   const token = session.access_token;
   if (!token) return;
 
-  // Synchronize user salt across devices
+  // Synchronize user salt across devices.
+  //
+  // The salt is cached locally (see "Per-user PBKDF2 Salt" above) but is
+  // also written to the user's Supabase profile (`encryption_salt`) so a
+  // second device/browser can pick up the *same* salt instead of generating
+  // its own. If the local and remote values ever diverge, the remote
+  // (`dbSalt`) value wins here so all devices converge on one salt.
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -361,6 +429,21 @@ async function handleSessionChange(session: Session) {
   }
 
   // Derive persistent master key from stored seed (or stable userId fallback)
+  //
+  // `storedSeed` is the value persisted by `setupKeysFromPassword` (see the
+  // "Persisted Master Seed" note above) — reading it here is what lets the
+  // app re-derive the same encryption/search keys after a refresh without
+  // re-prompting for the password.
+  //
+  // Note on the fallback: if no seed has been persisted for this user yet
+  // (`storedSeed` is null/undefined), `masterSeed` falls back to the raw
+  // `userId`. This keeps the app functional (e.g. first load before
+  // `setupKeysFromPassword` has run, or for accounts created before this
+  // seed mechanism existed) but derives a *weaker*, non-secret-based key,
+  // since `userId` is not a secret. This fallback is intentionally left as
+  // -is in this PR — flagging it here for anyone evaluating persistence
+  // hardening, since removing or changing it changes what key existing
+  // encrypted data was written under.
   const storedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
   const masterSeed = storedSeed || userId;
 
@@ -390,7 +473,14 @@ async function handleSessionChange(session: Session) {
 }
 
 async function handleSessionClear() {
-  // Clear user-specific data on logout
+  // Clear user-specific data on logout.
+  //
+  // This removes the locally cached salt and master seed so that no key
+  // material can be re-derived from this browser/device without the user
+  // authenticating again. Note the salt is recoverable on next login (it's
+  // also stored in the user's Supabase profile, see the sync logic in
+  // `handleSessionChange` above); the seed is not persisted anywhere except
+  // the current device, so it is re-derived from the password on next login.
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.id) {
     clearUserSalt(user.id);
