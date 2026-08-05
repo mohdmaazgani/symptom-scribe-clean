@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const Auth = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const fieldIconClass =
     "pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-200/70 transition-colors duration-200";
@@ -98,7 +100,7 @@ const Auth = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: "Validation Error",
+          title: t("auth.validationErrorTitle"),
           description: error.errors[0].message,
           variant: "destructive",
         });
@@ -120,7 +122,7 @@ const Auth = () => {
     });
 
     if (error) {
-      showError("Sign In Failed", error.message);
+      showError(t("auth.signInFailedTitle"), error.message);
       setLoading(false);
     } else {
       const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
@@ -150,7 +152,7 @@ const Auth = () => {
 
   const handleMfaVerify = async () => {
     if (mfaCode.length !== 6) {
-      showError("Invalid Code", "Enter the 6-digit code from your authenticator app");
+      showError(t("auth.invalidCodeTitle"), t("auth.mfaPrompt"));
       return;
     }
     setMfaSubmitting(true);
@@ -160,7 +162,7 @@ const Auth = () => {
     });
 
     if (challengeError) {
-      showError("Verification Failed", challengeError.message);
+      showError(t("auth.verificationFailedTitle"), challengeError.message);
       setMfaSubmitting(false);
       return;
     }
@@ -172,7 +174,7 @@ const Auth = () => {
     });
 
     if (verifyError) {
-      showError("Incorrect Code", "The code you entered is incorrect or expired");
+      showError(t("auth.incorrectCodeTitle"), t("auth.incorrectCodeDesc"));
       setMfaSubmitting(false);
       return;
     }
@@ -192,10 +194,7 @@ const Auth = () => {
 
 const handleForgotPassword= async () => {
   if (!signInEmail) {
-    showError(
-      "Email Required",
-      "Please enter your email address before resetting your password"
-    );
+    showError(t("auth.emailRequiredTitle"), t("auth.emailRequiredDesc"));
     return;
   }
   const { error } = await supabase.auth.resetPasswordForEmail(
@@ -205,11 +204,9 @@ const handleForgotPassword= async () => {
     });
 
   if (error) {
-    showError("Reset Failed", error.message);
+    showError(t("auth.resetFailedTitle"), error.message);
   } else {
-    showSuccess(
-      "Reset Email Sent","Please check your inbox for the password reset link"
-    );
+    showSuccess(t("auth.resetEmailSentTitle"), t("auth.resetEmailSentDesc"));
   }
 };
 
@@ -226,39 +223,36 @@ const handleForgotPassword= async () => {
           className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          {t("auth.backToHome")}
         </Link>
       </div>
       <main className="relative z-10 mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1fr_460px]">
         <section className="hidden max-w-xl space-y-8 lg:block">
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/15 bg-white/8 px-4 py-2 text-sm font-medium text-cyan-100 shadow-lg shadow-slate-950/20 backdrop-blur-xl">
             <Sparkles className="h-4 w-4 text-emerald-300" />
-            AI-powered healthcare dashboard
+            {t("auth.badge")}
           </div>
 
           <div className="space-y-5">
             <h1 className="text-5xl font-bold leading-tight tracking-normal text-white">
-              Care insights that feel calm, clear, and secure.
+              {t("auth.headline")}
             </h1>
-            <p className="max-w-lg text-lg leading-8 text-slate-300">
-              Track symptoms, health patterns, and personalized guidance from a focused workspace
-              built for everyday care decisions.
-            </p>
+            <p className="max-w-lg text-lg leading-8 text-slate-300">{t("auth.subheadline")}</p>
           </div>
 
           <div className="grid max-w-lg grid-cols-2 gap-4">
             <div className="rounded-2xl border border-white/10 bg-white/8 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
               <HeartPulse className="mb-4 h-7 w-7 text-rose-200" />
-              <p className="text-sm font-semibold text-white">Smart symptom history</p>
+              <p className="text-sm font-semibold text-white">{t("auth.featureHistoryTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-slate-300">
-                Organized health records with trend-aware summaries.
+                {t("auth.featureHistoryDesc")}
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/8 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
               <ShieldCheck className="mb-4 h-7 w-7 text-emerald-200" />
-              <p className="text-sm font-semibold text-white">Private by design</p>
+              <p className="text-sm font-semibold text-white">{t("auth.featurePrivacyTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-slate-300">
-                A secure entry point with accessible contrast and focus states.
+                {t("auth.featurePrivacyDesc")}
               </p>
             </div>
           </div>
@@ -272,10 +266,10 @@ const handleForgotPassword= async () => {
 
             <div className="space-y-2">
               <CardTitle className="text-2xl font-bold tracking-normal text-white sm:text-3xl">
-                Smart Health Tracker
+                {t("auth.cardTitle")}
               </CardTitle>
               <CardDescription className="text-sm leading-6 text-slate-300">
-                Manage your health with AI-powered insights
+                {t("auth.cardDescription")}
               </CardDescription>
             </div>
           </CardHeader>
@@ -291,7 +285,7 @@ const handleForgotPassword= async () => {
                       : "!bg-transparent text-slate-300 hover:text-white"
                   }`}
                 >
-                  Sign In
+                  {t("common.signIn")}
                 </TabsTrigger>
 
                 <TabsTrigger
@@ -302,7 +296,7 @@ const handleForgotPassword= async () => {
                       : "!bg-transparent text-slate-300 hover:text-white"
                   }`}
                 >
-                  Sign Up
+                  {t("common.signUp")}
                 </TabsTrigger>
               </TabsList>
 
@@ -311,9 +305,7 @@ const handleForgotPassword= async () => {
                   <div className="space-y-5">
                     <div className="flex flex-col items-center gap-2 text-center">
                       <ShieldCheck className="h-8 w-8 text-cyan-300" />
-                      <p className="text-sm text-slate-200">
-                        Enter the 6-digit code from your authenticator app
-                      </p>
+                      <p className="text-sm text-slate-200">{t("auth.mfaPrompt")}</p>
                     </div>
                     <div className="flex justify-center">
                       <InputOTP maxLength={6} value={mfaCode} onChange={setMfaCode}>
@@ -337,7 +329,7 @@ const handleForgotPassword= async () => {
                           setMfaCode("");
                         }}
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </Button>
                       <Button
                         type="button"
@@ -348,15 +340,15 @@ const handleForgotPassword= async () => {
                         {redirecting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Redirecting...
+                            {t("common.redirecting")}
                           </>
                         ) : mfaSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Verifying...
+                            {t("auth.verifying")}
                           </>
                         ) : (
-                          "Verify"
+                          t("common.verify")
                         )}
                       </Button>
                     </div>
@@ -365,7 +357,7 @@ const handleForgotPassword= async () => {
                 <form onSubmit={handleSignIn} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email" className="text-sm font-medium text-slate-100">
-                      Email
+                      {t("common.email")}
                     </Label>
 
                     <div className="relative">
@@ -374,7 +366,7 @@ const handleForgotPassword= async () => {
                       <Input
                         id="signin-email"
                         type="email"
-                        placeholder="your@email.com"
+                        placeholder={t("auth.emailPlaceholder")}
                         value={signInEmail}
                         onChange={(e) => setSignInEmail(e.target.value)}
                         required
@@ -385,7 +377,7 @@ const handleForgotPassword= async () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="signin-password" className="text-sm font-medium text-slate-100">
-                      Password
+                      {t("common.password")}
                     </Label>
 
                     <div className="relative">
@@ -404,7 +396,9 @@ const handleForgotPassword= async () => {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? t("common.hidePassword") : t("common.showPassword")
+                        }
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
@@ -416,7 +410,7 @@ const handleForgotPassword= async () => {
                     type="button"
                     onClick={handleForgotPassword}
                     className="text-sm text-cyan-400 hover:underline mt-2">
-                      Forgot Password?
+                      {t("auth.forgotPassword")}
                     </button>
                   </div>
 
@@ -428,15 +422,15 @@ const handleForgotPassword= async () => {
                     {redirecting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecting...
+                        {t("common.redirecting")}
                       </>
                     ) : loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing In...
+                        {t("auth.signingIn")}
                       </>
                     ) : (
-                      "Sign In"
+                      t("common.signIn")
                     )}
                   </Button>
                 </form>
