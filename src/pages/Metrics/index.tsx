@@ -379,7 +379,7 @@ const Metrics = () => {
 
       refresh();
     } catch (error) {
-      console.error("Error saving metric:", error);
+      console.warn("Error saving metric:", error);
       showError("Failed to Save", "Could not record your health metric");
     } finally {
       setLoading(false);

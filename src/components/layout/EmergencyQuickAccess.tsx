@@ -62,7 +62,7 @@ const EmergencyQuickAccess = () => {
           .maybeSingle();
 
         if (error) {
-          console.error("Error loading emergency profile info:", error);
+          console.warn("Error loading emergency profile info:", error);
         } else if (data) {
           const key = await whenEncryptionReady();
           const decryptedName = await decryptProfileField(data.emergency_contact_name, key);
@@ -73,7 +73,7 @@ const EmergencyQuickAccess = () => {
           });
         }
       } catch (err) {
-        console.error("Error loading profile:", err);
+        console.warn("Error loading profile:", err);
       } finally {
         setProfileLoading(false);
       }
@@ -127,7 +127,7 @@ const EmergencyQuickAccess = () => {
         setTimeout(() => setAlertStatus("idle"), 4000);
       } catch (err) {
         const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-        console.error("Failed to broadcast alert:", err);
+        console.warn("Failed to broadcast alert:", err);
         setAlertStatus("error");
         showError("Broadcast Failed", message);
         setTimeout(() => setAlertStatus("idle"), 4000);
@@ -144,7 +144,7 @@ const EmergencyQuickAccess = () => {
         await executeMeshAlert(position.coords.latitude, position.coords.longitude);
       },
       async (err) => {
-        console.error("Geolocation failed:", err);
+        console.warn("Geolocation failed:", err);
         await executeMeshAlert(null, null);
       },
       { enableHighAccuracy: true, timeout: 8000 }

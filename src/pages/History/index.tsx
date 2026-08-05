@@ -235,7 +235,7 @@ const History = () => {
           setHistory(decryptedRecords as unknown as SymptomEntry[]);
         }
       } catch (err) {
-        console.error("Error loading local symptoms:", err);
+        console.warn("Error loading local symptoms:", err);
       } finally {
         setLoading(false);
       }
@@ -296,7 +296,7 @@ const History = () => {
         prev.map((entry) => (entry.id === id ? { ...entry, resolved: newStatus } : entry))
       );
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.warn("Error updating status:", error);
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     }
   };
@@ -316,7 +316,7 @@ const History = () => {
       showSuccess("Record deleted", "The symptom history has been permanently removed.");
       setHistory((prev) => prev.filter((entry) => entry.id !== id));
     } catch (error) {
-      console.error("Error deleting history:", error);
+      console.warn("Error deleting history:", error);
       showError("Delete failed", "Could not delete this health record.");
     }
   };
