@@ -194,6 +194,10 @@ describe("Dashboard", () => {
     // Re-apply defaults that vi.clearAllMocks() removes:
     mockAuthUser();
     mockFromWithProfile();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ predictions: [] }),
+    });
   });
 
   // 1. Loading state
