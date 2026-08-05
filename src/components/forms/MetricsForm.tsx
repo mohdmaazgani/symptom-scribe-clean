@@ -1,3 +1,4 @@
+// src/components/forms/MetricsForm.tsx
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,13 +21,17 @@ export const MetricsForm = () => {
     resolver: zodResolver(healthMetricSchema),
   });
 
+  const isValidNumber = (n: unknown): n is number =>
+    typeof n === "number" && Number.isFinite(n);
+
   const onSubmit = async (data: HealthMetricInput) => {
     try {
       const {
-        data: { user },
+        data: userData,
         error: authError,
       } = await supabase.auth.getUser();
 
+      const user = userData?.user ?? null;
       if (authError || !user) {
         showError("Not signed in", "Please sign in again to log your metrics.");
         return;
@@ -34,29 +39,44 @@ export const MetricsForm = () => {
 
       const recordedAt = new Date().toISOString();
 
-      // The `health_metrics` table stores one row per metric type, so each
-      // field on the form becomes its own row rather than one wide row.
-      const rows = [
-        { metric_type: "steps", value: { value: data.steps } as Json },
-        { metric_type: "hydration", value: { value: data.hydrationMl } as Json },
-        { metric_type: "calories", value: { value: data.caloriesKcal } as Json },
-      ].map((row) => ({
-        user_id: user.id,
-        recorded_at: recordedAt,
-        ...row,
-      }));
+      // Map input fields to metric rows but only include finite numbers (allows 0).
+      const metricInputs: Array<{ metric_type: string; value: unknown }> = [
+        { metric_type: "steps", value: data.steps },
+        { metric_type: "hydration", value: data.hydrationMl },
+        { metric_type: "calories", value: data.caloriesKcal },
+      ];
 
-      const { error } = await supabase.from("health_metrics").insert(rows);
-      if (error) throw error;
+      const rows = metricInputs.reduce((acc: any[], m) => {
+        if (isValidNumber(m.value)) {
+          acc.push({
+            user_id: user.id,
+            recorded_at: recordedAt,
+            metric_type: m.metric_type,
+            value: { value: m.value } as Json,
+          });
+        }
+        return acc;
+      }, []);
+
+      if (rows.length === 0) {
+        showError("No metrics provided", "Please enter at least one numeric metric before submitting.");
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("health_metrics").insert(rows);
+      if (insertError) {
+        // Log full error for debugging/observability, but show a user-friendly message.
+        console.error("Failed to insert health_metrics rows:", insertError);
+        showError("Couldn't save metrics", "An error occurred while saving your metrics. Please try again.");
+        return;
+      }
 
       showSuccess("Metrics logged", "Your steps, hydration, and calories were saved.");
       reset();
-    } catch (error) {
-      console.error("Failed to submit metrics:", error);
-      showError(
-        "Couldn't save metrics",
-        error instanceof Error ? error.message : "Please try again.",
-      );
+    } catch (err) {
+      // Unexpected runtime errors: log detail and show generic message.
+      console.error("Failed to submit metrics:", err);
+      showError("Couldn't save metrics", "An unexpected error occurred. Please try again.");
     }
   };
 
