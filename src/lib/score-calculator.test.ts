@@ -316,6 +316,337 @@ describe("calculateWeeklyHealthScore", () => {
     });
   });
 
+  describe("biometric range boundaries", () => {
+    const boundaryReadings = [
+      {
+        label: "a heart rate at the lower bound",
+        metric_type: "heart_rate",
+        value: { value: 60 },
+        optimal: true,
+      },
+      {
+        label: "a heart rate below the lower bound",
+        metric_type: "heart_rate",
+        value: { value: 59 },
+        optimal: false,
+      },
+      {
+        label: "a heart rate at the upper bound",
+        metric_type: "heart_rate",
+        value: { value: 100 },
+        optimal: true,
+      },
+      {
+        label: "a heart rate above the upper bound",
+        metric_type: "heart_rate",
+        value: { value: 101 },
+        optimal: false,
+      },
+      {
+        label: "a temperature at the lower bound",
+        metric_type: "temperature",
+        value: { value: 97 },
+        optimal: true,
+      },
+      {
+        label: "a temperature below the lower bound",
+        metric_type: "temperature",
+        value: { value: 96.9 },
+        optimal: false,
+      },
+      {
+        label: "a temperature at the upper bound",
+        metric_type: "temperature",
+        value: { value: 99.5 },
+        optimal: true,
+      },
+      {
+        label: "a temperature above the upper bound",
+        metric_type: "temperature",
+        value: { value: 99.6 },
+        optimal: false,
+      },
+      {
+        label: "an oxygen saturation at the lower bound",
+        metric_type: "oxygen_saturation",
+        value: { value: 95 },
+        optimal: true,
+      },
+      {
+        label: "an oxygen saturation below the lower bound",
+        metric_type: "oxygen_saturation",
+        value: { value: 94.9 },
+        optimal: false,
+      },
+      {
+        label: "a blood sugar at the lower bound",
+        metric_type: "blood_sugar",
+        value: { value: 70 },
+        optimal: true,
+      },
+      {
+        label: "a blood sugar below the lower bound",
+        metric_type: "blood_sugar",
+        value: { value: 69 },
+        optimal: false,
+      },
+      {
+        label: "a blood sugar at the upper bound",
+        metric_type: "blood_sugar",
+        value: { value: 140 },
+        optimal: true,
+      },
+      {
+        label: "a blood sugar above the upper bound",
+        metric_type: "blood_sugar",
+        value: { value: 141 },
+        optimal: false,
+      },
+      {
+        label: "a blood pressure just inside both bounds",
+        metric_type: "blood_pressure",
+        value: { systolic: 129, diastolic: 84 },
+        optimal: true,
+      },
+      {
+        label: "a blood pressure at the systolic bound",
+        metric_type: "blood_pressure",
+        value: { systolic: 130, diastolic: 84 },
+        optimal: false,
+      },
+      {
+        label: "a blood pressure at the diastolic bound",
+        metric_type: "blood_pressure",
+        value: { systolic: 129, diastolic: 85 },
+        optimal: false,
+      },
+      {
+        label: "sleep at the lower bound",
+        metric_type: "sleep",
+        value: { value: 6 },
+        optimal: true,
+      },
+      {
+        label: "sleep below the lower bound",
+        metric_type: "sleep",
+        value: { value: 5.9 },
+        optimal: false,
+      },
+      {
+        label: "steps at the lower bound",
+        metric_type: "steps",
+        value: { value: 5000 },
+        optimal: true,
+      },
+      {
+        label: "steps below the lower bound",
+        metric_type: "steps",
+        value: { value: 4999 },
+        optimal: false,
+      },
+    ];
+
+    // The bounds are the thresholds most likely to drift when the scoring rules
+    // are tuned, so each one is pinned from both sides.
+    it.each(boundaryReadings)(
+      "scores $label as optimal=$optimal",
+      ({ metric_type, value, optimal }) => {
+        const result = calculateWeeklyHealthScore([], [makeMetric({ metric_type, value })]);
+
+        expect(pointsFor(result, "biometric_stability")).toBe(optimal ? 30 : 0);
+      }
+    );
+
+    it("never counts a zero reading as optimal", () => {
+      // The range checks guard on the value being truthy first, so a literal 0
+      // short-circuits before the bound is ever compared.
+      const sleep = calculateWeeklyHealthScore(
+        [],
+        [makeMetric({ metric_type: "sleep", value: { value: 0 } })]
+      );
+      const steps = calculateWeeklyHealthScore(
+        [],
+        [makeMetric({ metric_type: "steps", value: { value: 0 } })]
+      );
+
+      expect(pointsFor(sleep, "biometric_stability")).toBe(0);
+      expect(pointsFor(steps, "biometric_stability")).toBe(0);
+    });
+
+    it("requires the diastolic component alongside the systolic one", () => {
+      const result = calculateWeeklyHealthScore(
+        [],
+        [makeMetric({ metric_type: "blood_pressure", value: { diastolic: 78 } })]
+      );
+
+      expect(pointsFor(result, "biometric_stability")).toBe(0);
+    });
+
+    it("scores metrics without a recorded_at timestamp but does not credit a logged day", () => {
+      const result = calculateWeeklyHealthScore(
+        [],
+        [makeMetric({ recorded_at: "", value: { value: 72 } })]
+      );
+
+      expect(result.loggingDaysLastWeek).toBe(0);
+      expect(pointsFor(result, "biometric_stability")).toBe(30);
+    });
+  });
+
+  describe("streaks beyond the seven day window", () => {
+    it("keeps counting past the seven days the consistency score looks at", () => {
+      const symptoms = Array.from({ length: 10 }, (_, i) =>
+        makeSymptom({ id: `symptom-${i}`, created_at: daysAgo(i) })
+      );
+
+      const result = calculateWeeklyHealthScore(symptoms);
+
+      expect(result.streakDays).toBe(10);
+      // The consistency window stays capped at seven days.
+      expect(result.loggingDaysLastWeek).toBe(7);
+      expect(pointsFor(result, "consistency")).toBe(40);
+    });
+
+    it("counts a streak that crosses a month boundary", () => {
+      vi.setSystemTime(new Date("2026-03-01T12:00:00.000Z"));
+
+      const result = calculateWeeklyHealthScore([
+        makeSymptom({ id: "a", created_at: "2026-03-01T09:00:00.000Z" }),
+        makeSymptom({ id: "b", created_at: "2026-02-28T09:00:00.000Z" }),
+        makeSymptom({ id: "c", created_at: "2026-02-27T09:00:00.000Z" }),
+      ]);
+
+      expect(result.streakDays).toBe(3);
+      expect(result.loggingDaysLastWeek).toBe(3);
+    });
+
+    it("counts a streak that crosses a year boundary", () => {
+      vi.setSystemTime(new Date("2026-01-01T12:00:00.000Z"));
+
+      const result = calculateWeeklyHealthScore([
+        makeSymptom({ id: "a", created_at: "2026-01-01T09:00:00.000Z" }),
+        makeSymptom({ id: "b", created_at: "2025-12-31T09:00:00.000Z" }),
+      ]);
+
+      expect(result.streakDays).toBe(2);
+      expect(result.loggingDaysLastWeek).toBe(2);
+    });
+
+    it("does not start a streak from a future dated entry", () => {
+      const result = calculateWeeklyHealthScore([makeSymptom({ created_at: daysAgo(-1) })]);
+
+      expect(result.streakDays).toBe(0);
+      expect(result.loggingDaysLastWeek).toBe(0);
+    });
+  });
+
+  describe("rounding", () => {
+    it("rounds the consistency ratio to the nearest point", () => {
+      const oneDay = calculateWeeklyHealthScore([makeSymptom({ created_at: daysAgo(0) })]);
+      const threeDays = calculateWeeklyHealthScore(
+        Array.from({ length: 3 }, (_, i) =>
+          makeSymptom({ id: `symptom-${i}`, created_at: daysAgo(i) })
+        )
+      );
+
+      // (1 / 7) * 40 = 5.714… → 6, (3 / 7) * 40 = 17.142… → 17
+      expect(pointsFor(oneDay, "consistency")).toBe(6);
+      expect(pointsFor(threeDays, "consistency")).toBe(17);
+    });
+
+    it("rounds the symptom ratio, including the half point case", () => {
+      const oneOfThree = calculateWeeklyHealthScore([
+        makeSymptom({ id: "a", resolved: true }),
+        makeSymptom({ id: "b", resolved: false }),
+        makeSymptom({ id: "c", resolved: false }),
+      ]);
+      const oneOfFour = calculateWeeklyHealthScore([
+        makeSymptom({ id: "a", resolved: true }),
+        makeSymptom({ id: "b", resolved: false }),
+        makeSymptom({ id: "c", resolved: false }),
+        makeSymptom({ id: "d", resolved: false }),
+      ]);
+
+      // (1 / 3) * 30 = 10, (1 / 4) * 30 = 7.5 → 8 (rounded half up)
+      expect(pointsFor(oneOfThree, "symptom_resolution")).toBe(10);
+      expect(pointsFor(oneOfFour, "symptom_resolution")).toBe(8);
+    });
+
+    it("rounds the biometric ratio to the nearest point", () => {
+      const result = calculateWeeklyHealthScore(
+        [],
+        [
+          makeMetric({ id: "a", value: { value: 72 } }),
+          makeMetric({ id: "b", value: { value: 45 } }),
+          makeMetric({ id: "c", value: { value: 180 } }),
+        ]
+      );
+
+      // (1 / 3) * 30 = 10
+      expect(pointsFor(result, "biometric_stability")).toBe(10);
+      expect(result.breakdown[2].description).toBe("1 of 3 vital readings in optimal range");
+    });
+
+    it("weighs symptoms from outside the seven day window into the resolution ratio", () => {
+      const result = calculateWeeklyHealthScore([
+        makeSymptom({ id: "recent", created_at: daysAgo(0), resolved: true }),
+        makeSymptom({ id: "old", created_at: daysAgo(30), resolved: false }),
+      ]);
+
+      expect(result.loggingDaysLastWeek).toBe(1);
+      expect(pointsFor(result, "symptom_resolution")).toBe(15);
+    });
+  });
+
+  describe("result contract", () => {
+    it("labels every breakdown category", () => {
+      const { breakdown } = calculateWeeklyHealthScore();
+
+      expect(breakdown.map((item) => item.label)).toEqual([
+        "Logging Consistency",
+        "Symptom Control",
+        "Biometric Stability",
+      ]);
+    });
+
+    it("keeps every category within its own maximum", () => {
+      const symptoms = Array.from({ length: 7 }, (_, i) =>
+        makeSymptom({ id: `symptom-${i}`, created_at: daysAgo(i), resolved: i % 2 === 0 })
+      );
+      const metrics = Array.from({ length: 5 }, (_, i) =>
+        makeMetric({ id: `metric-${i}`, recorded_at: daysAgo(i), value: { value: 60 + i * 20 } })
+      );
+
+      const { breakdown } = calculateWeeklyHealthScore(symptoms, metrics);
+
+      breakdown.forEach((item) => {
+        expect(item.points).toBeGreaterThanOrEqual(0);
+        expect(item.points).toBeLessThanOrEqual(item.maxPoints);
+      });
+    });
+
+    it("does not mutate the arrays it is given", () => {
+      const symptoms = [makeSymptom({ created_at: daysAgo(1) })];
+      const metrics = [makeMetric({ recorded_at: daysAgo(2) })];
+      const symptomsSnapshot = JSON.stringify(symptoms);
+      const metricsSnapshot = JSON.stringify(metrics);
+
+      calculateWeeklyHealthScore(symptoms, metrics);
+
+      expect(JSON.stringify(symptoms)).toBe(symptomsSnapshot);
+      expect(JSON.stringify(metrics)).toBe(metricsSnapshot);
+    });
+
+    it("returns the same result when called twice with the same input", () => {
+      const symptoms = [makeSymptom({ created_at: daysAgo(0), resolved: true })];
+      const metrics = [makeMetric({ recorded_at: daysAgo(1) })];
+
+      expect(calculateWeeklyHealthScore(symptoms, metrics)).toEqual(
+        calculateWeeklyHealthScore(symptoms, metrics)
+      );
+    });
+  });
+
   describe("total score boundaries", () => {
     it("reaches exactly 100 for a perfect week without exceeding the cap", () => {
       const symptoms = Array.from({ length: 7 }, (_, i) =>
