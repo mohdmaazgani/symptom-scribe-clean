@@ -87,32 +87,7 @@ const floatingIcons = [
 ];
 
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.18,
-      delayChildren: 0.25,
-    },
-  },
-};
 
-const itemVariants = {
-  hidden: {
-    opacity: 0,
-    y: 35,
-    filter: "blur(12px)",
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: {
-      duration: 0.75,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
 const Hero = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -124,19 +99,19 @@ const Hero = () => {
       icon: Shield,
       title: t("hero.pillSecureTitle"),
       description: t("hero.pillSecureDesc"),
-      delay: 0.2,
+      delay: 0.05,
     },
     {
       icon: Zap,
       title: t("hero.pillInstantTitle"),
       description: t("hero.pillInstantDesc"),
-      delay: 0.35,
+      delay: 0.1,
     },
     {
       icon: Activity,
       title: t("hero.pillEvidenceTitle"),
       description: t("hero.pillEvidenceDesc"),
-      delay: 0.5,
+      delay: 0.15,
     },
   ];
 
@@ -160,29 +135,9 @@ const Hero = () => {
   };
 
   return (
-    <motion.section
-      initial={
-        reduceMotion
-          ? false
-          : {
-              opacity: 0,
-              scale: 0.98,
-            }
-      }
-      animate={
-        reduceMotion
-          ? {}
-          : {
-              opacity: 1,
-              scale: 1,
-            }
-      }
-      transition={{
-        duration: 0.8,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className="relative overflow-hidden bg-background pt-16 pb-24 md:pt-24 md:pb-32 px-4 group"
-      onMouseMove={handleMouseMove}
+    <section
+    className="relative overflow-hidden bg-background pt-16 pb-24 md:pt-24 md:pb-32 px-4 group"
+    onMouseMove={handleMouseMove}
     >
       {/* Interactive Mouse Spotlight */}
       <div 
@@ -256,7 +211,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             duration: 0.8,
-            delay: 0.2,
+            delay: 0.1,
             type: "spring",
             stiffness: 120,
           }}
@@ -274,7 +229,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             duration: 0.9,
-            delay: 0.45,
+            delay: 0.2,
             type: "spring",
             stiffness: 90,
           }}
@@ -292,7 +247,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             duration: 0.8,
-            delay: 0.75,
+            delay: 0.3,
           }}
         className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed"
         >
@@ -305,7 +260,7 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             duration: 0.8,
-            delay: 1.0,
+            delay: 0.4,
             type: "spring",
             stiffness: 100,
           }}
@@ -353,7 +308,7 @@ const Hero = () => {
             }}
 
             transition={{
-              delay: 1.3 + pill.delay,
+              delay: 0.5 + pill.delay,
               type: "spring",
               stiffness: 120,
               damping: 18,
@@ -426,7 +381,7 @@ const Hero = () => {
           ))}
         </div>
       </motion.div>
-    </motion.section>
+    </section>
   );
 };
 
