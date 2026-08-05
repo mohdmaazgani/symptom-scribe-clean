@@ -4,6 +4,16 @@ export interface ParsedSymptomConsultation {
   severityLevel: "low" | "moderate" | "high";
 }
 
+/**
+ * Strips markdown bold (`**text**`) and italic (`*text*`) markers from a string.
+ * This prevents raw `**` from appearing as literal characters in the UI when
+ * the AI model returns markdown-formatted text in structured fields.
+ */
+export function stripMarkdownFormatting(text: string): string {
+  // First strip bold (**text**), then italic (*text*)
+  return text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1");
+}
+
 export function parseSymptomConsultation(assistantContent: string): ParsedSymptomConsultation {
   const possibleCauses: string[] = [];
   const recommendations: string[] = [];
@@ -41,7 +51,7 @@ export function parseSymptomConsultation(assistantContent: string): ParsedSympto
 
     if (!listMatch) continue;
 
-    const item = listMatch[1].trim();
+    const item = stripMarkdownFormatting(listMatch[1].trim());
     if (!item) continue;
 
     if (currentSection === "causes") {

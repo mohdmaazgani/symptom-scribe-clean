@@ -23,6 +23,7 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
+import { stripMarkdownFormatting } from "@/lib/symptom-consultation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -634,7 +635,7 @@ const History = () => {
                           <p className="text-sm font-semibold mb-1">Possible Causes:</p>
                           <ul className="text-sm text-muted-foreground list-disc list-inside">
                             {entry.possible_causes.map((cause, idx) => (
-                              <li key={idx}>{cause}</li>
+                              <li key={idx}>{stripMarkdownFormatting(cause)}</li>
                             ))}
                           </ul>
                         </div>
@@ -644,7 +645,7 @@ const History = () => {
                           <p className="text-sm font-semibold mb-1">Recommendations:</p>
                           <ul className="text-sm text-muted-foreground list-disc list-inside">
                             {entry.recommendations.map((rec, idx) => (
-                              <li key={idx}>{rec}</li>
+                              <li key={idx}>{stripMarkdownFormatting(rec)}</li>
                             ))}
                           </ul>
                         </div>
