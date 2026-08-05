@@ -80,11 +80,41 @@ describe("stripMarkdownFormatting", () => {
     expect(stripMarkdownFormatting("**A** and **B** together")).toBe("A and B together");
   });
 
+  it("strips nested/repeated markers (***text***)", () => {
+    expect(stripMarkdownFormatting("***Important***")).toBe("Important");
+    expect(stripMarkdownFormatting("****Bold Bold****")).toBe("Bold Bold");
+  });
+
+  it("handles whitespace around markers", () => {
+    expect(stripMarkdownFormatting("**  spaced  **")).toBe("spaced");
+    expect(stripMarkdownFormatting("*  italic  *")).toBe("italic");
+  });
+
   it("returns plain text unchanged", () => {
     expect(stripMarkdownFormatting("No markdown here")).toBe("No markdown here");
   });
 
   it("handles empty string", () => {
     expect(stripMarkdownFormatting("")).toBe("");
+  });
+
+  it("handles whitespace-only string", () => {
+    expect(stripMarkdownFormatting("   ")).toBe("");
+  });
+
+  it("handles invalid input gracefully", () => {
+    expect(stripMarkdownFormatting(null as unknown as string)).toBe("");
+    expect(stripMarkdownFormatting(undefined as unknown as string)).toBe("");
+  });
+
+  it("handles malformed/unclosed markers gracefully", () => {
+    // Unclosed markers are left as-is (expected behavior)
+    expect(stripMarkdownFormatting("**unclosed")).toBe("**unclosed");
+    expect(stripMarkdownFormatting("*unclosed")).toBe("*unclosed");
+  });
+
+  it("handles mixed bold and italic", () => {
+    expect(stripMarkdownFormatting("**bold** and *italic*")).toBe("bold and italic");
+    expect(stripMarkdownFormatting("***bold italic***")).toBe("bold italic");
   });
 });
