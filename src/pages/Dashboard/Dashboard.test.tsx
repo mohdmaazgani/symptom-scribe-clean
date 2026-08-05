@@ -170,6 +170,10 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMetricsArray.value = [];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ predictions: [] }),
+    });
   });
 
   // 1. Loading state
