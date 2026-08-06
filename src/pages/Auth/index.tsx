@@ -200,8 +200,9 @@ const handleForgotPassword= async () => {
   const { error } = await supabase.auth.resetPasswordForEmail(
     signInEmail,
     {
-    redirectTo: "https://symptom-scribe-15.lovable.app/reset-password",
-    });
+      redirectTo: `${window.location.origin}/reset-password`,
+    }
+  );
 
   if (error) {
     showError(t("auth.resetFailedTitle"), error.message);
