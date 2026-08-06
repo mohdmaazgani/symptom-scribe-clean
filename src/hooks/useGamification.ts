@@ -139,8 +139,16 @@ export function useCheckInChallenge() {
       if (fetchErr) throw fetchErr;
 
       const now = new Date();
-      const todayDateStr = now.toISOString().split("T")[0]; 
-      const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
+      const toLocalDateStr = (date: Date): string =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+          date.getDate()
+        ).padStart(2, "0")}`;
+
+      // Compute the check-in day boundary from the user's local calendar day
+      // instead of the UTC date, so the check-in window matches the day the
+      // user sees on their device.
+      const todayDateStr = toLocalDateStr(now);
+      const todayStartISO = new Date(`${todayDateStr}T00:00:00`).toISOString();
 
       const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;
       const alreadyCheckedInToday =
@@ -150,11 +158,11 @@ export function useCheckInChallenge() {
         return { streak: current.current_streak, alreadyCheckedInToday: true };
       }
 
-      const lastCheckInDateStr = lastCheckIn ? lastCheckIn.toISOString().split("T")[0] : null;
+      const lastCheckInDateStr = lastCheckIn ? toLocalDateStr(lastCheckIn) : null;
       const daysSinceLastCheckIn = lastCheckInDateStr
         ? Math.round(
-            (Date.parse(`${todayDateStr}T00:00:00.000Z`) -
-              Date.parse(`${lastCheckInDateStr}T00:00:00.000Z`)) /
+            (Date.parse(`${todayDateStr}T00:00:00`) -
+              Date.parse(`${lastCheckInDateStr}T00:00:00`)) /
               (24 * 60 * 60 * 1000)
           )
         : null;
