@@ -38,6 +38,7 @@ export interface OfflineSymptom {
   pending_delete: number;
   ai_analysis?: string;
   search_tokens?: string[] | null;
+  images?: string[] | null;
 }
 
 export interface MeshAlert {
