@@ -19,7 +19,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { showSuccess, showError } from "@/lib/toast-helpers";
+import { showSuccess, showError, showInfo } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
@@ -323,15 +323,33 @@ const History = () => {
 
   const deleteAllEntries = async () => {
     try {
+      // Use the authenticated user id instead of the first visible record:
+      // when the visible (filtered/search) list is empty, history[0] is
+      // undefined and the server delete used to match zero rows while the
+      // local cache was still cleared and a success toast shown.
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+      if (!userId) {
+        showError("Delete failed", "Could not identify your account.");
+        return;
+      }
+
       if (navigator.onLine) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("symptom_history")
           .delete()
-          .eq("user_id", history[0]?.user_id || "");
+          .eq("user_id", userId)
+          .select("id");
 
         if (error) throw error;
         await invalidateCache("symptom_history");
         await db.symptomHistory.clear();
+
+        const deletedCount = Array.isArray(data) ? data.length : 0;
+        if (deletedCount === 0) {
+          showInfo("No records to delete", "There were no records to remove.");
+          return;
+        }
       } else {
         const allRecords = await db.symptomHistory.toArray();
         for (const record of allRecords) {
