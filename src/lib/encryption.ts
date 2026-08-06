@@ -547,7 +547,13 @@ export async function decryptProfileField(
   key: CryptoKey
 ): Promise<string> {
   if (!value) return "";
-  return await decryptText(value, key);
+  if (!isEncryptedProfileValue(value)) return "";
+  try {
+    return await decryptText(value, key);
+  } catch (err) {
+    console.warn("Failed to decrypt profile field, returning empty value:", err);
+    return "";
+  }
 }
 
 export async function decryptProfileArray(
@@ -555,8 +561,21 @@ export async function decryptProfileArray(
   key: CryptoKey
 ): Promise<string[]> {
   if (!value) return [];
-  const jsonString = await decryptText(value, key);
-  return JSON.parse(jsonString);
+  if (!isEncryptedProfileValue(value)) return [];
+  try {
+    const jsonString = await decryptText(value, key);
+    return JSON.parse(jsonString);
+  } catch (err) {
+    console.warn("Failed to decrypt profile array, returning empty array:", err);
+    return [];
+  }
+}
+
+function isEncryptedProfileValue(value: string): boolean {
+  const parts = value.split(":");
+  return (
+    parts.length === 2 && /^[\da-f]+$/i.test(parts[0]) && /^[\da-f]+$/i.test(parts[1])
+  );
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
