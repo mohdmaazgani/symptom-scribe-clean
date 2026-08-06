@@ -145,10 +145,10 @@ const TwoFactorAuth = () => {
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-900">
+      <Card className="border-destructive/20 bg-destructive/5 dark:bg-destructive/10">
         <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
-          <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          <AlertCircle className="w-6 h-6 text-destructive" />
+          <p className="text-sm text-destructive">{error}</p>
           <Button variant="outline" onClick={loadFactors}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Try Again
