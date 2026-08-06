@@ -13,6 +13,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [needsMfaChallenge, setNeedsMfaChallenge] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -26,6 +27,22 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         setAuthError(error.message);
         setLoading(false);
         return;
+      }
+
+      if (data.session) {
+        const { data: aalData } =
+          (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+
+        if (!isMounted) return;
+
+        // The account has MFA (2FA) enabled but the current session is only
+        // AAL1, so a second-factor challenge is still required before the
+        // protected content can be shown. Redirect to the MFA challenge flow.
+        if (aalData && aalData.currentLevel !== "aal2" && aalData.nextLevel === "aal2") {
+          setNeedsMfaChallenge(true);
+          setLoading(false);
+          return;
+        }
       }
 
       setSession(data.session);
@@ -68,6 +85,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         </div>
       </div>
     );
+  }
+
+  if (needsMfaChallenge) {
+    return <Navigate to="/auth?mfa=challenge" replace />;
   }
 
   if (!session) {

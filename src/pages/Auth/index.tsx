@@ -88,6 +88,27 @@ const Auth = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // When redirected here from ProtectedRoute with a pending second-factor
+    // challenge (?mfa=challenge), present the MFA verification UI for the
+    // existing AAL1 session so reloading the app cannot bypass 2FA.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mfa") === "challenge") {
+      (async () => {
+        const { data: aalData } =
+          (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+        if (aalData && aalData.currentLevel !== "aal2" && aalData.nextLevel === "aal2") {
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const totpFactor = factorsData?.totp?.[0];
+          if (totpFactor) {
+            setMfaFactorId(totpFactor.id);
+            setMfaRequired(true);
+          }
+        }
+      })();
+    }
+  }, []);
+
+  useEffect(() => {
     setShowPassword(false);
   }, [authTab]);
 
@@ -181,7 +202,7 @@ const Auth = () => {
 
     try {
       const { data: userRes } = await supabase.auth.getUser();
-      if (userRes?.user) {
+      if (userRes?.user && signInPassword) {
         await setupKeysFromPassword(signInPassword, signInEmail, userRes.user.id);
       }
     } catch (deriveErr) {
