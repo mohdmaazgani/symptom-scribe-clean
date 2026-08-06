@@ -755,7 +755,7 @@ const Metrics = () => {
                           tick={{ fontSize: 10 }}
                           minTickGap={25}
                         />
-                        <YAxis tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} domain={[0, "auto"]} />
                         <Tooltip labelFormatter={(value) => formatDate(value)} />
                         {isBloodPressure ? (
                           <>
