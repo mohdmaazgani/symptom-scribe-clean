@@ -4,6 +4,54 @@ export interface ParsedSymptomConsultation {
   severityLevel: "low" | "moderate" | "high";
 }
 
+/**
+ * Strips markdown bold (`**text**`) and italic (`*text*`) markers from a string.
+ *
+ * Handles:
+ * - Basic bold: **text** → text
+ * - Basic italic: *text* → text
+ * - Multiple markers: **A** and **B** → A and B
+ * - Nested markers: ***text*** → text (via iterative stripping)
+ * - Whitespace: **  text  ** → text (trimmed)
+ *
+ * Does NOT handle:
+ * - Underscore variants (_text_)
+ * - Other markdown (links, code blocks, etc.)
+ *
+ * @param text - The string to process
+ * @returns Cleaned string with markdown markers removed, or empty string if input is invalid
+ */
+export function stripMarkdownFormatting(text: string): string {
+  // Defensive input validation
+  if (!text || typeof text !== "string") {
+    return "";
+  }
+
+  // Prevent ReDoS: Cap input length
+  const MAX_LENGTH = 10000;
+  if (text.length > MAX_LENGTH) {
+    console.warn(`stripMarkdownFormatting: Input exceeds max length (${text.length}). Truncating.`);
+    text = text.slice(0, MAX_LENGTH);
+  }
+
+  let result = text;
+  let previousResult = "";
+  let iterations = 0;
+  const MAX_ITERATIONS = 10; // Prevent infinite loops with malformed input
+
+  // Iteratively strip markers to handle nested/malformed patterns
+  while (result !== previousResult && iterations < MAX_ITERATIONS) {
+    previousResult = result;
+    // Strip bold (**text**), capturing content and trimming whitespace
+    result = result.replace(/\*\*\s*(.+?)\s*\*\*/g, "$1");
+    // Strip italic (*text*), using negative lookahead to avoid ** matches
+    result = result.replace(/(?<!\*)\*\s*(.+?)\s*\*(?!\*)/g, "$1");
+    iterations++;
+  }
+
+  return result.trim();
+}
+
 export function parseSymptomConsultation(assistantContent: string): ParsedSymptomConsultation {
   const possibleCauses: string[] = [];
   const recommendations: string[] = [];
@@ -41,7 +89,9 @@ export function parseSymptomConsultation(assistantContent: string): ParsedSympto
 
     if (!listMatch) continue;
 
-    const item = listMatch[1].trim();
+    // Strip markdown at parse time to ensure new records are clean
+    // Also apply at render time for backward compatibility with existing records
+    const item = stripMarkdownFormatting(listMatch[1].trim());
     if (!item) continue;
 
     if (currentSection === "causes") {
