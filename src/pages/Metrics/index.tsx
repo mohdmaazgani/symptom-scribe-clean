@@ -246,42 +246,52 @@ const Metrics = () => {
     if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
     if (metricType !== "blood_pressure" && !value) return;
 
+    // Validate that entry date is not in the future
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const entryDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (entryDate > today) {
+      showError("Invalid Date", "Entry date cannot be in the future. Please use today or an earlier date.");
+      return;
+    }
+
     if (metricType === "heart_rate") {
       const hr = Number(value);
-      if (hr < 30 || hr > 250) {
-        alert("Heart Rate must be between 30 and 250 BPM");
+      if (isNaN(hr) || hr < 0 || hr < 30 || hr > 250) {
+        showError("Invalid Heart Rate", "Heart Rate must be between 30 and 250 BPM");
         return;
       }
     }
-    
+
     if (metricType === "temperature") {
       const temp = Number(value);
-      if (temp < 86 || temp > 113) {
-        alert("Temperature must be between 86°F and 113°F");
+      if (isNaN(temp) || temp < 0 || temp < 86 || temp > 113) {
+        showError("Invalid Temperature", "Temperature must be between 86°F and 113°F");
         return;
       }
     }
 
     if (metricType === "weight") {
       const wt = Number(value);
-      if (wt <= 0 || wt > 500) {
-        alert("Weight must be between 1 and 500 lbs");
+      if (isNaN(wt) || wt < 0 || wt <= 0 || wt > 500) {
+        showError("Invalid Weight", "Weight must be between 1 and 500 lbs and cannot be negative");
         return;
       }
     }
 
     if (metricType === "blood_sugar") {
       const sugar = Number(value);
-      if (sugar < 20 || sugar > 1000) {
-        alert("Blood Sugar must be between 20 and 1000 mg/dL");
+      if (isNaN(sugar) || sugar < 0 || sugar < 20 || sugar > 1000) {
+        showError("Invalid Blood Sugar", "Blood Sugar must be between 20 and 1000 mg/dL and cannot be negative");
         return;
       }
     }
 
     if (metricType === "oxygen_saturation") {
       const oxygen = Number(value);
-      if (oxygen < 70 || oxygen > 100) {
-        alert("Oxygen Saturation must be between 70% and 100%");
+      if (isNaN(oxygen) || oxygen < 0 || oxygen < 70 || oxygen > 100) {
+        showError("Invalid Oxygen Saturation", "Oxygen Saturation must be between 70% and 100% and cannot be negative");
         return;
       }
     }
@@ -290,8 +300,8 @@ const Metrics = () => {
       const sys = Number(systolic);
       const dia = Number(diastolic);
 
-      if (sys < 50 || sys > 300 || dia < 30 || dia > 200) {
-        alert("Blood Pressure values are out of valid range");
+      if (isNaN(sys) || isNaN(dia) || sys < 0 || dia < 0 || sys < 50 || sys > 300 || dia < 30 || dia > 200) {
+        showError("Invalid Blood Pressure", "Blood Pressure values must be positive and within valid ranges (Systolic: 50-300, Diastolic: 30-200)");
         return;
       }
     }
