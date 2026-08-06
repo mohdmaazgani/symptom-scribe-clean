@@ -348,20 +348,31 @@ const History = () => {
   };
 
   const exportCSV = () => {
-    const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
+    const headers = [
+  "Date",
+  "Symptoms",
+  "Severity",
+  "Risk Score",
+  "Possible Causes",
+  "Recommendations",
+  "Resolved",
+];
     const rows = history.map((entry) => [
-      new Date(entry.created_at).toLocaleDateString(),
-      `"${entry.symptoms.replace(/"/g, '""')}"`,
-      entry.severity_level,
-      entry.risk_score,
-      entry.resolved ? "Yes" : "No",
-    ]);
+  new Date(entry.created_at).toLocaleDateString(),
+  `"${entry.symptoms.replace(/"/g, '""')}"`,
+  entry.severity_level,
+  entry.risk_score,
+  `"${entry.possible_causes.join("; ").replace(/"/g, '""')}"`,
+  `"${entry.recommendations.join("; ").replace(/"/g, '""')}"`,
+  entry.resolved ? "Yes" : "No",
+]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "symptom-history.csv";
+    const date = new Date().toISOString().split("T")[0];
+a.download = `symptom-history-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
