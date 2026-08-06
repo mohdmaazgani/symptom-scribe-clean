@@ -162,20 +162,44 @@ const Settings = () => {
         return;
       }
 
-      // Verify password
+      // Verify the user's identity WITHOUT replacing the current session.
+      // `signInWithPassword` would swap in a fresh password-only AAL1
+      // session, silently downgrading an MFA user whose session was AAL2 —
+      // and the delete-user-account edge function runs against the current
+      // session token. So:
+      // - Accounts with MFA enabled: `reauthenticate()` re-verifies the user
+      //   while preserving the existing session and its assurance level.
+      // - Accounts without MFA: `signInWithPassword` is safe (AAL1 is the
+      //   maximum level) and keeps the password-confirmation UX.
       const user = (await supabase.auth.getUser()).data.user;
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || "",
-        password: deletePassword,
-      });
+      const { data: aalData } =
+        (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+      const accountRequiresMfa = aalData?.nextLevel === "aal2";
 
-      if (signInError) {
-        showError(
-          t("settings.toasts.invalidPasswordTitle"),
-          t("settings.toasts.passwordIncorrect")
-        );
-        setDeleteLoading(false);
-        return;
+      if (accountRequiresMfa) {
+        const { error: reauthError } = await supabase.auth.reauthenticate();
+        if (reauthError) {
+          showError(
+            t("settings.toasts.invalidPasswordTitle"),
+            t("settings.toasts.passwordIncorrect")
+          );
+          setDeleteLoading(false);
+          return;
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user?.email || "",
+          password: deletePassword,
+        });
+
+        if (signInError) {
+          showError(
+            t("settings.toasts.invalidPasswordTitle"),
+            t("settings.toasts.passwordIncorrect")
+          );
+          setDeleteLoading(false);
+          return;
+        }
       }
 
       // Call Edge Function to perform deletion via Admin API
