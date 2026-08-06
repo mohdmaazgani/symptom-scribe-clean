@@ -5,6 +5,20 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
+// Local-calendar helpers used by the challenge check-in logic. These convert
+// to/from the user's LOCAL date so that "today" matches the user's calendar
+// day rather than the UTC day.
+function toLocalDateStr(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function localMidnightToISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+}
+
 // ─── Lightweight current-user helper (no custom useAuth hook needed) ─────────
 // Mirrors the pattern already used in Auth.tsx (supabase.auth.* calls directly)
 
@@ -139,8 +153,13 @@ export function useCheckInChallenge() {
       if (fetchErr) throw fetchErr;
 
       const now = new Date();
-      const todayDateStr = now.toISOString().split("T")[0]; 
-      const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
+      // Use the user's LOCAL calendar day, not UTC. For a UTC+5:30 user the
+      // local day starts at 18:30 UTC the previous day — computing the
+      // boundary from `toISOString()` would treat the first ~5.5 local hours
+      // as "yesterday" and wrongly block the new day's check-in (and streak
+      // day-count would be timezone-shifted for everyone).
+      const todayDateStr = toLocalDateStr(now);
+      const todayStartISO = localMidnightToISO(now);
 
       const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;
       const alreadyCheckedInToday =
@@ -150,7 +169,7 @@ export function useCheckInChallenge() {
         return { streak: current.current_streak, alreadyCheckedInToday: true };
       }
 
-      const lastCheckInDateStr = lastCheckIn ? lastCheckIn.toISOString().split("T")[0] : null;
+      const lastCheckInDateStr = lastCheckIn ? toLocalDateStr(lastCheckIn) : null;
       const daysSinceLastCheckIn = lastCheckInDateStr
         ? Math.round(
             (Date.parse(`${todayDateStr}T00:00:00.000Z`) -
