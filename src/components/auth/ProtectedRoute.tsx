@@ -12,24 +12,46 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mfaPending, setMfaPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
+    const applyAssuranceLevel = async (nextSession: Session | null) => {
+      if (!nextSession) {
+        if (!isMounted) return;
+        setSession(null);
+        setMfaPending(false);
+        setLoading(false);
+        return;
+      }
+
+      // Enforce AAL2 whenever the account has a verified MFA factor. A session
+      // restored from a refresh token or a new tab is only AAL1 — without this
+      // check a 2FA user could reach protected pages without a second factor.
+      const { data: aalData } =
+        (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+      const pendingMfa =
+        aalData?.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel;
+
+      if (!isMounted) return;
+      setSession(nextSession);
+      setMfaPending(pendingMfa);
+      setLoading(false);
+    };
+
     const initializeSession = async () => {
       const { data, error } = await supabase.auth.getSession();
 
-      if (!isMounted) return;
-
       if (error) {
+        if (!isMounted) return;
         setAuthError(error.message);
         setLoading(false);
         return;
       }
 
-      setSession(data.session);
-      setLoading(false);
+      await applyAssuranceLevel(data.session);
     };
 
     initializeSession();
@@ -38,10 +60,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!isMounted) return;
-
-      setSession(nextSession);
       setAuthError(null);
-      setLoading(false);
+      applyAssuranceLevel(nextSession);
     });
 
     return () => {
@@ -72,6 +92,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!session) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (mfaPending) {
+    return <Navigate to="/auth?mfa=1" replace />;
   }
 
   return <>{children}</>;

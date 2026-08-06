@@ -91,6 +91,39 @@ const Auth = () => {
     setShowPassword(false);
   }, [authTab]);
 
+  // Resume an interrupted MFA challenge after a reload/new tab. When
+  // ProtectedRoute detects an AAL1 session that requires AAL2 it redirects
+  // here with ?mfa=1; this effect surfaces the second-factor OTP UI instead
+  // of leaving the user stuck at the sign-in form with an existing session.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mfa") !== "1") return;
+
+    const resumeMfaChallenge = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: aalData } =
+        (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
+      if (
+        !aalData ||
+        aalData.nextLevel !== "aal2" ||
+        aalData.currentLevel === aalData.nextLevel
+      ) {
+        return;
+      }
+
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factorsData?.totp?.[0];
+      if (totpFactor) {
+        setMfaFactorId(totpFactor.id);
+        setMfaRequired(true);
+      }
+    };
+
+    resumeMfaChallenge();
+  }, []);
+
 
   const validateSignIn = () => {
     try {
