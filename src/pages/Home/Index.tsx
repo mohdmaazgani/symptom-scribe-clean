@@ -177,7 +177,7 @@ const Index = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <img
-              src="/3.png"
+              src="/logo.png"
               alt="Symptom Scribe Logo"
               className="h-7 w-7 object-contain shrink-0"
             />

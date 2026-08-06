@@ -46,7 +46,7 @@ export const MetricsForm = () => {
         { metric_type: "calories", value: data.caloriesKcal },
       ];
 
-      const rows = metricInputs.reduce((acc: any[], m) => {
+      const rows = metricInputs.reduce<Array<{ user_id: string; recorded_at: string; metric_type: string; value: Json }>>((acc, m) => {
         if (isValidNumber(m.value)) {
           acc.push({
             user_id: user.id,
