@@ -252,14 +252,21 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
   const iv = hexToUint8Array(ivHex);
   const ciphertext = hexToUint8Array(ciphertextHex);
 
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    {
-      name: "AES-GCM",
-      iv: iv,
-    },
-    key,
-    ciphertext
-  );
+  let decryptedBuffer: ArrayBuffer;
+  try {
+    decryptedBuffer = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv,
+      },
+      key,
+      ciphertext
+    );
+  } catch (err) {
+    // Normalize all Web Crypto API errors to a generic message to avoid
+    // leaking implementation details through error messages
+    throw new Error("Decryption failed");
+  }
 
   const decoder = new TextDecoder();
   return decoder.decode(decryptedBuffer);
@@ -555,8 +562,18 @@ export async function decryptProfileArray(
   key: CryptoKey
 ): Promise<string[]> {
   if (!value) return [];
-  const jsonString = await decryptText(value, key);
-  return JSON.parse(jsonString);
+  let jsonString: string;
+  try {
+    jsonString = await decryptText(value, key);
+  } catch {
+    // Decryption failed — return empty array rather than crashing
+    return [];
+  }
+  try {
+    return JSON.parse(jsonString);
+  } catch {
+    return [];
+  }
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
