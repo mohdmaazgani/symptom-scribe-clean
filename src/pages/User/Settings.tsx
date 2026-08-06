@@ -22,6 +22,7 @@ import {
   setupKeysFromPassword,
   triggerKeyRotation,
 } from "@/lib/encryption";
+import { reencryptServerData } from "@/lib/offline-db";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
 
 const Settings = () => {
@@ -123,6 +124,7 @@ const Settings = () => {
 
             if (oldKey && newKey && oldSearchKey && newSearchKey) {
               await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
+              await reencryptServerData(oldKey, newKey, oldSearchKey, newSearchKey);
             }
           }
         } catch (rotateErr) {
