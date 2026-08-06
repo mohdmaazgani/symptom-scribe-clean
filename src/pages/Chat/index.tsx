@@ -1,8 +1,11 @@
+import { useTranslation } from "react-i18next";
 import ChatInterface from "@/components/chat/ChatInterface";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Bot } from "lucide-react";
 
 const Chat = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full flex flex-col gap-4">
       <div className="shrink-0 flex items-center gap-3">
@@ -11,11 +14,9 @@ const Chat = () => {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
-            AI Health Assistant
+            {t("chat.title")}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Describe your symptoms for instant AI analysis
-          </p>
+          <p className="text-sm text-muted-foreground">{t("chat.subtitle")}</p>
         </div>
       </div>
 
@@ -26,8 +27,8 @@ const Chat = () => {
       <Alert className="shrink-0 border-destructive/30 bg-destructive/5 rounded-xl">
         <AlertCircle className="h-4 w-4 text-destructive/80" />
         <AlertDescription className="text-sm text-muted-foreground">
-          <strong className="text-foreground">Medical Disclaimer:</strong> This provides general
-          information only. Always seek professional medical advice for diagnosis or treatment.
+          <strong className="text-foreground">{t("chat.disclaimerLabel")}</strong>{" "}
+          {t("chat.disclaimerText")}
         </AlertDescription>
       </Alert>
     </div>

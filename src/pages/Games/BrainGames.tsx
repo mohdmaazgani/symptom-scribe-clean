@@ -2263,82 +2263,83 @@ const BrainGames = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-12 overflow-x-hidden">
       <header className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-8 items-start">
-        <div className="space-y-4 max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 text-primary"
-          >
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <Brain className="w-6 h-6" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)] items-start">
+          <div className="space-y-4 max-w-3xl">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 text-primary"
+            >
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Brain className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-wider">Cognitive Training</span>
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-4xl md:text-5xl font-black tracking-tight text-foreground"
+            >
+              Brain Fitness{" "}
+              <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                Center
+              </span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-lg text-muted-foreground max-w-2xl leading-relaxed"
+            >
+              Elevate your cognitive performance through specialized games designed to enhance memory,
+              calculation speed, and logical reasoning.
+            </motion.p>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 pb-1">
+              {brainBadges.map((badge, index) => {
+                const Icon = badge.icon;
+
+                return (
+                  <motion.div
+                    key={badge.title}
+                    animate={{
+                      y: [0, -6, 0],
+                    }}
+                    transition={{
+                      duration: 2.8,
+                      delay: index * 0.2,
+                      repeat: Infinity,
+                      repeatType: "mirror",
+                      ease: "easeInOut",
+                    }}
+                    whileHover={{
+                      scale: 1.02,
+                      y: -4,
+                    }}
+                    whileTap={{
+                      scale: 0.98,
+                    }}
+                    className="group flex items-center gap-3 min-h-[62px] w-full px-4 rounded-2xl border border-border/50 bg-card/70 backdrop-blur-xl shadow-sm transition-all duration-300 hover:shadow-xl hover:border-primary/40 cursor-default"
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${badge.color} shadow-md transition-all duration-300 group-hover:rotate-6 group-hover:scale-110`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+
+                    <div className="min-w-0 leading-tight">
+                      <p className="text-[15px] font-semibold text-foreground truncate">
+                        {badge.title.split(" ")[0]}
+                      </p>
+
+                      <p className="text-xs text-muted-foreground truncate">
+                        {badge.title.split(" ").slice(1).join(" ")}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-            <span className="text-sm font-bold uppercase tracking-wider">Cognitive Training</span>
-          </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black tracking-tight text-foreground"
-          >
-            Brain Fitness{" "}
-            <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Center
-            </span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-lg text-muted-foreground max-w-2xl leading-relaxed"
-          >
-            Elevate your cognitive performance through specialized games designed to enhance memory,
-            calculation speed, and logical reasoning.
-          </motion.p>
-        
-        <div className="mt-6 flex items-center gap-3 pb-1">
-          {brainBadges.map((badge, index) => {
-            const Icon = badge.icon;
-
-            return (
-              <motion.div
-                key={badge.title}
-                animate={{
-                  y: [0, -6, 0],
-                }}
-                transition={{
-                  duration: 2.8,
-                  delay: index * 0.2,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                }}
-                whileHover={{
-                  scale: 1.06,
-                  y: -8,
-                }}
-                whileTap={{
-                  scale: 0.96,
-                }}
-              className="group flex items-center gap-3 w-[185px] h-[62px] px-4 rounded-2xl border border-border/50 bg-card/70 backdrop-blur-xl shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.04] hover:-translate-y-1 hover:border-primary/40 cursor-default ">
-              <div className={` flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${badge.color} shadow-md transition-all duration-300 group-hover:rotate-6 group-hover:scale-110`} >
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-
-        <div className="leading-tight">
-          <p className="text-[15px] font-semibold text-foreground">
-            {badge.title.split(" ")[0]}
-          </p>
-
-          <p className="text-xs text-muted-foreground">
-            {badge.title.split(" ").slice(1).join(" ")}
-          </p>
-        </div>
-              </motion.div>
-            );
-          })}
-        </div>
-        </div>
+          </div>
 
         <motion.div
           key={`lobby-status-${level}`}
@@ -2351,11 +2352,11 @@ const BrainGames = () => {
             duration: 0.5, 
             ease: "easeOut" 
           }}
-          className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-6 sm:px-8 w-full max-w-[360px] justify-self-end"
+          className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6 rounded-[2.5rem] shadow-xl flex flex-col gap-4 px-5 sm:px-8 w-full max-w-none lg:max-w-[360px] justify-self-stretch lg:justify-self-end"
         >
           
           <div className="flex flex-wrap items-center gap-4 sm:gap-8 justify-center">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4 justify-center">
               <div className="text-center">
                 <p className="text-2xl sm:text-3xl font-black text-primary">{level}</p>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -2374,7 +2375,7 @@ const BrainGames = () => {
 
             <div className="w-px h-8 sm:h-10 bg-border/50 hidden sm:block" />
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4 justify-center">
               <div className="text-center">
                 <p className="text-xs font-semibold text-primary">
                  🎯 Next Milestone
@@ -2436,7 +2437,7 @@ const BrainGames = () => {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-16"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {games.map((game, index) => {
                 const Icon = game.icon;
                 return (
@@ -2511,7 +2512,7 @@ const BrainGames = () => {
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
                 <div className="flex items-center gap-3 px-6 py-2 bg-muted/50 rounded-full border border-border">
                   <Award className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-bold tracking-tight uppercase tracking-widest">
+                  <h2 className="text-lg font-bold uppercase tracking-widest">
                     Redesigned Benefits
                   </h2>
                 </div>
@@ -2820,7 +2821,7 @@ const BrainGames = () => {
                           {wordPhase === "memorize" ? "Memorize these words:" : "Phase Complete"}
                         </h3>
                         {wordPhase === "memorize" && (
-                          <div className="flex items-center gap-3 px-4 py-1.5 sm:px-5 py-2 rounded-full bg-primary text-white font-black shadow-lg">
+                          <div className="flex items-center gap-3 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full bg-primary text-white font-black shadow-lg">
                             <Clock className="w-5 h-5" />
                             <span className="text-base sm:text-lg">{timeLeft}s</span>
                           </div>

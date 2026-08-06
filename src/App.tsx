@@ -67,7 +67,7 @@ const App = () => {
         if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
           if (navigator.onLine) {
             await syncOfflineData().catch((err) =>
-              console.error("Failed to sync offline data on session ready:", err)
+              console.warn("Failed to sync offline data on session ready:", err)
             );
 
             // Handle pending profile details (from MultiStepSignUp)
@@ -99,13 +99,13 @@ const App = () => {
                   }, { onConflict: "user_id" });
 
                 if (error) {
-                  console.error("Failed to sync pending profile details:", error);
+                  console.warn("Failed to sync pending profile details:", error);
                 } else {
                   localStorage.removeItem("symptom_scribe_pending_profile");
                   console.log("Successfully encrypted and synced pending profile details");
                 }
               } catch (err) {
-                console.error("Failed parsing or encrypting pending profile:", err);
+                console.warn("Failed parsing or encrypting pending profile:", err);
               }
             }
           }
