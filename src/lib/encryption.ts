@@ -398,7 +398,22 @@ async function handleSessionChange(session: Session) {
     const localSalt = localStorage.getItem(SALT_KEY_PREFIX + userId);
 
     if (dbSalt) {
-      if (dbSalt !== localSalt) {
+      if (localSalt && dbSalt !== localSalt) {
+        // A diverged salt must not be silently swapped in: the salt is a
+        // direct input to key derivation, so overwriting it would silently
+        // produce a different key and make all previously encrypted fields
+        // and blind-index search tokens unreadable (see the "Per-user PBKDF2
+        // Salt" note above). Treat the mismatch as an error that requires an
+        // explicit re-encryption instead of rotating the key under the user.
+        console.error(
+          "Encryption salt mismatch: local salt differs from the database salt for this user. " +
+            "Refusing to overwrite the local salt because it would change the derived key and " +
+            "make existing encrypted data undecryptable. An explicit re-encryption is required " +
+            "to migrate to the database salt."
+        );
+      } else if (!localSalt) {
+        // Fresh device with no local data yet: safely adopt the database salt
+        // so all devices converge on one salt.
         localStorage.setItem(SALT_KEY_PREFIX + userId, dbSalt);
       }
     } else {
