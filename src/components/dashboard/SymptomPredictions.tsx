@@ -69,8 +69,27 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
           }),
         });
 
+        // Provide more specific error messages based on response status
         if (!response.ok) {
-          throw new Error("Failed to fetch predictions from AI assistant");
+          let errorMessage = "Failed to fetch predictions from AI assistant";
+
+          if (response.status === 401 || response.status === 403) {
+            errorMessage = "Authentication failed. Please log in again.";
+          } else if (response.status === 0 || response.type === "opaque" || response.type === "error") {
+            errorMessage = "Network error. Please check your connection and try again.";
+          } else if (response.status >= 500) {
+            errorMessage = "Server error. The AI service is temporarily unavailable. Please try again later.";
+          } else {
+            // Try to get error details from response body
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch {
+              // Response body is not JSON, use generic message
+            }
+          }
+
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -88,8 +107,16 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
 
         setPredictions(preds);
       } catch (err) {
-        console.warn("Error fetching AI predictions:", err);
-        setError(err instanceof Error ? err.message : "Failed to load predictions");
+        console.error("Error fetching AI predictions:", err);
+
+        // Handle specific error types for better error messages
+        if (err instanceof TypeError && err.message.includes("fetch")) {
+          setError("Network error. Please check your internet connection and try again.");
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load predictions");
+        }
       } finally {
         setLoading(false);
       }
