@@ -59,6 +59,7 @@ const Profile = () => {
         const key = await whenEncryptionReady();
         const decryptedFullName = await decryptProfileField(data.full_name, key);
         const decryptedDob = await decryptProfileField(data.date_of_birth, key);
+        const decryptedBloodType = await decryptProfileField(data.blood_type, key);
         const decryptedEmergencyName = await decryptProfileField(data.emergency_contact_name, key);
         const decryptedEmergencyPhone = await decryptProfileField(data.emergency_contact_phone, key);
         const decryptedAllergies = await decryptProfileArray(data.allergies, key);
@@ -68,7 +69,7 @@ const Profile = () => {
           full_name: decryptedFullName,
           date_of_birth: decryptedDob,
           gender: data.gender || "",
-          blood_type: data.blood_type || "",
+          blood_type: decryptedBloodType,
           allergies: decryptedAllergies,
           chronic_conditions: decryptedChronicConditions,
           emergency_contact_name: decryptedEmergencyName,
@@ -163,6 +164,7 @@ if (!profile.blood_type) {
 
       const encryptedFullName = await encryptProfileField(profile.full_name, key);
       const encryptedDob = await encryptProfileField(profile.date_of_birth, key);
+      const encryptedBloodType = await encryptProfileField(profile.blood_type, key);
       const encryptedEmergencyName = await encryptProfileField(profile.emergency_contact_name, key);
       const encryptedEmergencyPhone = await encryptProfileField(profile.emergency_contact_phone, key);
       const encryptedAllergies = await encryptProfileArray(allergiesArray, key);
@@ -173,7 +175,7 @@ if (!profile.blood_type) {
         full_name: encryptedFullName,
         date_of_birth: encryptedDob,
         gender: profile.gender || null,
-        blood_type: profile.blood_type || null,
+        blood_type: encryptedBloodType,
         allergies: encryptedAllergies,
         chronic_conditions: encryptedChronicConditions,
         emergency_contact_name: encryptedEmergencyName,
