@@ -153,11 +153,65 @@ Have an idea to make Symptom Scribe better? We'd love to hear it! Open a feature
 
 ---
 
+## 🔒 Security Checklist for Data Handling
+
+When contributing features that handle user data or interact with Supabase, verify these security requirements:
+
+### Before Submitting a PR
+
+- [ ] **No hardcoded secrets** — No API keys, tokens, or credentials in code
+- [ ] **No secrets in .env** — Check `.env.local` is in `.gitignore`
+- [ ] **RLS policies enabled** — All user-data tables have Row-Level Security enabled
+- [ ] **Admin operations use Edge Functions** — Never use `SUPABASE_SERVICE_ROLE_KEY` in frontend code
+- [ ] **Authentication verified** — All endpoints check `auth.uid()` before processing sensitive requests
+- [ ] **Sensitive data not logged** — No passwords, tokens, or PII in console.log or external services
+- [ ] **Environment variables documented** — New variables added to `.env.example` with clear comments
+- [ ] **Dependencies are secure** — Ran `npm audit` with no critical vulnerabilities
+- [ ] **CORS properly configured** — Sensitive endpoints validate origin headers
+
+### Common Security Issues
+
+❌ **Avoid:**
+```typescript
+// Exposing sensitive keys in frontend
+const dbPassword = import.meta.env.VITE_DB_PASSWORD;
+
+// Trusting user input without validation
+const data = await supabase.from('users').select('*').eq('id', req.body.id);
+
+// Logging sensitive information
+console.log('User token:', token);
+```
+
+✅ **Do Instead:**
+```typescript
+// Keep sensitive operations server-side
+const { data } = await fetch('/api/protected-operation', {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+// Validate with RLS policies automatically
+const { data } = await supabase.from('users').select('*');
+// RLS ensures only current user's data is returned
+
+// Never log sensitive data
+console.log('User authenticated successfully');
+```
+
+### Resources
+
+- [Security Policy](../reference/SECURITY.md) — Detailed security guidelines
+- [RLS Policies Guide](./RLS_POLICIES.md) — How to use Row-Level Security
+- [Supabase Security](https://supabase.com/docs/guides/self-hosting/security/overview)
+
+---
+
 ## 🆘 Need Help?
 
 If you have questions or get stuck at any point:
 * Open a new issue with the `question` label.
 * Participate in GitHub discussions.
 * Leave a comment on your pull request asking the maintainers for guidance.
+* Check the [Security Policy](../reference/SECURITY.md) for security-related questions.
 
 Happy Contributing! 🎉
