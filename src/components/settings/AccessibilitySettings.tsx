@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useAccessibilityContext } from "@/components/accessibility/AccessibilityContext";
 import type { FontSize } from "@/components/accessibility/AccessibilityContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,25 +8,36 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Accessibility, Type, Contrast, RotateCcw, Space, Zap } from "lucide-react";
 
-const FONT_SIZES: { value: FontSize; label: string; description: string }[] = [
-  { value: "normal", label: "Normal", description: "Default text size" },
-  { value: "large", label: "Large", description: "125% — easier to read" },
-  { value: "x-large", label: "X-Large", description: "150% — maximum readability" },
+const FONT_SIZES: { value: FontSize; labelKey: string; descriptionKey: string }[] = [
+  {
+    value: "normal",
+    labelKey: "accessibility.sizes.normal",
+    descriptionKey: "accessibility.sizes.normalDesc",
+  },
+  {
+    value: "large",
+    labelKey: "accessibility.sizes.large",
+    descriptionKey: "accessibility.sizes.largeDesc",
+  },
+  {
+    value: "x-large",
+    labelKey: "accessibility.sizes.xLarge",
+    descriptionKey: "accessibility.sizes.xLargeDesc",
+  },
 ];
 
 const AccessibilitySettings = () => {
   const { settings, updateSetting, resetSettings } = useAccessibilityContext();
+  const { t } = useTranslation();
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Accessibility className="w-5 h-5" />
-          Accessibility Mode
+          {t("accessibility.title")}
         </CardTitle>
-        <CardDescription>
-          Adjust visual and interaction settings to improve readability and usability.
-        </CardDescription>
+        <CardDescription>{t("accessibility.description")}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -34,11 +46,11 @@ const AccessibilitySettings = () => {
           <div className="flex items-center gap-2 mb-3">
             <Type className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <span id="font-size-label" className="text-sm font-medium">
-              Font Size
+              {t("accessibility.fontSize")}
             </span>
           </div>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="font-size-label">
-            {FONT_SIZES.map(({ value, label, description }) => (
+            {FONT_SIZES.map(({ value, labelKey, descriptionKey }) => (
               <button
                 key={value}
                 role="radio"
@@ -51,15 +63,15 @@ const AccessibilitySettings = () => {
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background text-foreground border-border hover:bg-muted",
                 ].join(" ")}
-                title={description}
+                title={t(descriptionKey)}
               >
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Current:{" "}
-            {FONT_SIZES.find((f) => f.value === settings.fontSize)?.description}
+            {t("accessibility.current")}{" "}
+            {t(FONT_SIZES.find((f) => f.value === settings.fontSize)?.descriptionKey)}
           </p>
         </section>
 
@@ -71,10 +83,10 @@ const AccessibilitySettings = () => {
             <Contrast className="w-4 h-4 mt-0.5 text-muted-foreground" aria-hidden="true" />
             <div>
               <Label htmlFor="high-contrast" className="text-sm font-medium cursor-pointer">
-                High-Contrast Mode
+                {t("accessibility.highContrast")}
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Increases colour contrast for better visibility
+                {t("accessibility.highContrastDesc")}
               </p>
             </div>
           </div>
@@ -93,10 +105,10 @@ const AccessibilitySettings = () => {
             <Type className="w-4 h-4 mt-0.5 text-muted-foreground" aria-hidden="true" />
             <div>
               <Label htmlFor="dyslexia-font" className="text-sm font-medium cursor-pointer">
-                Dyslexia-Friendly Font
+                {t("accessibility.dyslexiaFont")}
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Uses OpenDyslexic — a typeface designed to improve readability for dyslexic users
+                {t("accessibility.dyslexiaFontDesc")}
               </p>
             </div>
           </div>
@@ -115,10 +127,10 @@ const AccessibilitySettings = () => {
             <Space className="w-4 h-4 mt-0.5 text-muted-foreground" aria-hidden="true" />
             <div>
               <Label htmlFor="improved-spacing" className="text-sm font-medium cursor-pointer">
-                Improved Spacing
+                {t("accessibility.improvedSpacing")}
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Increases line height and letter spacing for easier reading
+                {t("accessibility.improvedSpacingDesc")}
               </p>
             </div>
           </div>
@@ -137,10 +149,10 @@ const AccessibilitySettings = () => {
             <Zap className="w-4 h-4 mt-0.5 text-muted-foreground" aria-hidden="true" />
             <div>
               <Label htmlFor="reduced-motion" className="text-sm font-medium cursor-pointer">
-                Reduce Motion
+                {t("accessibility.reducedMotion")}
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Disables non-essential animations and transitions
+                {t("accessibility.reducedMotionDesc")}
               </p>
             </div>
           </div>
@@ -160,10 +172,10 @@ const AccessibilitySettings = () => {
             size="sm"
             onClick={resetSettings}
             className="gap-2"
-            aria-label="Reset all accessibility settings to defaults"
+            aria-label={t("accessibility.resetLabel")}
           >
             <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-            Reset to Defaults
+            {t("accessibility.reset")}
           </Button>
         </div>
       </CardContent>
