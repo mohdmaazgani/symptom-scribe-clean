@@ -20,16 +20,50 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
   improvedSpacing: false,
 };
 
+const VALID_FONT_SIZES: FontSize[] = ["normal", "large", "x-large"];
+
+function isValidFontSize(value: unknown): value is FontSize {
+  return VALID_FONT_SIZES.includes(value as FontSize);
+}
+
 function loadSettings(): AccessibilitySettings {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+
+    if (!stored) {
+      return DEFAULT_SETTINGS;
     }
+
+    const parsed = JSON.parse(stored);
+
+    return {
+      fontSize: isValidFontSize(parsed.fontSize)
+        ? parsed.fontSize
+        : DEFAULT_SETTINGS.fontSize,
+
+      highContrast:
+        typeof parsed.highContrast === "boolean"
+          ? parsed.highContrast
+          : DEFAULT_SETTINGS.highContrast,
+
+      dyslexiaFont:
+        typeof parsed.dyslexiaFont === "boolean"
+          ? parsed.dyslexiaFont
+          : DEFAULT_SETTINGS.dyslexiaFont,
+
+      reducedMotion:
+        typeof parsed.reducedMotion === "boolean"
+          ? parsed.reducedMotion
+          : DEFAULT_SETTINGS.reducedMotion,
+
+      improvedSpacing:
+        typeof parsed.improvedSpacing === "boolean"
+          ? parsed.improvedSpacing
+          : DEFAULT_SETTINGS.improvedSpacing,
+    };
   } catch {
-    // ignore parse errors
+    return DEFAULT_SETTINGS;
   }
-  return DEFAULT_SETTINGS;
 }
 
 function applyClasses(settings: AccessibilitySettings) {
