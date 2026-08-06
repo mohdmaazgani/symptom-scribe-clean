@@ -343,25 +343,25 @@ const Settings = () => {
 
         {/* Delete Account Tab */}
         <TabsContent value="delete">
-          <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-900">
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <CardTitle className="text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                <CardTitle className="text-destructive">
                   {t("settings.delete.title")}
                 </CardTitle>
               </div>
-              <CardDescription className="text-red-700 dark:text-red-300">
+              <CardDescription>
                 {t("settings.delete.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Warning Box */}
-              <div className="bg-white dark:bg-slate-900 border border-red-300 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-semibold text-red-700 dark:text-red-400 mb-2">
+              <div className="bg-destructive/5 dark:bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <h4 className="font-semibold text-destructive mb-2">
                   {t("settings.delete.warningTitle")}
                 </h4>
-                <ul className="text-sm text-red-600 dark:text-red-300 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-destructive/80 space-y-1 list-disc list-inside">
                   <li>{t("settings.delete.warning1")}</li>
                   <li>{t("settings.delete.warning2")}</li>
                   <li>{t("settings.delete.warning3")}</li>
@@ -371,7 +371,7 @@ const Settings = () => {
 
               {/* Password Confirmation */}
               <div className="space-y-2">
-                <Label htmlFor="delete-password" className="text-red-700 dark:text-red-300">
+                <Label htmlFor="delete-password">
                   {t("settings.delete.confirmLabel")}
                 </Label>
                 <div className="relative">
@@ -422,7 +422,7 @@ const Settings = () => {
               <p className="font-semibold">{t("settings.delete.dialogWarning")}</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-3 text-sm text-red-700 dark:text-red-300">
+          <div className="bg-destructive/10 border border-destructive/20 rounded p-3 text-sm text-destructive">
             {t("settings.delete.dialogNote")}
           </div>
           <div className="flex gap-3">
