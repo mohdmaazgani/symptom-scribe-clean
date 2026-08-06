@@ -6,6 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import ReactMarkdown from "react-markdown";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
 import {
@@ -21,7 +22,7 @@ import {
   Brain,
   Utensils,
   BatteryLow,
-  HeartPulse
+  HeartPulse,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -291,7 +292,8 @@ const AIHealthAssistant = () => {
           }
 
           const rngScore = (range: number, offset: number) =>
-            offset + Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1) * range);
+            offset +
+            Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1)) * range);
           const riskScore =
             severityLevel === "high"
               ? rngScore(20, 70)
@@ -322,12 +324,8 @@ const AIHealthAssistant = () => {
             );
 
             // Strip offline-only fields so we match the Supabase table schema
-            const {
-              pending_sync,
-              pending_update,
-              pending_delete,
-              ...supabaseRecord
-            } = encryptedRecord;
+            const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+              encryptedRecord;
 
             const { error: insertError } = await supabase
               .from("symptom_history")
@@ -335,7 +333,7 @@ const AIHealthAssistant = () => {
 
             if (insertError) {
               console.warn("Supabase save failed, falling back to local saving:", insertError);
-              
+
               // Save locally to Dexie immediately with pending_sync: 1
               await db.symptomHistory.put({
                 ...encryptedRecord,
@@ -516,38 +514,45 @@ const AIHealthAssistant = () => {
                       </button>
                     )}
                     <div className={msg.role === "assistant" ? "pr-6" : ""}>
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: (() => {
-                            const lines = msg.text.split("\n");
-                            let html = "";
-                            let inList = false;
-                            for (const line of lines) {
-                              const listMatch = line.trim().match(/^[-*•]\s+(.+)/);
-                              if (listMatch) {
-                                if (!inList) {
-                                  html +=
-                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc;overflow-wrap:anywhere'>";
-                                  inList = true;
-                                }
-                                html += `<li style='margin:2px 0;overflow-wrap:anywhere'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
-                              } else {
-                                if (inList) {
-                                  html += "</ul>";
-                                  inList = false;
-                                }
-                                if (line.trim() === "") {
-                                  html += "<br>";
-                                } else {
-                                  html += `<p style='margin:2px 0;overflow-wrap:anywhere'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
-                                }
-                              }
-                            }
-                            if (inList) html += "</ul>";
-                            return html;
-                          })(),
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-xl font-bold mt-4 mb-2 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-lg font-semibold mt-3.5 mb-1.5 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-base font-semibold mt-3 mb-1 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h3>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-5 my-2 space-y-1 break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </ul>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground my-0.5 break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </li>
+                          ),
+                          p: ({ children }) => (
+                            <p className="my-1.5 last:mb-0 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </p>
+                          ),
                         }}
-                      />
+                      >
+                        {msg.text.replace(/•/g, "-")}
+                      </ReactMarkdown>
                     </div>
                   </div>
                   <span

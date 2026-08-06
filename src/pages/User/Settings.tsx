@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
 import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
@@ -39,6 +39,7 @@ const Settings = () => {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Handle Change Password
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -370,15 +371,28 @@ const Settings = () => {
 
               {/* Password Confirmation */}
               <div className="space-y-2">
-                <Label htmlFor="delete-password">{t("settings.delete.confirmLabel")}</Label>
-                <Input
-                  id="delete-password"
-                  type="password"
-                  placeholder={t("settings.delete.confirmPlaceholder")}
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  autoComplete="current-password"
-                />
+                <Label htmlFor="delete-password" className="text-red-700 dark:text-red-300">
+                  {t("settings.delete.confirmLabel")}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="delete-password"
+                    type={showDeletePassword ? "text" : "password"}
+                    placeholder={t("settings.delete.confirmPlaceholder")}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none"
+                    aria-label={showDeletePassword ? "Hide password" : "Show password"}
+                  >
+                    {showDeletePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {/* Delete Button */}
