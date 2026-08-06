@@ -547,7 +547,14 @@ export async function decryptProfileField(
   key: CryptoKey
 ): Promise<string> {
   if (!value) return "";
-  return await decryptText(value, key);
+  // Plaintext (e.g. legacy) values pass through untouched instead of throwing.
+  if (!looksEncrypted(value)) return value;
+  try {
+    return await decryptText(value, key);
+  } catch (err) {
+    console.warn("Failed to decrypt profile field; returning an empty value.", err);
+    return "";
+  }
 }
 
 export async function decryptProfileArray(
@@ -555,8 +562,39 @@ export async function decryptProfileArray(
   key: CryptoKey
 ): Promise<string[]> {
   if (!value) return [];
-  const jsonString = await decryptText(value, key);
-  return JSON.parse(jsonString);
+
+  let jsonString: string;
+  if (looksEncrypted(value)) {
+    try {
+      jsonString = await decryptText(value, key);
+    } catch (err) {
+      console.warn("Failed to decrypt profile array; returning an empty array.", err);
+      return [];
+    }
+  } else {
+    // Plaintext (legacy) JSON array stored directly.
+    jsonString = value;
+  }
+
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+  } catch (err) {
+    console.warn("Failed to parse profile array; returning an empty array.", err);
+    return [];
+  }
+}
+
+// A stored profile value is treated as encrypted only when it matches the
+// `ivHex:cipherHex` shape produced by `encryptText`. Anything else is legacy
+// plaintext and is passed through as-is.
+function looksEncrypted(value: string): boolean {
+  const parts = value.split(":");
+  return (
+    parts.length === 2 &&
+    /^[0-9a-f]+$/i.test(parts[0]) &&
+    /^[0-9a-f]+$/i.test(parts[1])
+  );
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
