@@ -151,6 +151,18 @@ Have an idea to make Symptom Scribe better? We'd love to hear it! Open a feature
 2. A detailed description of the proposed feature and user journey.
 3. Why the feature is beneficial to the project and its users.
 
+## CI Pipeline
+
+All pull requests must pass the automated CI checks before being reviewed:
+
+- **ESLint** — no lint errors allowed
+- **TypeScript** — `tsc --noEmit` must pass with zero type errors
+- **Vite build** — production build must complete without errors
+
+CI runs automatically on every push and PR. Check the **Actions** tab for your PR's status.
+
+> **Note for maintainers:** Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository secrets under Settings → Secrets and variables → Actions.
+
 ---
 
 ## 🆘 Need Help?
