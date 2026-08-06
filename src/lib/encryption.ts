@@ -122,7 +122,7 @@ export function clearUserSalt(userId: string): void {
 }
 
 // Key Derivation
-export async function deriveKeyFromToken(token: string, userId?: string): Promise<CryptoKey> {
+async function deriveKeyFromTokenWithSalt(token: string, salt: Uint8Array): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const tokenBytes = encoder.encode(token);
 
@@ -133,12 +133,6 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
     false,
     ["deriveKey"]
   );
-
-  // Use per-user random salt when userId is available; fall back to a
-  // deterministic domain salt for unauthenticated derivation paths.
-  const salt = userId
-    ? getUserSalt(userId)
-    : encoder.encode("symptom-scribe-offline-salt");
 
   return await crypto.subtle.deriveKey(
     {
@@ -157,7 +151,19 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
   );
 }
 
-export async function deriveSearchKeyFromToken(token: string, userId?: string): Promise<CryptoKey> {
+export async function deriveKeyFromToken(token: string, userId?: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+
+  // Use per-user random salt when userId is available; fall back to a
+  // deterministic domain salt for unauthenticated derivation paths.
+  const salt = userId
+    ? getUserSalt(userId)
+    : encoder.encode("symptom-scribe-offline-salt");
+
+  return deriveKeyFromTokenWithSalt(token, salt);
+}
+
+async function deriveSearchKeyFromTokenWithSalt(token: string, salt: Uint8Array): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const tokenBytes = encoder.encode(token);
 
@@ -168,10 +174,6 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
     false,
     ["deriveKey"]
   );
-
-  const salt = userId
-    ? getUserSalt(userId)
-    : encoder.encode("symptom-scribe-search-salt");
 
   return await crypto.subtle.deriveKey(
     {
@@ -189,6 +191,16 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
     true,
     ["sign", "verify"]
   );
+}
+
+export async function deriveSearchKeyFromToken(token: string, userId?: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+
+  const salt = userId
+    ? getUserSalt(userId)
+    : encoder.encode("symptom-scribe-search-salt");
+
+  return deriveSearchKeyFromTokenWithSalt(token, salt);
 }
 
 // Tokenizer & Blind Index Generation
@@ -373,6 +385,47 @@ export async function triggerKeyRotation(
   }
 }
 
+// Migrate a device's encrypted data from its current local salt to the DB
+// salt. Because the salt feeds directly into key derivation, converging on
+// the DB salt without re-encrypting first would make every previously
+// encrypted field unreadable. We therefore derive the old keys under the
+// local salt, derive the new keys under the DB salt, and re-encrypt all
+// locally cached records through the key-rotation hook before persisting the
+// new salt. If no local salt exists yet (fresh device) we simply adopt the
+// DB salt — there is no local data encrypted under anything else.
+async function migrateSalt(dbSaltHex: string, localSaltHex: string | null, userId: string): Promise<void> {
+  if (!localSaltHex) {
+    localStorage.setItem(SALT_KEY_PREFIX + userId, dbSaltHex);
+    return;
+  }
+
+  const masterSeed = localStorage.getItem(SEED_KEY_PREFIX + userId) || userId;
+
+  const oldSalt = hexToUint8Array(localSaltHex);
+  const dbSalt = hexToUint8Array(dbSaltHex);
+
+  const oldKey = await deriveKeyFromTokenWithSalt(masterSeed, oldSalt);
+  const oldSearchKey = await deriveSearchKeyFromTokenWithSalt(masterSeed, oldSalt);
+
+  const newKey = await deriveKeyFromTokenWithSalt(masterSeed, dbSalt);
+  const newSearchKey = await deriveSearchKeyFromTokenWithSalt(masterSeed, dbSalt);
+
+  if (onTokenRefreshCallback) {
+    await onTokenRefreshCallback(oldKey, newKey, oldSearchKey, newSearchKey);
+  } else {
+    console.error(
+      "Salt mismatch detected but the key-rotation hook is not registered; keeping the local salt to avoid data loss."
+    );
+    return;
+  }
+
+  // Re-encryption succeeded (or there was nothing to re-encrypt); only now is
+  // it safe to converge this device on the DB salt.
+  localStorage.setItem(SALT_KEY_PREFIX + userId, dbSaltHex);
+  setKeys(newKey, newSearchKey);
+  lastToken = masterSeed;
+}
+
 async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
@@ -385,8 +438,15 @@ async function handleSessionChange(session: Session) {
   // The salt is cached locally (see "Per-user PBKDF2 Salt" above) but is
   // also written to the user's Supabase profile (`encryption_salt`) so a
   // second device/browser can pick up the *same* salt instead of generating
-  // its own. If the local and remote values ever diverge, the remote
-  // (`dbSalt`) value wins here so all devices converge on one salt.
+  // its own.
+  //
+  // IMPORTANT: when the local and remote salts diverge we do NOT silently
+  // overwrite the local value. The salt is a direct input to PBKDF2 key
+  // derivation (see the note above), so swapping it would silently change
+  // the derived key and make all previously encrypted data unreadable.
+  // Instead we migrate the device's existing encrypted data to the DB salt
+  // through the same key-rotation path used for password changes, and only
+  // then adopt the DB salt.
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -399,7 +459,7 @@ async function handleSessionChange(session: Session) {
 
     if (dbSalt) {
       if (dbSalt !== localSalt) {
-        localStorage.setItem(SALT_KEY_PREFIX + userId, dbSalt);
+        await migrateSalt(dbSalt, localSalt, userId);
       }
     } else {
       const activeSalt = localSalt || (() => {
