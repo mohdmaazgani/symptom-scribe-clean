@@ -52,7 +52,7 @@ const effectiveKey = supabasePublishableKey || (isTestEnv ? "placeholder-key" : 
 
 export const supabase = createClient<Database>(effectiveUrl, effectiveKey, {
   auth: {
-    storage: typeof window !== "undefined" ? localStorage : undefined,
+    storage: typeof window !== "undefined" ? sessionStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
   },
