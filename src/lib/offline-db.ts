@@ -33,6 +33,11 @@ export interface OfflineSymptom {
   risk_score: number | null;
   resolved: boolean;
   created_at: string;
+
+  doctor_notes?: string | null;
+  doctor_name?: string | null;
+  visit_date?: string | null;
+
   pending_sync: number;
   pending_update: number;
   pending_delete: number;
