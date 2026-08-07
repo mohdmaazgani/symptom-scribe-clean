@@ -8,6 +8,9 @@ const emergencyKeywords = [
     "suicidal",
     "heart attack",
     "severe bleeding",
+    "worst headache of my life",
+    "can't breathe",
+    "slurred speech",
 ];
 
 type Message = {

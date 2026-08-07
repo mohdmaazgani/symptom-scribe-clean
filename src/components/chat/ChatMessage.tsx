@@ -4,9 +4,10 @@ import ReactMarkdown from "react-markdown";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  progressText?: string;
 }
 
-const ChatMessage = ({ role, content }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, progressText }: ChatMessageProps) => {
   const isUser = role === "user";
 
   return (
@@ -47,6 +48,11 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
           >
             {content.replace(/•/g, "-")}
           </ReactMarkdown>
+          {progressText && (
+            <div className="text-[10px] text-muted-foreground mt-2 border-t border-border/40 pt-1.5 font-medium select-none">
+              {progressText}
+            </div>
+          )}
         </div>
       </div>
 
@@ -61,3 +67,4 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => {
 };
 
 export default ChatMessage;
+

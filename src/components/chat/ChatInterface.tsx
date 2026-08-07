@@ -35,6 +35,8 @@ import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
+import { type TriagePhase, type CollectedInfo } from "@/types/triage";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,6 +69,9 @@ interface ChatSession {
   messages: Json;
   created_at: string | null;
   updated_at: string | null;
+  phase: TriagePhase;
+  collected_info: CollectedInfo;
+  questions_asked: number;
 }
 
 const ChatInterface = () => {
@@ -78,6 +83,11 @@ const ChatInterface = () => {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const [phase, setPhase] = useState<TriagePhase>("gathering");
+  const [collectedInfo, setCollectedInfo] = useState<CollectedInfo>({});
+  const [questionsAsked, setQuestionsAsked] = useState<number>(0);
+  const [parseFailures, setParseFailures] = useState<number>(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,8 +146,16 @@ const ChatInterface = () => {
     const loadedMessages = (session.messages as unknown as Message[]) || [];
     if (loadedMessages.length === 0) {
       setMessages([INITIAL_GREETING]);
+      setPhase("gathering");
+      setCollectedInfo({});
+      setQuestionsAsked(0);
+      setParseFailures(0);
     } else {
       setMessages(loadedMessages);
+      setPhase((session.phase as TriagePhase) || "gathering");
+      setCollectedInfo((session.collected_info as CollectedInfo) || {});
+      setQuestionsAsked(session.questions_asked || 0);
+      setParseFailures(0);
     }
     setIsMobileOpen(false);
   };
@@ -165,6 +183,10 @@ const ChatInterface = () => {
   const handleNewChat = () => {
     setActiveSessionId(null);
     setMessages([INITIAL_GREETING]);
+    setPhase("gathering");
+    setCollectedInfo({});
+    setQuestionsAsked(0);
+    setParseFailures(0);
     setIsMobileOpen(false);
   };
 
@@ -215,6 +237,9 @@ const ChatInterface = () => {
             user_id: user.id,
             title,
             messages: newMessages as unknown as Json,
+            phase,
+            collected_info: collectedInfo as unknown as Json,
+            questions_asked: questionsAsked,
           })
           .select()
           .single();
@@ -228,6 +253,9 @@ const ChatInterface = () => {
           .from("chat_sessions")
           .update({
             messages: newMessages as unknown as Json,
+            phase,
+            collected_info: collectedInfo as unknown as Json,
+            questions_asked: questionsAsked,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -249,7 +277,13 @@ const ChatInterface = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ messages: [...recentContext, userMessage] }),
+        body: JSON.stringify({
+          messages: [...recentContext, userMessage],
+          phase,
+          collectedInfo,
+          questionsAsked,
+          parseFailures,
+        }),
       });
 
       if (!response.ok || !response.body) {
@@ -260,6 +294,11 @@ const ChatInterface = () => {
       const decoder = new TextDecoder();
       let textBuffer = "";
       let streamDone = false;
+
+      let latestPhase = phase;
+      let latestCollectedInfo = collectedInfo;
+      let latestQuestionsAsked = questionsAsked;
+      let latestParseFailures = parseFailures;
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -285,6 +324,19 @@ const ChatInterface = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) upsertAssistant(content);
+
+            if (parsed.triageState) {
+              const state = parsed.triageState;
+              latestPhase = state.phase;
+              latestCollectedInfo = state.collectedInfo;
+              latestQuestionsAsked = state.questionsAsked;
+              latestParseFailures = state.parseFailures || 0;
+
+              setPhase(latestPhase);
+              setCollectedInfo(latestCollectedInfo);
+              setQuestionsAsked(latestQuestionsAsked);
+              setParseFailures(latestParseFailures);
+            }
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
@@ -305,6 +357,9 @@ const ChatInterface = () => {
           .from("chat_sessions")
           .update({
             messages: finalMessages as unknown as Json,
+            phase: latestPhase,
+            collected_info: latestCollectedInfo as unknown as Json,
+            questions_asked: latestQuestionsAsked,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -319,99 +374,104 @@ const ChatInterface = () => {
               ? {
                   ...s,
                   messages: finalMessages as unknown as Json,
+                  phase: latestPhase,
+                  collected_info: latestCollectedInfo as unknown as Json,
+                  questions_asked: latestQuestionsAsked,
                   updated_at: new Date().toISOString(),
                 }
               : s
           )
         );
 
-        const { possibleCauses, recommendations, severityLevel } =
-          parseSymptomConsultation(assistantContent);
+        if (latestPhase === "complete" || latestPhase === "ready") {
+          const { possibleCauses, recommendations, severityLevel } =
+            parseSymptomConsultation(assistantContent);
 
-        if (assistantContent.match(/severity(\s+level)?/i)) {
-          showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
-        }
-
-        const riskScore = computeRiskScore(
-          severityLevel,
-          possibleCauses.length,
-          recommendations.length
-        );
-
-        if (shouldPersistConsultation(assistantContent)) {
-          let uploadedImages: string[] | null = null;
-          if (selectedFiles.length > 0) {
-            try {
-              uploadedImages = [];
-              for (const file of selectedFiles) {
-                const compressed = await compressImage(file);
-                const url = await uploadSymptomImage(compressed, user.id);
-                uploadedImages.push(url);
-              }
-            } catch (err) {
-              console.error("Image upload failed:", err);
-              showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
-              uploadedImages = null;
-            }
+          if (assistantContent.match(/severity(\s+level)?/i)) {
+            showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
           }
 
-          const recordId = crypto.randomUUID();
-          const record = {
-            id: recordId,
-            user_id: user.id,
-            symptoms: userMessage.content,
-            ai_analysis: assistantContent,
-            severity_level: severityLevel,
-            possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
-            recommendations: recommendations.length > 0 ? recommendations : null,
-            risk_score: riskScore,
-            resolved: false,
-            created_at: new Date().toISOString(),
-            images: uploadedImages,
-          };
-
-          const keys = await whenKeysReady();
-          const encryptedRecord = await encryptSymptom(
-            record as unknown as OfflineSymptom,
-            keys.encryptionKey,
-            keys.searchKey
+          const riskScore = computeRiskScore(
+            severityLevel,
+            possibleCauses.length,
+            recommendations.length
           );
 
-          // Strip offline-only fields so we match the Supabase table schema
-          const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
-            encryptedRecord;
+          if (shouldPersistConsultation(assistantContent)) {
+            let uploadedImages: string[] | null = null;
+            if (selectedFiles.length > 0) {
+              try {
+                uploadedImages = [];
+                for (const file of selectedFiles) {
+                  const compressed = await compressImage(file);
+                  const url = await uploadSymptomImage(compressed, user.id);
+                  uploadedImages.push(url);
+                }
+              } catch (err) {
+                console.error("Image upload failed:", err);
+                showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
+                uploadedImages = null;
+              }
+            }
 
-          const { error: insertError } = await supabase
-            .from("symptom_history")
-            .insert(supabaseRecord);
+            const recordId = crypto.randomUUID();
+            const record = {
+              id: recordId,
+              user_id: user.id,
+              symptoms: userMessage.content,
+              ai_analysis: assistantContent,
+              severity_level: severityLevel,
+              possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
+              recommendations: recommendations.length > 0 ? recommendations : null,
+              risk_score: riskScore,
+              resolved: false,
+              created_at: new Date().toISOString(),
+              images: uploadedImages,
+            };
 
-          if (insertError) {
-            console.warn("Supabase save failed, falling back to local saving:", insertError);
-
-            // Save locally to Dexie immediately with pending_sync: 1
-            await db.symptomHistory.put({
-              ...encryptedRecord,
-              pending_sync: 1,
-              pending_update: 0,
-              pending_delete: 0,
-            });
-
-            showWarning(
-              "Saved Offline",
-              "Could not connect to server. Saved locally and will sync once connection is restored."
+            const keys = await whenKeysReady();
+            const encryptedRecord = await encryptSymptom(
+              record as unknown as OfflineSymptom,
+              keys.encryptionKey,
+              keys.searchKey
             );
-          } else {
-            await invalidateCache("symptom_history");
 
-            // Save locally to Dexie immediately
-            await db.symptomHistory.put({
-              ...encryptedRecord,
-              pending_sync: 0,
-              pending_update: 0,
-              pending_delete: 0,
-            });
+            // Strip offline-only fields so we match the Supabase table schema
+            const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+              encryptedRecord;
 
-            showSuccess("Saved to history", "This analysis has been added to your health records");
+            const { error: insertError } = await supabase
+              .from("symptom_history")
+              .insert(supabaseRecord);
+
+            if (insertError) {
+              console.warn("Supabase save failed, falling back to local saving:", insertError);
+
+              // Save locally to Dexie immediately with pending_sync: 1
+              await db.symptomHistory.put({
+                ...encryptedRecord,
+                pending_sync: 1,
+                pending_update: 0,
+                pending_delete: 0,
+              });
+
+              showWarning(
+                "Saved Offline",
+                "Could not connect to server. Saved locally and will sync once connection is restored."
+              );
+            } else {
+              await invalidateCache("symptom_history");
+
+              // Save locally to Dexie immediately
+              await db.symptomHistory.put({
+                ...encryptedRecord,
+                pending_sync: 0,
+                pending_update: 0,
+                pending_delete: 0,
+              });
+
+              showSuccess("Saved to history", "This analysis has been added to your health records");
+            }
           }
         }
       }
@@ -650,9 +710,20 @@ const ChatInterface = () => {
             </div>
           )}
 
-          {messages.map((message, index) => (
-            <ChatMessage key={index} role={message.role} content={message.content} />
-          ))}
+          {messages.map((message, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const showProgress = isLastMessage && message.role === "assistant" && phase === "gathering" && questionsAsked > 0;
+            const progressText = showProgress ? `Clarifying Question ${questionsAsked} of ~4` : undefined;
+
+            return (
+              <ChatMessage
+                key={index}
+                role={message.role}
+                content={message.content}
+                progressText={progressText}
+              />
+            );
+          })}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && <ChatLoading />}
           <div ref={messagesEndRef} />
