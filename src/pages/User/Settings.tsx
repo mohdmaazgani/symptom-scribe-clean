@@ -16,12 +16,7 @@ import { PasswordStrengthMeter } from "@/components/registration/shared/Password
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { clearSafeStorage } from "@/lib/storage";
-import {
-  getKey,
-  getSearchKey,
-  setupKeysFromPassword,
-  triggerKeyRotation,
-} from "@/lib/encryption";
+import { rotateKeysToNewPassword } from "@/lib/encryption";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
 
 const Settings = () => {
@@ -112,18 +107,8 @@ const Settings = () => {
         try {
           const userRes = await supabase.auth.getUser();
           const user = userRes.data.user;
-          if (user && user.email) {
-            const oldKey = getKey();
-            const oldSearchKey = getSearchKey();
-
-            await setupKeysFromPassword(newPassword, user.email, user.id);
-
-            const newKey = getKey();
-            const newSearchKey = getSearchKey();
-
-            if (oldKey && newKey && oldSearchKey && newSearchKey) {
-              await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
-            }
+          if (user?.email) {
+            await rotateKeysToNewPassword(newPassword, user.email, user.id);
           }
         } catch (rotateErr) {
           console.error("Failed to rotate keys after password update:", rotateErr);
