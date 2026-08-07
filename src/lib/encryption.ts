@@ -373,6 +373,56 @@ export async function triggerKeyRotation(
   }
 }
 
+/**
+ * Re-derives the user's encryption keys from a *new* password and re-encrypts
+ * all existing data (local IndexedDB + server-side Supabase rows) under the
+ * new key.
+ *
+ * Must be called after `supabase.auth.updateUser({ password })` succeeds
+ * (Settings "Change Password" and ResetPassword). Without it, records that
+ * were encrypted under the old password-derived seed become undecryptable the
+ * moment the new key is activated (issue #999).
+ *
+ * If no old key is available on this device (e.g. a forgotten-password reset
+ * opened on a fresh browser where the old seed was never persisted), rotation
+ * is skipped: the old key is unrecoverable by design, and decrypting old
+ * ciphertext with the fallback key would corrupt it.
+ *
+ * @returns `true` when existing data was re-encrypted under the new key, and
+ *          `false` when no old key was available so old records cannot be
+ *          recovered (callers should inform the user in that case).
+ */
+export async function rotateKeysToNewPassword(
+  newPassword: string,
+  email: string,
+  userId: string
+): Promise<boolean> {
+  const oldKey = getKey();
+  const oldSearchKey = getSearchKey();
+
+  // Persist the new seed and activate the new keys before rotating data.
+  await setupKeysFromPassword(newPassword, email, userId);
+
+  if (!oldKey || !oldSearchKey) {
+    console.warn(
+      "No active encryption key before password change — existing encrypted " +
+        "records on this device cannot be re-encrypted."
+    );
+    return false;
+  }
+
+  const newKey = getKey();
+  const newSearchKey = getSearchKey();
+
+  if (!newKey || !newSearchKey) {
+    console.warn("New encryption keys could not be derived; existing records were not rotated.");
+    return false;
+  }
+
+  await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
+  return true;
+}
+
 async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
