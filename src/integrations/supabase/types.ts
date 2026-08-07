@@ -48,6 +48,7 @@ export type Database = {
           metric_type: string
           notes: string | null
           recorded_at: string | null
+          search_tokens: string[] | null
           user_id: string
           value: Json
         }
@@ -57,6 +58,7 @@ export type Database = {
           metric_type: string
           notes?: string | null
           recorded_at?: string | null
+          search_tokens?: string[] | null
           user_id: string
           value: Json
         }
@@ -66,6 +68,7 @@ export type Database = {
           metric_type?: string
           notes?: string | null
           recorded_at?: string | null
+          search_tokens?: string[] | null
           user_id?: string
           value?: Json
         }
@@ -135,6 +138,7 @@ export type Database = {
           recommendations: string[] | null
           resolved: boolean | null
           risk_score: number | null
+          search_tokens: string[] | null
           severity_level: string
           symptoms: string
           updated_at: string | null
@@ -149,6 +153,7 @@ export type Database = {
           recommendations?: string[] | null
           resolved?: boolean | null
           risk_score?: number | null
+          search_tokens?: string[] | null
           severity_level: string
           symptoms: string
           updated_at?: string | null
@@ -163,6 +168,7 @@ export type Database = {
           recommendations?: string[] | null
           resolved?: boolean | null
           risk_score?: number | null
+          search_tokens?: string[] | null
           severity_level?: string
           symptoms?: string
           updated_at?: string | null

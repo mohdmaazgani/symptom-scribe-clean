@@ -1,6 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { supabase } from "@/integrations/supabase/client";
-import { type Json } from "@/integrations/supabase/types";
+import { type Database, type Json } from "@/integrations/supabase/types";
 import {
   encryptText,
   decryptText,
@@ -8,6 +8,10 @@ import {
   registerEncryptionHooks,
   getSearchKey,
   generateSearchTokens,
+  encryptProfileField,
+  decryptProfileField,
+  encryptProfileArray,
+  decryptProfileArray,
 } from "./encryption";
 import { invalidateCache } from "@/lib/cached-queries";
 
@@ -327,4 +331,140 @@ export const syncOfflineData = async (): Promise<boolean> => {
     console.error("Error during offline synchronization:", error);
     return false;
   }
+};
+
+/**
+ * Re-encrypts the authenticated user's server-side rows after a password
+ * change/reset so existing records remain decryptable under the new key.
+ *
+ * Without this, only the local Dexie cache is re-encrypted (see the
+ * onTokenRefresh hook above) and every server row stays encrypted under the
+ * old key, becoming undecryptable after a reload.
+ */
+export const reencryptServerData = async (
+  oldKey: CryptoKey,
+  newKey: CryptoKey,
+  oldSearchKey?: CryptoKey | null,
+  newSearchKey?: CryptoKey | null
+): Promise<void> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // symptom_history
+  const { data: symptoms, error: symptomsError } = await supabase
+    .from("symptom_history")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (symptomsError) {
+    console.error("Failed to fetch symptom_history for re-encryption:", symptomsError);
+  } else if (symptoms && symptoms.length > 0) {
+    for (const record of symptoms) {
+      try {
+        const decrypted = await decryptSymptom(record as unknown as OfflineSymptom, oldKey);
+        const reencrypted = await encryptSymptom(decrypted, newKey, newSearchKey);
+        const { error: updateError } = await supabase
+          .from("symptom_history")
+          .update({
+            symptoms: reencrypted.symptoms,
+            ai_analysis: reencrypted.ai_analysis,
+            possible_causes: reencrypted.possible_causes,
+            recommendations: reencrypted.recommendations,
+            search_tokens: reencrypted.search_tokens,
+          })
+          .eq("id", record.id);
+        if (updateError) {
+          console.error(`Failed to re-encrypt symptom_history row ${record.id}:`, updateError);
+        }
+      } catch (err) {
+        console.error(`Failed to re-encrypt symptom_history row ${record.id}:`, err);
+      }
+    }
+  }
+
+  // health_metrics
+  const { data: metrics, error: metricsError } = await supabase
+    .from("health_metrics")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (metricsError) {
+    console.error("Failed to fetch health_metrics for re-encryption:", metricsError);
+  } else if (metrics && metrics.length > 0) {
+    for (const record of metrics) {
+      try {
+        const decrypted = await decryptMetric(record as unknown as OfflineMetric, oldKey);
+        const reencrypted = await encryptMetric(decrypted, newKey, newSearchKey);
+        const { error: updateError } = await supabase
+          .from("health_metrics")
+          .update({
+            value: reencrypted.value,
+            notes: reencrypted.notes,
+            search_tokens: reencrypted.search_tokens,
+          })
+          .eq("id", record.id);
+        if (updateError) {
+          console.error(`Failed to re-encrypt health_metrics row ${record.id}:`, updateError);
+        }
+      } catch (err) {
+        console.error(`Failed to re-encrypt health_metrics row ${record.id}:`, err);
+      }
+    }
+  }
+
+  // profiles (encrypted fields)
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("Failed to fetch profile for re-encryption:", profileError);
+  } else if (profile) {
+    const profileUpdate: Database["public"]["Tables"]["profiles"]["Update"] = {};
+
+    const textFields = [
+      "full_name",
+      "date_of_birth",
+      "emergency_contact_name",
+      "emergency_contact_phone",
+    ] as const;
+    const arrayFields = ["allergies", "chronic_conditions"] as const;
+
+    for (const field of textFields) {
+      try {
+        const decrypted = await decryptProfileField(profile[field], oldKey);
+        profileUpdate[field] = await encryptProfileField(decrypted, newKey);
+      } catch (err) {
+        console.error(`Failed to re-encrypt profile field ${field}:`, err);
+      }
+    }
+
+    for (const field of arrayFields) {
+      try {
+        const decrypted = await decryptProfileArray(profile[field] as unknown as string, oldKey);
+        profileUpdate[field] = (await encryptProfileArray(decrypted, newKey)) as unknown as string[] | null;
+      } catch (err) {
+        console.error(`Failed to re-encrypt profile field ${field}:`, err);
+      }
+    }
+
+    const { error: profileUpdateError } = await supabase
+      .from("profiles")
+      .update(profileUpdate)
+      .eq("user_id", user.id);
+
+    if (profileUpdateError) {
+      console.error("Failed to update re-encrypted profile fields:", profileUpdateError);
+    }
+  }
+
+  await Promise.all([
+    invalidateCache("health_metrics").catch(() => {}),
+    invalidateCache("symptom_history").catch(() => {}),
+    invalidateCache("profiles").catch(() => {}),
+  ]);
 };
