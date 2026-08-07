@@ -7,18 +7,11 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:8080",
   "https://symptom-scribe.vercel.app",
-  "https://symptom-scribe-clean.netlify.app",
 ];
-
-const NETLIFY_PREVIEW_ORIGIN = /^https:\/\/deploy-preview-\d+--symptom-scribe-clean\.netlify\.app$/;
-
-function isAllowedOrigin(origin: string): boolean {
-  return ALLOWED_ORIGINS.includes(origin) || NETLIFY_PREVIEW_ORIGIN.test(origin);
-}
 
 const getCorsHeaders = (origin: string | null) => ({
   "Access-Control-Allow-Origin":
-    origin && isAllowedOrigin(origin) ? origin : "null",
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : "null",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 });
@@ -26,7 +19,7 @@ const getCorsHeaders = (origin: string | null) => ({
 serve(async (req) => {
   const origin = req.headers.get("origin");
 
-  if (origin && !isAllowedOrigin(origin)) {
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
     return new Response(JSON.stringify({ error: "Origin not allowed" }), {
       status: 403,
       headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
