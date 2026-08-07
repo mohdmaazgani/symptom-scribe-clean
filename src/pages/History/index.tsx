@@ -236,7 +236,7 @@ const History = () => {
           setHistory(decryptedRecords as unknown as SymptomEntry[]);
         }
       } catch (err) {
-        console.error("Error loading local symptoms:", err);
+        console.warn("Error loading local symptoms:", err);
       } finally {
         setLoading(false);
       }
