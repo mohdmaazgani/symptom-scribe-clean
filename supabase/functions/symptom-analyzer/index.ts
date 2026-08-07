@@ -5,6 +5,8 @@ import { RequestSchema } from "./validation.ts";
 import { detectEmergencySymptoms } from "./medicalSafety.ts";
 import { rateLimit } from "../_shared/rateLimit.ts";
 import { jsonResponse } from "./utils.ts";
+import { evaluateTriageState } from "./triageEngine.ts";
+
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -218,173 +220,365 @@ ${symptoms.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}
 
     const safetyCheck = detectEmergencySymptoms(messages);
 
-    const systemPrompt = `
-You are a professional medical assistant helping users understand their symptoms.
-
-Provide a clear, detailed, and helpful response in standard Markdown format. You MUST structure your response with the following sections and exact headers so the frontend can parse them properly:
-
-### Severity Level
-Severity Level: ${
-      safetyCheck.isEmergency
-        ? "High"
-        : "[Low | Moderate | High] (choose the appropriate one based on symptoms)"
-    }
+    // Hard-coded, non-LLM emergency response logic
+    if (safetyCheck.isEmergency) {
+      const encoder = new TextEncoder();
+      const emergencyResponse = `### Severity Level
+Severity Level: High
 
 ### Possible Causes
-Provide a bulleted list of possible causes:
-- [Cause 1]
-- [Cause 2]
+- Emergency condition (identified by warning keywords)
+
+### Recommendations
+- **IMMEDIATE ACTION REQUIRED**: Your description contains symptoms that may represent a life-threatening medical emergency.
+- **DO NOT WAIT**: Call your local emergency services (e.g., 911 or local emergency number) or go to the nearest emergency room immediately.
+- Remain as calm as possible and notify someone nearby of your situation.
+
+⚠️ Important: This is general health information only. Consult a qualified healthcare provider for diagnosis and treatment.`;
+
+      const stream = new ReadableStream({
+        start(controller) {
+          // Stream the predefined emergency message
+          const words = emergencyResponse.split(" ");
+          let i = 0;
+          
+          const intervalId = setInterval(() => {
+            if (i < words.length) {
+              const chunk = (i > 0 ? " " : "") + words[i];
+              const payload = `data: ${JSON.stringify({
+                choices: [{ delta: { content: chunk } }],
+              })}\n\n`;
+              controller.enqueue(encoder.encode(payload));
+              i++;
+            } else {
+              clearInterval(intervalId);
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            }
+          }, 20); // Simulate smooth streaming
+        },
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    let phase = "phase" in requestData ? requestData.phase : "gathering";
+    let collectedInfo = "collectedInfo" in requestData ? requestData.collectedInfo : {};
+    let questionsAsked = "questionsAsked" in requestData ? requestData.questionsAsked : 0;
+    let parseFailures = "parseFailures" in requestData ? requestData.parseFailures : 0;
+
+    // Force transition to 'ready' if questionsAsked hits 4
+    if (phase === "gathering" && questionsAsked >= 4) {
+      phase = "ready";
+    }
+
+    const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+
+    const getCorsHeaders = (origin: string | null) => ({
+      "Access-Control-Allow-Origin": origin && isAllowedOrigin(origin) ? origin : "null",
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    });
+
+    const corsHeaders = getCorsHeaders(origin);
+
+    async function getGeminiResponseText(
+      systemPrompt: string,
+      conversationText: string
+    ): Promise<string> {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt}\n\nConversation:\n${conversationText}`,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2048,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const json = await response.json();
+      return json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+
+    function streamStaticResponse(
+      text: string,
+      triageStateToSend: any
+    ): Response {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          const payload = `data: ${JSON.stringify({
+            choices: [{ delta: { content: text } }],
+          })}\n\n`;
+          controller.enqueue(encoder.encode(payload));
+
+          const statePayload = `data: ${JSON.stringify({
+            triageState: triageStateToSend,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(statePayload));
+
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    async function streamGeminiResponse(
+      systemPrompt: string,
+      conversationText: string,
+      triageStateToSend: any
+    ): Promise<Response> {
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt}\n\nConversation:\n${conversationText}`,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2048,
+            },
+          }),
+        }
+      );
+
+      if (!geminiResponse.ok || !geminiResponse.body) {
+        return jsonResponse(
+          { error: "Gemini API error during analysis streaming" },
+          geminiResponse.status,
+          corsHeaders
+        );
+      }
+
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+      const reader = geminiResponse.body.getReader();
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          let buffer = "";
+          let closed = false;
+
+          const safeClose = () => {
+            if (closed) return;
+            closed = true;
+            controller.close();
+          };
+
+          const processLine = (line: string) => {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) return;
+
+            const jsonStr = trimmed.slice(5).trim();
+            if (!jsonStr || jsonStr === "[DONE]") return;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const candidate = parsed?.candidates?.[0];
+              const parts = candidate?.content?.parts ?? [];
+              for (const part of parts) {
+                if (part?.text) {
+                  const payload = `data: ${JSON.stringify({
+                    choices: [{ delta: { content: part.text } }],
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(payload));
+                }
+              }
+            } catch (parseErr) {
+              console.error("Failed to parse Gemini SSE chunk:", parseErr, jsonStr);
+            }
+          };
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
+
+              for (const line of lines) processLine(line);
+            }
+
+            buffer += decoder.decode();
+            if (buffer.trim()) processLine(buffer);
+
+            // Send the updated triageState before the DONE marker
+            const statePayload = `data: ${JSON.stringify({
+              triageState: triageStateToSend,
+            })}\n\n`;
+            controller.enqueue(encoder.encode(statePayload));
+            
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch (streamErr) {
+            console.error("Error while relaying Gemini stream:", streamErr);
+            const errorPayload = `data: ${JSON.stringify({
+              error: "Stream interrupted while generating the response.",
+            })}\n\n`;
+            controller.enqueue(encoder.encode(errorPayload));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } finally {
+            safeClose();
+          }
+        },
+        cancel(reason) {
+          try {
+            reader.cancel(reason);
+          } catch {}
+        },
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    let result;
+
+    if (phase === "gathering") {
+      const triagePrompt = `
+You are an AI medical triage assistant. Your goal is to gather symptom information from the user before rendering a final health analysis.
+You MUST follow these rules:
+1. Ask exactly ONE clarifying question at a time.
+2. Ask in the following priority order, check if each is already known from context:
+   - Duration (e.g., "How long has this been occurring?")
+   - Severity (e.g., "On a scale of 1-10, how severe is the pain/symptom?")
+   - Associated symptoms or triggers (e.g., "Are you experiencing any other symptoms, or does anything specific seem to trigger it?")
+3. NEVER provide possible causes, recommendations, severity levels, or advice yet.
+4. Keep your tone empathetic, clear, and professional.
+5. Once you have gathered sufficient information on these areas OR when questionsAsked reaches 4 (current questionsAsked count: ${questionsAsked}), you MUST conclude your reply by appending the exact token "READY_FOR_ANALYSIS" followed by a JSON summary of the collected info.
+
+Format for concluding when ready (ensure JSON is valid and on a new line after the READY_FOR_ANALYSIS token):
+READY_FOR_ANALYSIS
+{
+  "symptom": "[symptom name]",
+  "duration": "[duration description]",
+  "severity": "[severity description]",
+  "associatedSymptoms": ["list", "of", "symptoms"],
+  "triggers": "[trigger description]"
+}
+`;
+
+      const responseText = await getGeminiResponseText(triagePrompt, conversationText);
+      result = evaluateTriageState(
+        { phase, collectedInfo, questionsAsked, parseFailures },
+        responseText,
+        false
+      );
+
+      if (result.nextPhase === "gathering") {
+        const textToSend = result.fallbackText || responseText;
+        const triageStateToSend = {
+          phase: "gathering",
+          collectedInfo: result.nextCollectedInfo,
+          questionsAsked: result.nextQuestionsAsked,
+          parseFailures: result.nextParseFailures,
+        };
+        return streamStaticResponse(textToSend, triageStateToSend);
+      }
+    } else {
+      result = evaluateTriageState(
+        { phase, collectedInfo, questionsAsked, parseFailures },
+        null,
+        false
+      );
+    }
+
+    // If phase is 'ready' (either originally or transitioned above)
+    if (result.nextPhase === "ready" || result.shouldRunAnalysis) {
+      const analysisPrompt = `
+You are a professional medical assistant helping users understand their symptoms.
+You are provided with structured symptom details collected during a triage phase:
+- Symptom: ${result.nextCollectedInfo?.symptom || "Unknown"}
+- Duration: ${result.nextCollectedInfo?.duration || "Unknown"}
+- Severity: ${result.nextCollectedInfo?.severity || "Unknown"}
+- Associated Symptoms: ${(result.nextCollectedInfo?.associatedSymptoms || []).join(", ") || "None"}
+- Triggers: ${result.nextCollectedInfo?.triggers || "Unknown"}
+
+Provide a clear, detailed, and helpful response in standard Markdown format. You MUST structure your response with the following sections and exact headers so the frontend can parse them properly.
+Rank potential causes by relevance to the collected triage context instead of using a generic static list.
+
+### Severity Level
+Severity Level: [Low | Moderate | High] (choose the appropriate one based on symptoms and severity)
+
+### Possible Causes
+Provide a bulleted list of possible causes ranked by relevance to the details above:
+- [Ranked Cause 1]
+- [Ranked Cause 2]
 
 ### Recommendations
 Provide self-care steps or action items:
 - [Recommendation 1]
 - [Recommendation 2]
 
-${
-  safetyCheck.isEmergency
-    ? `
-IMPORTANT:
-The user's symptoms indicate a potential medical emergency.
-You MUST set the Severity Level to High, and strongly advise immediate professional medical attention or visiting the nearest emergency room.
-`
-    : ""
-}
-
 ⚠️ Important: This is general health information only. Consult a qualified healthcare provider for diagnosis and treatment.
 `;
 
-    const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+      const triageStateToSend = {
+        phase: "complete",
+        collectedInfo: result.nextCollectedInfo,
+        questionsAsked: result.nextQuestionsAsked,
+        parseFailures: result.nextParseFailures,
+      };
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `${systemPrompt}\n\nConversation:\n${conversationText}`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
-
-    if (!geminiResponse.ok || !geminiResponse.body) {
-      const errorText = await geminiResponse.text().catch(() => "");
-
-      console.error("Gemini API error:", geminiResponse.status, errorText);
-
-      return jsonResponse(
-        {
-          error: "Gemini API error",
-          status: geminiResponse.status,
-        },
-        geminiResponse.status,
-        getCorsHeaders(origin)
-      );
+      return streamGeminiResponse(analysisPrompt, conversationText, triageStateToSend);
     }
 
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    function extractTextChunks(parsed: unknown): string[] {
-      const candidate = (parsed as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
-        ?.candidates?.[0];
-      const parts = candidate?.content?.parts ?? [];
-      return parts.map((p) => p?.text).filter((t): t is string => Boolean(t));
-    }
-
-    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const localReader = geminiResponse.body!.getReader();
-        reader = localReader;
-        let buffer = "";
-        let closed = false;
-
-        const safeClose = () => {
-          if (closed) return;
-          closed = true;
-          controller.close();
-        };
-
-        const processLine = (line: string) => {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) return;
-
-          const jsonStr = trimmed.slice(5).trim();
-          if (!jsonStr || jsonStr === "[DONE]") return;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            for (const chunkText of extractTextChunks(parsed)) {
-              const payload = `data: ${JSON.stringify({
-                choices: [{ delta: { content: chunkText } }],
-              })}\n\n`;
-              controller.enqueue(encoder.encode(payload));
-            }
-          } catch (parseErr) {
-            console.error("Failed to parse Gemini SSE chunk:", parseErr, jsonStr);
-          }
-        };
-
-        try {
-          while (true) {
-            const { done, value } = await localReader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
-
-            for (const line of lines) processLine(line);
-          }
-
-          buffer += decoder.decode(); // flush any pending multi-byte sequence
-          if (buffer.trim()) processLine(buffer);
-
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        } catch (streamErr) {
-          console.error("Error while relaying Gemini stream:", streamErr);
-          const errorPayload = `data: ${JSON.stringify({
-            error: "Stream interrupted while generating the response.",
-          })}\n\n`;
-          controller.enqueue(encoder.encode(errorPayload));
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        } finally {
-          safeClose();
-        }
-      },
-      cancel(reason) {
-        try {
-          reader?.cancel(reason);
-        } catch {
-          // reader may already be closed/released — safe to ignore.
-        }
-      },
-    });
-
-    return new Response(stream, {
-      status: 200,
-      headers: {
-        ...getCorsHeaders(origin),
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    return jsonResponse({ error: "Invalid phase state reached" }, 500, corsHeaders);
   } catch (error) {
     console.error("Error in symptom-analyzer:", error);
 
@@ -393,7 +587,11 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
         error: error instanceof Error ? error.message : "Unknown server error",
       },
       500,
-      getCorsHeaders(origin)
+      {
+        "Access-Control-Allow-Origin": origin && isAllowedOrigin(origin) ? origin : "null",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      }
     );
   }
 });
+

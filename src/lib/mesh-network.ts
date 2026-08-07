@@ -36,7 +36,7 @@ class MeshNetworkManager {
   constructor() {
     // Generate a unique node ID for this tab session
     this.nodeId = crypto.randomUUID();
-    this.isOfflineSimulated = localStorage.getItem("symptom_scribe_offline_sim") === "true";
+    this.isOfflineSimulated = typeof localStorage !== "undefined" && localStorage.getItem("symptom_scribe_offline_sim") === "true";
 
     if (typeof window !== "undefined") {
       this.channel = new BroadcastChannel("symptom_scribe_mesh_channel");
@@ -77,7 +77,9 @@ class MeshNetworkManager {
 
   public setOfflineSimulation(simulated: boolean) {
     this.isOfflineSimulated = simulated;
-    localStorage.setItem("symptom_scribe_offline_sim", simulated ? "true" : "false");
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("symptom_scribe_offline_sim", simulated ? "true" : "false");
+    }
     this.notifyListeners();
 
     if (!simulated && navigator.onLine) {
