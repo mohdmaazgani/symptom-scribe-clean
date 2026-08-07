@@ -235,12 +235,8 @@ const handleForgotPassword= async () => {
 
           <div className="space-y-5">
             <h1 className="text-5xl font-bold leading-tight tracking-normal text-white">
-              <span className="bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent font-extrabold">
-                Care insights
-              </span>
-              {t("auth.headline").replace("Care insights", "")}
-          </h1>
-
+              {t("auth.headline")}
+            </h1>
             <p className="max-w-lg text-lg leading-8 text-slate-300">{t("auth.subheadline")}</p>
           </div>
 
