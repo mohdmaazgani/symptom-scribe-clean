@@ -4,13 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
-import {
-  getKey,
-  getSearchKey,
-  setupKeysFromPassword,
-  triggerKeyRotation,
-} from "@/lib/encryption";
-import { reencryptServerData } from "@/lib/offline-db";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -32,38 +25,16 @@ const ResetPassword = () => {
 
     setLoading(true);
 
-    const oldKey = getKey();
-    const oldSearchKey = getSearchKey();
-
     const { error } = await supabase.auth.updateUser({
       password,
     });
 
+    setLoading(false);
+
     if (error) {
-      setLoading(false);
       showError("Update Failed", error.message);
       return;
     }
-
-    try {
-      const userRes = await supabase.auth.getUser();
-      const user = userRes.data.user;
-      if (user && user.email) {
-        await setupKeysFromPassword(password, user.email, user.id);
-
-        const newKey = getKey();
-        const newSearchKey = getSearchKey();
-
-        if (oldKey && newKey && oldSearchKey && newSearchKey) {
-          await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
-          await reencryptServerData(oldKey, newKey, oldSearchKey, newSearchKey);
-        }
-      }
-    } catch (rotateErr) {
-      console.error("Failed to rotate encryption keys after password reset:", rotateErr);
-    }
-
-    setLoading(false);
 
     showSuccess("Password Updated!", "You can now sign in with your new password.");
     navigate("/auth");
