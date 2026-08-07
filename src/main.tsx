@@ -5,8 +5,8 @@ import "./lib/i18n";
 import "./index.css";
 
 import ErrorBoundary from "./components/common/ErrorBoundary.tsx";
-
 import { ThemeProvider } from "./components/theme/providers/theme-provider.tsx";
+import App from "./App.tsx";
 
 
 const root = createRoot(document.getElementById("root")!);
@@ -30,16 +30,11 @@ if (!browserEnv.diagnostics.isValid) {
 
 	root.render(<StartupDiagnostics />);
 } else {
-  void import("./App.tsx").then(({ default: App }) => {
-    root.render(
-      <ErrorBoundary>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </ErrorBoundary>
-    );
-  }).catch((error) => {
-    console.error("Failed to load App:", error);
-    root.render(<AppLoadError />);
-  });
+  root.render(
+    <ErrorBoundary>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
 }
