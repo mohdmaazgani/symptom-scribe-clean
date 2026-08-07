@@ -188,72 +188,66 @@ const Dashboard = () => {
         return;
       }
       setUserId(user.id);
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const [{ data: profile }, { data: rawSymptoms, source }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        fetchSymptomHistory(user.id),
+      ]);
+
+      const key = await whenEncryptionReady();
+
+      const decryptionTasks: Promise<void>[] = [];
 
       if (profile?.full_name) {
-        const key = await whenEncryptionReady();
-
-        try {
-          const decryptedFullName = await decryptProfileField(
-            profile.full_name,
-            key
-          );
-
-          setUserName(decryptedFullName);
-        } catch (err) {
-          console.warn("Full name decryption failed", err);
-        }
+        decryptionTasks.push(
+          decryptProfileField(profile.full_name, key)
+            .then((decryptedFullName) => setUserName(decryptedFullName))
+            .catch((err) => console.warn("Full name decryption failed", err))
+        );
       }
 
-
-
-      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
-
       if (rawSymptoms && rawSymptoms.length > 0) {
-        const key = await whenEncryptionReady();
+        decryptionTasks.push(
+          (async () => {
+            const decryptedResults = await Promise.allSettled(
+              rawSymptoms.map((s) => decryptSymptom(s as unknown as OfflineSymptom, key))
+            );
 
-        const decryptedResults = await Promise.allSettled(
-          rawSymptoms.map((s) => decryptSymptom(s as unknown as OfflineSymptom, key))
+            const symptoms = decryptedResults
+              .filter(
+                (result): result is PromiseFulfilledResult<OfflineSymptom> =>
+                  result.status === "fulfilled"
+              )
+              .map((result) => result.value);
+
+            const failedDecryptions = decryptedResults.filter((result) => result.status === "rejected");
+
+            if (failedDecryptions.length > 0) {
+              console.warn(
+                `Skipped ${failedDecryptions.length} symptom records that could not be decrypted`
+              );
+            }
+
+            const symptomTexts = symptoms.map((s) => s.symptoms);
+            setDecryptedSymptomsList(symptomTexts);
+
+            const unresolved = symptoms.filter((s) => !s.resolved).length;
+            const avgRisk = symptoms.reduce((sum, s) => sum + (s.risk_score || 0), 0) / symptoms.length;
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recent = symptoms.filter((s) => new Date(s.created_at) > sevenDaysAgo).length;
+
+            setSymptoms(symptoms);
+            setStats({
+              totalSymptoms: symptoms.length,
+              unresolvedSymptoms: unresolved,
+              avgRiskScore: Math.round(avgRisk),
+              recentActivity: recent,
+            });
+
+            setRecentHistory(symptoms.slice(0, 5) as unknown as SymptomHistoryRecord[]);
+          })()
         );
-
-        const symptoms = decryptedResults
-          .filter(
-            (result): result is PromiseFulfilledResult<OfflineSymptom> =>
-              result.status === "fulfilled"
-          )
-          .map((result) => result.value);
-
-        const failedDecryptions = decryptedResults.filter((result) => result.status === "rejected");
-
-        if (failedDecryptions.length > 0) {
-          console.warn(
-            `Skipped ${failedDecryptions.length} symptom records that could not be decrypted`
-          );
-        }
-
-        const symptomTexts = symptoms.map((s) => s.symptoms);
-        setDecryptedSymptomsList(symptomTexts);
-
-        const unresolved = symptoms.filter((s) => !s.resolved).length;
-        const avgRisk = symptoms.reduce((sum, s) => sum + (s.risk_score || 0), 0) / symptoms.length;
-
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const recent = symptoms.filter((s) => new Date(s.created_at) > sevenDaysAgo).length;
-
-        setSymptoms(symptoms);
-        setStats({
-          totalSymptoms: symptoms.length,
-          unresolvedSymptoms: unresolved,
-          avgRiskScore: Math.round(avgRisk),
-          recentActivity: recent,
-        });
-
-        setRecentHistory(symptoms.slice(0, 5) as unknown as SymptomHistoryRecord[]);
       } else {
         setSymptoms([]);
         setDecryptedSymptomsList([]);
@@ -268,6 +262,8 @@ const Dashboard = () => {
           showInfo(t("dashboard.welcomeToastTitle"), t("dashboard.welcomeToastDesc"));
         }
       }
+
+      await Promise.all(decryptionTasks);
     } catch (error) {
       console.warn("Error fetching dashboard data:", error);
       showError(t("dashboard.connectionErrorTitle"), t("dashboard.connectionErrorDesc"));
