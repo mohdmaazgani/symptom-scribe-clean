@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+   "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

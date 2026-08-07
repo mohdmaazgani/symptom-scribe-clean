@@ -87,7 +87,7 @@ export function useMetricsHistory(userId: string | null) {
 
       setRecords(sortedRecords);
     } catch (err) {
-      console.error("Error loading local metrics:", err);
+      console.warn("Error loading local metrics:", err);
     } finally {
       setLoading(false);
     }

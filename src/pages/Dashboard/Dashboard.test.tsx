@@ -170,6 +170,10 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMetricsArray.value = [];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ predictions: [] }),
+    });
   });
 
   // 1. Loading state
@@ -192,7 +196,7 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/No symptom history yet/i)
+        screen.getByText(/No health data yet/i)
       ).toBeInTheDocument();
     });
   });
@@ -312,6 +316,19 @@ describe("Dashboard", () => {
       expect(screen.getByText("Weekly Health Score")).toBeInTheDocument();
       expect(screen.getByText("Gamified logging consistency & vital stability score")).toBeInTheDocument();
       expect(screen.getByText("XP Checklist Breakdown")).toBeInTheDocument();
+    });
+  });
+
+  // 11. Accessibility: Radial gauge role="img" and Health Trends screen reader summary
+  it("renders accessible ARIA attributes on radial gauge and health trends chart", async () => {
+    mockAuthUser();
+    mockCachedSymptoms(sampleSymptoms);
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("img", { name: /Wellness Score:/i })).toBeInTheDocument();
+      expect(screen.getByText(/30-day health trends summary:/i)).toBeInTheDocument();
     });
   });
 });

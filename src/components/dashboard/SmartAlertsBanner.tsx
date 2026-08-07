@@ -31,7 +31,7 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
       const activeAlerts = detectSmartAlerts(decryptedMetrics, symptoms);
       setAlerts(activeAlerts);
     } catch (err) {
-      console.error("Failed to calculate smart alerts:", err);
+      console.warn("Failed to calculate smart alerts:", err);
     }
   }, [userId, symptoms]);
 
@@ -145,14 +145,16 @@ export function SmartAlertsBanner({ userId, symptoms }: SmartAlertsBannerProps) 
                       e.stopPropagation();
                       toggleExpand(alert.id);
                     }}
+                    aria-label={isExpanded ? `Collapse details for ${alert.title}` : `Expand details for ${alert.title}`}
                   >
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
                   </button>
                   <button
                     className="p-1 rounded-md hover:bg-muted-foreground/10 text-muted-foreground/80 transition-colors"
                     onClick={(e) => handleDismiss(alert.id, e)}
+                    aria-label={`Dismiss alert: ${alert.title}`}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>

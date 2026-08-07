@@ -80,6 +80,33 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
     );
   }, [chartData]);
 
+  // Compute accessible screen reader summary text
+  const summaryText = useMemo(() => {
+    if (!hasData) {
+      return "30-day health trends summary: No heart rate, sleep duration, or step logs detected for the last 30 days.";
+    }
+
+    const hrVals = chartData.map((d) => d["Heart Rate"]).filter((v): v is number => v !== null);
+    const sleepVals = chartData.map((d) => d["Sleep Duration"]).filter((v): v is number => v !== null);
+    const stepVals = chartData.map((d) => d["Daily Steps"]).filter((v): v is number => v !== null);
+
+    const parts: string[] = [];
+    if (hrVals.length > 0) {
+      const avgHr = Math.round(hrVals.reduce((a, b) => a + b, 0) / hrVals.length);
+      parts.push(`Average heart rate: ${avgHr} bpm across ${hrVals.length} log days`);
+    }
+    if (sleepVals.length > 0) {
+      const avgSleep = Math.round((sleepVals.reduce((a, b) => a + b, 0) / sleepVals.length) * 10) / 10;
+      parts.push(`Average sleep: ${avgSleep} hours across ${sleepVals.length} log days`);
+    }
+    if (stepVals.length > 0) {
+      const avgSteps = Math.round(stepVals.reduce((a, b) => a + b, 0) / stepVals.length);
+      parts.push(`Average daily steps: ${avgSteps} steps across ${stepVals.length} log days`);
+    }
+
+    return `30-day health trends summary: ${parts.join("; ")}.`;
+  }, [chartData, hasData]);
+
   if (loading) {
     return (
       <Card className="w-full border border-border/60">
@@ -106,7 +133,7 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 pb-7">
         <div className="space-y-1">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" /> Health Trends
+            <TrendingUp className="w-5 h-5 text-primary" aria-hidden="true" /> Health Trends
           </CardTitle>
           <CardDescription>Unified rolling 30-day historical health insights</CardDescription>
         </div>
@@ -118,6 +145,7 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
             variant={activeFilter === "all" ? "default" : "ghost"}
             className="text-xs h-8 px-3"
             onClick={() => setActiveFilter("all")}
+            aria-label="Filter chart by all metrics"
           >
             All Metrics
           </Button>
@@ -126,39 +154,47 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
             variant={activeFilter === "heart_rate" ? "default" : "ghost"}
             className="text-xs h-8 px-3 flex items-center gap-1.5"
             onClick={() => setActiveFilter("heart_rate")}
+            aria-label="Filter chart by heart rate"
           >
-            <Activity className="w-3.5 h-3.5 text-rose-500" /> Heart Rate
+            <Activity className="w-3.5 h-3.5 text-rose-500" aria-hidden="true" /> Heart Rate
           </Button>
           <Button
             size="sm"
             variant={activeFilter === "sleep" ? "default" : "ghost"}
             className="text-xs h-8 px-3 flex items-center gap-1.5"
             onClick={() => setActiveFilter("sleep")}
+            aria-label="Filter chart by sleep"
           >
-            <Moon className="w-3.5 h-3.5 text-indigo-500" /> Sleep
+            <Moon className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" /> Sleep
           </Button>
           <Button
             size="sm"
             variant={activeFilter === "steps" ? "default" : "ghost"}
             className="text-xs h-8 px-3 flex items-center gap-1.5"
             onClick={() => setActiveFilter("steps")}
+            aria-label="Filter chart by steps"
           >
-            <Footprints className="w-3.5 h-3.5 text-emerald-500" /> Steps
+            <Footprints className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> Steps
           </Button>
         </div>
       </CardHeader>
 
       <CardContent>
+        {/* Screen Reader Accessible Summary */}
+        <p className="sr-only" aria-live="polite">
+          {summaryText}
+        </p>
+
         {!hasData ? (
           <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-muted/20 border border-dashed rounded-xl">
-            <TrendingUp className="w-12 h-12 text-muted-foreground/60 mb-3 animate-pulse" />
+            <TrendingUp className="w-12 h-12 text-muted-foreground/60 mb-3 animate-pulse" aria-hidden="true" />
             <h4 className="font-bold text-sm text-foreground">No Trend Data Available</h4>
             <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-relaxed">
               No heart rate, sleep duration, or step logs detected for the last 30 days. Log your metrics in the Metrics tab to view your trends.
             </p>
           </div>
         ) : (
-          <div className="h-[300px] w-full mt-2">
+          <div className="h-[300px] w-full mt-2" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
@@ -183,7 +219,7 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
                   />
                 )}
 
-                {/* Secondary Right Y-Axis for daily steps */}
+                {/* Secondary Right Y-Axis for daily steps — shown only for steps filter or all metrics */}
                 {(activeFilter === "all" || activeFilter === "steps") && (
                   <YAxis
                     yAxisId="right"

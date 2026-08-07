@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence, useScroll, useSpring } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState("");
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -71,46 +73,27 @@ const Index = () => {
   }, []);
 
   const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Health Enthusiast",
-      content: "This app helped me track my symptoms and understand when to seek medical help. The AI analysis is surprisingly accurate!",
-      rating: 5
-    },
-    {
-      name: "Michael Chen",
-      role: "Fitness Coach",
-      content: "I use this daily to monitor my clients' health metrics. The comprehensive tracking and analytics are game-changing.",
-      rating: 5
-    },
-    {
-      name: "Dr. Emily Roberts",
-      role: "Medical Professional",
-      content: "An excellent tool for preliminary health awareness. It empowers patients to make informed decisions about their health.",
-      rating: 5
-    }
+    { name: "Sarah Johnson", key: "one", rating: 5 },
+    { name: "Michael Chen", key: "two", rating: 5 },
+    { name: "Dr. Emily Roberts", key: "three", rating: 5 },
   ];
 
   const howItWorksSteps = [
-    {
-      num: "01",
-      icon: UserRound,
-      title: "Sign Up & Set Profile",
-      desc: "Create your account and set up your health profile with basic information and health goals.",
-    },
-    {
-      num: "02",
-      icon: LineChart,
-      title: "Track & Analyze",
-      desc: "Input your symptoms, track your metrics, and let our AI analyze your health data for insights.",
-    },
-    {
-      num: "03",
-      icon: ClipboardCheck,
-      title: "Get Recommendations",
-      desc: "Receive personalized health recommendations and know when to seek professional care.",
-    },
+    { num: "01", icon: UserRound, key: "step1" },
+    { num: "02", icon: LineChart, key: "step2" },
+    { num: "03", icon: ClipboardCheck, key: "step3" },
   ];
+
+  const features = [
+    { icon: Brain, key: "aiAssistant" },
+    { icon: TrendingUp, key: "analytics" },
+    { icon: Clock, key: "history" },
+    { icon: Shield, key: "emergency" },
+  ];
+
+  const benefits = ["insights", "tracking", "privacy", "games", "emergency", "education"];
+
+  const faqItems = [1, 2, 3, 4, 5, 6];
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
 
@@ -168,33 +151,38 @@ const Index = () => {
   return () => window.removeEventListener("scroll", handleScroll);
 }, []);
 
+  const { scrollYProgress } = useScroll();
+
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 25,
+    mass: 0.3,
+  });
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
 
       <header 
-        className={`sticky top-0 left-0 w-full px-6 py-0 z-50 ${
+        className={`sticky top-0 left-0 w-full px-6 py-0 z-50 bg-background border-b border-border ${
           isScrolled
-            ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
-            : "bg-background/0 border-transparent"
+            ? "bg-background border-b border-border "
+            : "bg-background"
         }`}
       >
             
         <div className="container mx-auto -mb-[84px]">
-          <div className="flex items-center justify-between rounded-2xl border border-border/100 bg-background/80 backdrop-blur-md px-4 py-3 shadow-md">
+          <div className="flex relative overflow-hidden items-center justify-between rounded-2xl border border-border/100 bg-background px-4 py-3 shadow-md">
           <div
             className="flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-80"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <img
-              src="/3.png"
+              src="/logo.png"
               alt="Symptom Scribe Logo"
               className="h-7 w-7 object-contain shrink-0"
             />
 
-            <span className="text-xl font-bold text-primary">
-              Symptom Scribe
-
-            </span>
+            <span className="text-xl font-bold text-primary">{t("common.appName")}</span>
           </div>
           <div className="hidden md:flex items-center gap-3 ml-4">
             <nav className="flex items-center gap-7 mx-6">
@@ -203,7 +191,7 @@ const Index = () => {
             activeSection === "features"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
-              Features
+              {t("nav.features")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
               ${
                 activeSection === "features"
@@ -217,7 +205,7 @@ const Index = () => {
             activeSection === "how-it-works"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
-              How It Works
+              {t("nav.howItWorks")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
                ${
                 activeSection === "how-it-works"
@@ -233,7 +221,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
             >
-              Why Choose Us
+              {t("nav.whyChooseUs")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                ${
                 activeSection === "why-choose"
@@ -249,7 +237,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
             >
-              Reviews
+              {t("nav.reviews")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
                  ${
                 activeSection === "reviews"
@@ -265,7 +253,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
               >
-              FAQ
+              {t("nav.faq")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
                ${
                 activeSection === "faq"
@@ -281,7 +269,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
             >
-              Contact
+              {t("nav.contact")}
               <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                  ${
                 activeSection === "contact"
@@ -305,7 +293,7 @@ const Index = () => {
                 <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs">
                   {userInitial}
                 </span>
-                Go to Dashboard
+                {t("common.goToDashboard")}
               </Button>
             ) : (
               <>
@@ -314,16 +302,22 @@ const Index = () => {
                   className="h-10 px-5 border-primary/30 text-primary hover:bg-primary/5"
                   onClick={() => navigate("/auth")}
                 >
-                  Sign In
+                  {t("common.signIn")}
                 </Button>
                 <Button
                   className="h-10 px-5"
                   onClick={() => navigate("/auth")}
                 >
-                  Get Started
+                  {t("common.getStarted")}
                 </Button>
               </>
             )}
+          </div>
+          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-border overflow-hidden">
+            <motion.div
+              style={{ scaleX }}
+              className="h-full w-full origin-left bg-primary"
+            />
           </div>
           </div>
 
@@ -352,15 +346,15 @@ const Index = () => {
                     <span className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold text-xs shrink-0">
                       {userInitial}
                     </span>
-                    Go to Dashboard
+                    {t("common.goToDashboard")}
                   </Button>
                 ) : (
                   <>
                     <Button variant="outline" className="w-full justify-center" onClick={() => navigate("/auth")}>
-                      Sign In
+                      {t("common.signIn")}
                     </Button>
                     <Button className="w-full justify-center" onClick={() => navigate("/auth")}>
-                      Get Started
+                      {t("common.getStarted")}
                     </Button>
                   </>
                 )}
@@ -381,21 +375,16 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Comprehensive Health Tracking</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">{t("home.features.heading")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Everything you need to monitor, analyze, and improve your health in one powerful platform
+              {t("home.features.subtitle")}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { icon: Brain, title: "AI Health Assistant", desc: "Get instant symptom analysis with severity assessment and personalized recommendations" },
-              { icon: TrendingUp, title: "Health Analytics", desc: "Track your health metrics with visual analytics and trend analysis over time" },
-              { icon: Clock, title: "Complete History", desc: "Maintain detailed records of all consultations and health events in one place" },
-              { icon: Shield, title: "Emergency Resources", desc: "Quick access to emergency contacts and critical health information when needed" },
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <motion.div
-                key={feature.title}
+                key={feature.key}
                 initial={{ opacity: 0, y: 25 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-30px" }}
@@ -406,9 +395,11 @@ const Index = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                       <feature.icon className="w-6 h-6 text-primary" />
                     </div>
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {t(`home.features.${feature.key}.title`)}
+                    </CardTitle>
                     <CardDescription className="text-sm leading-relaxed">
-                      {feature.desc}
+                      {t(`home.features.${feature.key}.desc`)}
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -419,7 +410,8 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="bg-muted pt-20 px-3 overflow-hidden">
+      <section id="how-it-works" className="relative bg-muted py-28 px-3 overflow-visible">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5 pointer-events-none" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -427,64 +419,101 @@ const Index = () => {
           transition={{ duration: 0.5 }}
           className="max-w-6xl mx-auto"
         >
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+          <div className="text-center mb-20">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.howItWorks.heading")}</h2>
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="w-10 h-0.5 rounded-full bg-primary" />
               <div className="w-2.5 h-2.5 rounded-full bg-primary" />
               <div className="w-10 h-0.5 rounded-full bg-primary" />
             </div>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Three simple steps to better health management
+              {t("home.howItWorks.subtitle")}
             </p>
           </div>
 
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12 overflow-visible">
             {howItWorksSteps.map((step, index) => {
               const Icon = step.icon;
 
               return (
-                <motion.div
-                  key={step.num}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-30px" }}
-                  transition={{ duration: 0.45, delay: index * 0.1 }}
-                  className="relative"
-                >
+                   <motion.div
+                    key={step.num}
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-30px" }}
+                    animate={{
+                      y: [0, -10, 0],
+                    }}
+                    transition={{
+                      opacity: { duration: 0.6, delay: index * 0.2 },
+                      y: {
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: index * 0.3,
+                      },
+                    }}
+                    className="relative"
+                  >
                   {index !== howItWorksSteps.length - 1 && (
-                    <div className="hidden md:block absolute top-[148px] left-[calc(100%-10px)] w-20 lg:w-24 h-12 z-20 pointer-events-none">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" fill="none" aria-hidden="true">
-                        <path
-                          d="M8 35 C28 6, 72 6, 92 35"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeDasharray="5 7"
-                        />
-                        <circle cx="8" cy="35" r="5.5" fill="hsl(var(--primary))" />
-                        <circle cx="92" cy="35" r="5.5" fill="hsl(var(--primary))" />
-                      </svg>
-                    </div>
-                  )}
+                    <div className="hidden md:block absolute top-[150px] left-[calc(100%-9px)] w-24 h-16 z-20 overflow-visible pointer-events-none">
+                     <svg className="w-full h-full overflow-visible"
+                        viewBox="0 0 130 90"
+                        fill="none">
 
-                  <div className="relative bg-card rounded-xl border border-border shadow-sm px-4 pt-16 pb-10 min-h-[360px] text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex items-center justify-center shadow-lg">
-                      {step.num}
-                    </div>
+                     <path
+                        id={`flowPath-${index}`}
+                        d="M8 30 C22 8 58 8 74 30"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray="8 8"
+                        fill="none"
+                     />
+                    <motion.circle
+                        r="4"
+                        fill="white">
+                     <animateMotion
+                          dur="2s"
+                          repeatCount="indefinite"
+                          path="M8 30 C22 8 58 8 74 30"/>
+                    </motion.circle>
 
-                    <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                      <Icon className="w-10 h-10 text-primary" strokeWidth={2.2} />
-                    </div>
+                  <circle cx="8" cy="30" r="5" fill="hsl(var(--primary))" />
+                  <circle cx="74" cy="30" r="5" fill="hsl(var(--primary))" />
+                </svg>
+              </div>
+            )}
+
+              <div className="group relative bg-card/90 backdrop-blur-xl rounded-3xl border border-border/60 shadow-lg px-4 pt-16 pb-10 min-h-[360px] text-center transition-all duration-500 hover:-translate-y-2 hover:scale-[1.015] hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 hover:ring-1 hover:ring-primary/20 hover:shadow-[0_25px_70px_rgba(34,211,238,.25)]">
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
+                    
+            <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-xl border-4 border-background shadow-2xl ring-2 ring-primary/30">
+              {step.num}
+            </div>
+
+           <motion.div
+             animate={{
+              rotate: [0, 4, -4, 0],
+              scale: [1, 1.05, 1],
+             }}
+             transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+             }}
+             className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Icon className="w-10 h-10 text-primary" strokeWidth={2.2} />
+           </motion.div>
 
                     <h3 className="text-xl font-bold leading-tight mb-4 min-h-[56px] flex items-center justify-center">
-                      {step.title}
+                      {t(`home.howItWorks.${step.key}.title`)}
                     </h3>
 
                     <div className="w-12 h-0.5 rounded-full bg-primary mx-auto mb-5" />
 
                     <p className="text-muted-foreground leading-7 max-w-[280px] mx-auto">
-                      {step.desc}
+                      {t(`home.howItWorks.${step.key}.desc`)}
                     </p>
 
                     <div className="absolute bottom-0 left-0 w-full h-1.5 rounded-b-xl bg-primary" />
@@ -506,70 +535,20 @@ const Index = () => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Smart Health Tracker</h2>
-            <p className="text-muted-foreground text-lg">Powerful features that make health management effortless</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.why.heading")}</h2>
+            <p className="text-muted-foreground text-lg">{t("home.why.subtitle")}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">AI-Powered Insights</h3>
-                <p className="text-muted-foreground">
-                  Advanced AI algorithms analyze your symptoms and provide evidence-based recommendations instantly
-                </p>
+            {benefits.map((benefit) => (
+              <div key={benefit} className="flex gap-4">
+                <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">{t(`home.why.${benefit}.title`)}</h3>
+                  <p className="text-muted-foreground">{t(`home.why.${benefit}.desc`)}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">Comprehensive Tracking</h3>
-                <p className="text-muted-foreground">
-                  Monitor multiple health metrics including vitals, symptoms, medications, and lifestyle factors
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">Privacy & Security</h3>
-                <p className="text-muted-foreground">
-                  Your health data is encrypted and stored securely with industry-leading security standards
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">Brain Games</h3>
-                <p className="text-muted-foreground">
-                  Engage in cognitive exercises to keep your mind sharp while tracking mental wellness
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">Emergency Access</h3>
-                <p className="text-muted-foreground">
-                  Quick access to emergency numbers and nearby hospitals when every second counts
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-bold text-lg mb-2">Health Education</h3>
-                <p className="text-muted-foreground">
-                  Access curated health facts and educational content to improve your health literacy
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </motion.div>
       </section>
@@ -584,9 +563,11 @@ const Index = () => {
               className="max-w-4xl mx-auto"
             >
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">What Our Users Say</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  {t("home.testimonials.heading")}
+                </h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Join thousands of satisfied users taking control of their health
+                  {t("home.testimonials.subtitle")}
                 </p>
               </div>
 
@@ -600,12 +581,14 @@ const Index = () => {
                     </div>
 
                     <p className="text-foreground text-lg md:text-xl italic leading-8 max-w-3xl mx-auto mb-7">
-                      "{testimonials[activeTestimonial].content}"
+                      "{t(`home.testimonials.${testimonials[activeTestimonial].key}.content`)}"
                     </p>
 
                     <div className="mb-6">
                       <p className="text-foreground text-lg font-bold mb-1">{testimonials[activeTestimonial].name}</p>
-                      <p className="text-muted-foreground text-sm">{testimonials[activeTestimonial].role}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {t(`home.testimonials.${testimonials[activeTestimonial].key}.role`)}
+                      </p>
                     </div>
 
                     <div className="flex justify-center items-center gap-2 mt-4">
@@ -613,7 +596,7 @@ const Index = () => {
                         <button
                           key={i}
                           onClick={() => setActiveTestimonial(i)}
-                          aria-label={`Show testimonial ${i + 1}`}
+                          aria-label={t("home.testimonials.showTestimonial", { index: i + 1 })}
                           className={`rounded-full transition-all duration-300 ${
                             i === activeTestimonial
                               ? "w-8 h-2 bg-primary"
@@ -638,52 +621,17 @@ const Index = () => {
           className="max-w-3xl mx-auto"
         >
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground text-lg">Everything you need to know about Smart Health Tracker</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.faq.heading")}</h2>
+            <p className="text-muted-foreground text-lg">{t("home.faq.subtitle")}</p>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-left">Is this a replacement for visiting a doctor?</AccordionTrigger>
-              <AccordionContent>
-                No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="text-left">How accurate is the AI health analysis?</AccordionTrigger>
-              <AccordionContent>
-                Our AI is trained on medical knowledge bases and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3">
-              <AccordionTrigger className="text-left">Is my health data secure and private?</AccordionTrigger>
-              <AccordionContent>
-                Yes, we take data security seriously. All health data is encrypted both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4">
-              <AccordionTrigger className="text-left">What features are included in the platform?</AccordionTrigger>
-              <AccordionContent>
-                The platform includes AI-powered symptom analysis, health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-5">
-              <AccordionTrigger className="text-left">Can I use this for tracking chronic conditions?</AccordionTrigger>
-              <AccordionContent>
-                Yes, the platform is excellent for tracking chronic conditions over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-6">
-              <AccordionTrigger className="text-left">Is there a mobile app available?</AccordionTrigger>
-              <AccordionContent>
-                Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!
-              </AccordionContent>
-            </AccordionItem>
+            {faqItems.map((item) => (
+              <AccordionItem key={item} value={`item-${item}`}>
+                <AccordionTrigger className="text-left">{t(`home.faq.q${item}`)}</AccordionTrigger>
+                <AccordionContent>{t(`home.faq.a${item}`)}</AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </motion.div>
       </section>
@@ -698,23 +646,20 @@ const Index = () => {
           className="max-w-4xl mx-auto text-center"
         >
           <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Take Control of Your Health?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("home.cta.heading")}</h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join thousands of users who are already using Smart Health Tracker to monitor their health, 
-            understand their symptoms, and make informed decisions about their wellbeing.
+            {t("home.cta.subtitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/auth")} className="gap-2 group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
-              Get Started Free
+              {t("common.getStartedFree")}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" />
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="transition-all duration-300 active:scale-95 hover:bg-muted">
-              Sign In
+              {t("common.signIn")}
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground mt-6">
-            No credit card required • Free to use • Secure & Private
-          </p>
+          <p className="text-sm text-muted-foreground mt-6">{t("home.cta.note")}</p>
         </motion.div>
       </section>
       <footer id="contact" className="border-t border-border bg-gradient-to-b from-background to-muted/30">
@@ -724,12 +669,10 @@ const Index = () => {
 <div className="lg:col-span-2">
   <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
     <Activity className="w-6 h-6 text-primary" />
-    <span className="text-foreground font-bold">
-      Symptom Scribe
-    </span>
+    <span className="text-foreground font-bold">{t("common.appName")}</span>
   </h3>
   <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-sm">
-    Your intelligent health companion for symptom analysis, health tracking, and wellness insights powered by AI.
+    {t("home.footer.tagline")}
   </p>
   {/* GitHub Link */}
   <a 
@@ -739,7 +682,7 @@ const Index = () => {
     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-accent transition-all duration-300 text-sm w-fit"
   >
     <Github className="w-4 h-4" />
-    <span>View on GitHub</span>
+    <span>{t("home.footer.viewOnGithub")}</span>
     <ExternalLink className="w-3 h-3" />
   </a>
 </div>
@@ -748,13 +691,13 @@ const Index = () => {
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          Platform
+          {t("home.footer.platform")}
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/chat" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> AI Symptom Checker</span></Link></li>
-          <li><Link to="/metrics" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Metrics</span></Link></li>
-          <li><Link to="/history" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Consultation History</span></Link></li>
-          <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Brain Training</span></Link></li>
+          <li><Link to="/chat" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.symptomChecker")}</span></Link></li>
+          <li><Link to="/metrics" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.healthMetrics")}</span></Link></li>
+          <li><Link to="/history" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Clock className="w-4 h-4 transition-transform duration-300  group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.consultationHistory")}</span></Link></li>
+          <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.brainTraining")}</span></Link></li>
         </ul>
       </div>
       
@@ -762,11 +705,11 @@ const Index = () => {
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
-          Resources
+          {t("home.footer.resources")}
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/health-library" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Health Library</span></Link></li>
-          <li><Link to="/emergency" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "><Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Emergency Guide</span></Link></li>
+          <li><Link to="/health-library" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Heart className="w-4 h-4 transition-transform duration-300  group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.healthLibrary")}</span></Link></li>
+          <li><Link to="/emergency" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full "><Shield className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.emergencyGuide")}</span></Link></li>
           <li>
           <button
             onClick={() => {
@@ -780,10 +723,10 @@ const Index = () => {
             className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"
           >
             <HelpCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" />
-            <span className="transition-transform duration-300 group-hover:translate-x-1"> FAQ</span>
+            <span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.faq")}</span>
           </button>
         </li>
-          <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Blog</span></Link></li>
+          <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.blog")}</span></Link></li>
         </ul>
       </div>
       
@@ -791,13 +734,13 @@ const Index = () => {
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary" />
-          Legal
+          {t("home.footer.legal")}
         </h4>
         <ul className="space-y-3 text-sm">
-          <li><Link to="/privacy" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Privacy Policy</span></Link></li>
-          <li><Link to="/terms" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Terms of Service</span></Link></li>
-          <li><Link to="/disclaimer" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Medical Disclaimer</span></Link></li>
-          <li><Link to="/contact" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> Contact Support</span></Link></li>
+          <li><Link to="/privacy" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Lock className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.privacyPolicy")}</span></Link></li>
+          <li><Link to="/terms" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.termsOfService")}</span></Link></li>
+          <li><Link to="/disclaimer" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><AlertCircle className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.medicalDisclaimer")}</span></Link></li>
+          <li><Link to="/contact" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Mail className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.contactSupport")}</span></Link></li>
         </ul>
       </div>
     </div>
@@ -805,21 +748,19 @@ const Index = () => {
     {/* Bottom Bar - Centered */}
     <div className="border-t border-border pt-6 mt-4">
       <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <p className="text-muted-foreground">
-          © 2026 Symptom Scribe. All rights reserved.
-        </p>
+        <p className="text-muted-foreground">{t("home.footer.copyright")}</p>
         <div className="flex gap-6">
           <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Privacy
+            {t("home.footer.privacy")}
           </Link>
           <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Terms
+            {t("home.footer.terms")}
           </Link>
           <Link to="/disclaimer" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Disclaimer
+            {t("home.footer.disclaimer")}
           </Link>
           <Link to="/accessibility" className="text-muted-foreground hover:text-primary transition-colors text-xs">
-            Accessibility
+            {t("home.footer.accessibility")}
           </Link>
         </div>
       </div>
@@ -828,7 +769,7 @@ const Index = () => {
       <div className="text-center mt-6 pt-4 border-t border-border/50">
         <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
           <AlertCircle className="w-3 h-3" />
-          <span>For informational purposes only. Always consult a qualified healthcare provider for medical advice.</span>
+          <span>{t("home.footer.informationalNotice")}</span>
           <Heart className="w-3 h-3" />
         </p>
       </div>

@@ -12,6 +12,8 @@ export interface SmartAlert {
 
 const DISMISSED_ALERTS_KEY = "symptom_scribe_dismissed_alerts";
 
+const MAX_DISMISSED_ALERTS = 100;
+
 export function getDismissedAlerts(): string[] {
   try {
     const stored = localStorage.getItem(DISMISSED_ALERTS_KEY);
@@ -24,12 +26,22 @@ export function getDismissedAlerts(): string[] {
 export function dismissAlert(alertId: string) {
   try {
     const dismissed = getDismissedAlerts();
-    if (!dismissed.includes(alertId)) {
-      dismissed.push(alertId);
-      localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(dismissed));
+
+    const updated = [
+      ...dismissed.filter((id) => id !== alertId),
+      alertId,
+    ];
+
+    if (updated.length > MAX_DISMISSED_ALERTS) {
+      updated.splice(0, updated.length - MAX_DISMISSED_ALERTS);
     }
+
+    localStorage.setItem(
+      DISMISSED_ALERTS_KEY,
+      JSON.stringify(updated)
+    );
   } catch (err) {
-    console.error("Failed to dismiss alert:", err);
+    console.warn("Failed to dismiss alert:", err);
   }
 }
 

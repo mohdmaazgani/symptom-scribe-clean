@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +16,8 @@ import { motion } from "framer-motion";
 import { SmartAlertsBanner } from "@/components/dashboard/SmartAlertsBanner";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { WeeklyHealthScoreCard } from "@/components/dashboard/WeeklyHealthScoreCard";
+import { useNavigate } from "react-router-dom";
+import { EmptyState } from "@/components/common/EmptyState";
 
 interface Stats {
   totalSymptoms: number;
@@ -52,7 +55,7 @@ async function fetchSymptomHistory(
 
   if (directError) {
     if (error) {
-      console.error("Cached symptom_history fetch failed:", error);
+      console.warn("Cached symptom_history fetch failed:", error);
     }
     throw directError;
   }
@@ -65,6 +68,7 @@ async function fetchSymptomHistory(
 }
 
 const RadialWellnessGauge = ({ score }: { score: number }) => {
+  const { t } = useTranslation();
   const [offset, setOffset] = useState(226.2);
   const radius = 36;
   const circumference = 2 * Math.PI * radius; // 226.195
@@ -92,12 +96,18 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
   }
 
   return (
-    <div className="relative flex items-center justify-center w-20 h-20 select-none">
+    <div
+      className="relative flex items-center justify-center w-20 h-20 select-none"
+      role="img"
+      aria-label={t("dashboard.wellnessScoreLabel", { score })}
+    >
+      <span className="sr-only">{t("dashboard.wellnessScoreLabel", { score })}</span>
       <div
         className={`absolute inset-1 rounded-full animate-pulse blur-md opacity-20 ${pulseColor}`}
+        aria-hidden="true"
       />
 
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 88 88">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 88 88" aria-hidden="true">
         <defs>
           <linearGradient id="wellness-green" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#10b981" />
@@ -137,10 +147,10 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
         />
       </svg>
 
-      <div className="absolute flex flex-col items-center justify-center text-center">
+      <div className="absolute flex flex-col items-center justify-center text-center" aria-hidden="true">
         <span className={`text-base font-black tracking-tight ${textColor}`}>{score}%</span>
         <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
-          Well
+          {t("dashboard.wellnessShort")}
         </span>
       </div>
     </div>
@@ -148,6 +158,8 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats>({
     totalSymptoms: 0,
     unresolvedSymptoms: 0,
@@ -160,6 +172,7 @@ const Dashboard = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [symptoms, setSymptoms] = useState<OfflineSymptom[]>([]);
   const [decryptedSymptomsList, setDecryptedSymptomsList] = useState<string[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -192,7 +205,7 @@ const Dashboard = () => {
 
           setUserName(decryptedFullName);
         } catch (err) {
-          console.error("Full name decryption failed", err);
+          console.warn("Full name decryption failed", err);
         }
       }
 
@@ -252,14 +265,15 @@ const Dashboard = () => {
         });
         setRecentHistory([]);
         if (source === "none") {
-          showInfo("Welcome!", "Start by consulting with the AI Assistant");
+          showInfo(t("dashboard.welcomeToastTitle"), t("dashboard.welcomeToastDesc"));
         }
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      showError("Connection Error", "Failed to load dashboard data");
+      console.warn("Error fetching dashboard data:", error);
+      showError(t("dashboard.connectionErrorTitle"), t("dashboard.connectionErrorDesc"));
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
     }
   };
 
@@ -297,17 +311,19 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <Card className="border"
         style={{ background: "var(--welcome-bg)" }}>
         <CardContent className="flex items-center justify-between py-6">
           <div>
             <h2 className="text-3xl font-bold">
-              Welcome, <span className="text-primary">{userName}</span>
+              <Trans
+                i18nKey="dashboard.welcome"
+                values={{ name: userName }}
+                components={{ 1: <span className="text-primary" /> }}
+              />
             </h2>
-            <p className="text-muted-foreground mt-1">
-              Advanced analytics & personalized health insights
-            </p>
+            <p className="text-muted-foreground mt-1">{t("dashboard.welcomeSubtitle")}</p>
           </div>
 
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
@@ -316,8 +332,13 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Health Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your health tracking journey</p>
+        <h1 className="text-3xl font-bold text-foreground">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
+        {lastUpdated && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("dashboard.lastUpdated", { time: lastUpdated.toLocaleTimeString() })}
+          </p>
+        )}
       </div>
 
       {userId && (
@@ -332,7 +353,9 @@ const Dashboard = () => {
           </div>
           <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-primary/30 transition-all duration-500 pointer-events-none" />
           <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Consultations</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("dashboard.totalConsultations")}
+            </CardTitle>
             <motion.div
               whileHover={{
                 rotate: 15,
@@ -352,7 +375,7 @@ const Dashboard = () => {
               <CountUp end={stats.totalSymptoms} duration={1.2} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Lifetime symptom checks
+              {t("dashboard.totalConsultationsDesc")}
             </p>
           </CardContent>
         </Card>
@@ -365,7 +388,7 @@ const Dashboard = () => {
           <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-primary/30 transition-all duration-500 pointer-events-none" />
 
           <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Issues</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("dashboard.activeIssues")}</CardTitle>
             <motion.div
               whileHover={{
                 rotate: 15,
@@ -386,9 +409,7 @@ const Dashboard = () => {
               <CountUp end={stats.unresolvedSymptoms} duration={1.2} />
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Requiring follow-up
-            </p>
+            <p className="text-xs text-muted-foreground">{t("dashboard.activeIssuesDesc")}</p>
           </CardContent>
         </Card>
 
@@ -400,7 +421,9 @@ const Dashboard = () => {
 
           <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-primary/30 transition-all duration-500 pointer-events-none" />
           <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Wellness</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("dashboard.overallWellness")}
+            </CardTitle>
             <motion.div
               whileHover={{ rotate: 15, scale: 1.15 }}
               transition={{
@@ -420,7 +443,7 @@ const Dashboard = () => {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Avg Risk:
+                {t("dashboard.avgRisk")}
                 <span className="font-semibold">
                   {" "}
                   {stats.avgRiskScore}/100
@@ -439,7 +462,9 @@ const Dashboard = () => {
           <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-primary/30 transition-all duration-500 pointer-events-none" />
 
           <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("dashboard.recentActivity")}
+            </CardTitle>
             <motion.div
               whileHover={{ rotate: 15, scale: 1.15 }}
               transition={{
@@ -456,9 +481,7 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">
               <CountUp end={stats.recentActivity} duration={1.2} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Last 7 days
-            </p>
+            <p className="text-xs text-muted-foreground">{t("dashboard.recentActivityDesc")}</p>
           </CardContent>
 
         </Card>
@@ -472,15 +495,19 @@ const Dashboard = () => {
 
       <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5">
         <CardHeader>
-          <CardTitle>Recent Symptom Checks</CardTitle>
-          <CardDescription>Your most recent health consultations</CardDescription>
+          <CardTitle>{t("dashboard.recentChecks")}</CardTitle>
+          <CardDescription>{t("dashboard.recentChecksDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {recentHistory.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No symptom history yet. Start by consulting with the AI Assistant!
-            </p>
-          ) : (
+              <EmptyState
+                  icon={<Activity className="w-8 h-8 text-teal-600 dark:text-teal-400" strokeWidth={1.5} />}
+                 title={t("dashboard.emptyTitle")}
+                  description={t("dashboard.emptyDescription")}
+                  ctaText={t("dashboard.emptyCta")}
+                  onCtaClick={() => navigate("/ai-health-assistant")}
+                  />
+                  ) : (
             <div className="space-y-4">
               {recentHistory.map((item) => (
                 <div
