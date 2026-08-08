@@ -23,6 +23,7 @@ import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 const preloadDashboard = () => import("./pages/Dashboard");
 
 // Lazy-loaded pages
+const BodyMap = lazy(() => import("./pages/BodyMap/index.tsx"));
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
 const Auth = lazy(() => import("./pages/Auth/index.tsx"));
 const Dashboard = lazy(() => preloadDashboard());
@@ -293,7 +294,17 @@ const App = () => {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="*" element={<NotFound />} />
+                            <Route
+                path="/body-map"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BodyMap />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+<Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </AuthProvider>
