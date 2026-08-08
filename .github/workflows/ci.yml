@@ -1,4 +1,13 @@
-name: CI Validation
+name: CI
+
+# ---------------------------------------------------------------------------
+# Change-aware CI pipeline
+#
+# One "detect-changes" job classifies every file touched by a push or PR into
+# logical categories (source, tests, config, docs, assets, supabase,
+# workflows). Every other job reads those outputs and decides whether it has
+# any work to do. See docs/guides/CHANGE_AWARE_CI.md for the full strategy.
+# ---------------------------------------------------------------------------
 
 on:
   pull_request:
@@ -6,17 +15,109 @@ on:
     branches: [main]
   workflow_dispatch:
 
-jobs:
-  validate:
-    name: Validate (build, type-check)
-    runs-on: ubuntu-latest
+# Cancel superseded runs on the same PR/branch so we never burn minutes on
+# stale commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1. Detect + classify changed files. Every downstream job depends on this
+  #    one and only this one job knows how to read a diff.
+  # -------------------------------------------------------------------------
+  detect-changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.filter.outputs.source }}
+      tests: ${{ steps.filter.outputs.tests }}
+      config: ${{ steps.filter.outputs.config }}
+      docs: ${{ steps.filter.outputs.docs }}
+      assets: ${{ steps.filter.outputs.assets }}
+      supabase: ${{ steps.filter.outputs.supabase }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      changed_files: ${{ steps.filter.outputs.changes }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
+      - name: Classify changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          # On push events this diffs against the previous commit on the
+          # branch automatically; on pull_request events it diffs against
+          # the PR's merge base. No manual base/head wiring needed.
+          filters: |
+            workflows:
+              - '.github/workflows/**'
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/pull_request_template.md'
+            config:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'bun.lockb'
+              - 'tsconfig*.json'
+              - 'vite.config.ts'
+              - 'tailwind.config.ts'
+              - 'postcss.config.js'
+              - 'eslint.config.js'
+              - 'components.json'
+              - '.editorconfig'
+              - 'Dockerfile'
+              - 'nginx.conf'
+              - '.env.example'
+            assets:
+              - 'public/**'
+            supabase:
+              - 'supabase/**'
+            tests:
+              - '**/*.test.ts'
+              - '**/*.test.tsx'
+              - '**/*.spec.ts'
+              - '**/*.spec.tsx'
+              - 'src/test/**'
+            source:
+              - 'src/**'
+              - 'index.html'
+
+      - name: Log detected categories
+        run: |
+          echo "### 🔎 Change categories detected" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Category | Changed |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| source | ${{ steps.filter.outputs.source }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| tests | ${{ steps.filter.outputs.tests }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| config | ${{ steps.filter.outputs.config }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| docs | ${{ steps.filter.outputs.docs }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| assets | ${{ steps.filter.outputs.assets }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| supabase | ${{ steps.filter.outputs.supabase }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| workflows | ${{ steps.filter.outputs.workflows }} |" >> "$GITHUB_STEP_SUMMARY"
+
+  # -------------------------------------------------------------------------
+  # 2. Lint + type-check. Runs whenever code that could be wrong exists:
+  #    app source, test source, or config that affects how either compiles.
+  # -------------------------------------------------------------------------
+  lint-and-typecheck:
+    name: Lint & type-check
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.source == 'true' ||
+      needs.detect-changes.outputs.tests == 'true' ||
+      needs.detect-changes.outputs.config == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,5 +135,158 @@ jobs:
       - name: Type-check
         run: npm exec tsc -b
 
+  # -------------------------------------------------------------------------
+  # 3. Build. Only meaningful when source or config changed (test-only
+  #    changes don't need a production build to be validated).
+  # -------------------------------------------------------------------------
+  build:
+    name: Build
+    needs: [detect-changes, lint-and-typecheck]
+    if: |
+      always() &&
+      needs.lint-and-typecheck.result == 'success' &&
+      (needs.detect-changes.outputs.source == 'true' || needs.detect-changes.outputs.config == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
       - name: Build
         run: npm run build
+
+  # -------------------------------------------------------------------------
+  # 4. Unit / component tests. Runs for source, test, or config changes.
+  # -------------------------------------------------------------------------
+  unit-tests:
+    name: Unit & component tests
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.source == 'true' ||
+      needs.detect-changes.outputs.tests == 'true' ||
+      needs.detect-changes.outputs.config == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Copy example env
+        run: cp .env.example .env || true
+
+      - name: Run tests
+        run: npm test
+
+  # -------------------------------------------------------------------------
+  # 5. Workflow validation. Runs only when .github/workflows/** changed —
+  #    lints the workflow YAML itself instead of the app.
+  # -------------------------------------------------------------------------
+  validate-workflows:
+    name: Validate GitHub Actions workflows
+    needs: detect-changes
+    if: needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
+
+  # -------------------------------------------------------------------------
+  # 6. Supabase validation. Runs only when supabase/** changed (migrations,
+  #    functions, config). Placeholder for schema/lint checks — extend with
+  #    `supabase db lint` / `supabase functions deploy --dry-run` etc. once
+  #    a project ref + service credentials are wired into repo secrets.
+  # -------------------------------------------------------------------------
+  validate-supabase:
+    name: Validate Supabase changes
+    needs: detect-changes
+    if: needs.detect-changes.outputs.supabase == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check config.toml is valid TOML
+        run: |
+          python3 - <<'PY'
+          import sys
+          try:
+              import tomllib
+          except ImportError:
+              print("tomllib unavailable, skipping"); sys.exit(0)
+          with open("supabase/config.toml", "rb") as f:
+              tomllib.load(f)
+          print("supabase/config.toml is valid TOML")
+          PY
+
+  # -------------------------------------------------------------------------
+  # 7. Single required status check. Branch protection should point at THIS
+  #    job, never at the conditional ones above — a skipped job still counts
+  #    as "pending" for branch protection, but this job always runs and only
+  #    fails if something that actually ran, failed.
+  # -------------------------------------------------------------------------
+  ci-summary:
+    name: CI summary
+    needs:
+      [
+        detect-changes,
+        lint-and-typecheck,
+        build,
+        unit-tests,
+        validate-workflows,
+        validate-supabase,
+      ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build summary + decide pass/fail
+        run: |
+          {
+            echo "### ✅ CI run summary"
+            echo ""
+            echo "| Job | Triggered by | Result |"
+            echo "|---|---|---|"
+            echo "| Lint & type-check | source/tests/config | ${{ needs.lint-and-typecheck.result }} |"
+            echo "| Build | source/config | ${{ needs.build.result }} |"
+            echo "| Unit & component tests | source/tests/config | ${{ needs.unit-tests.result }} |"
+            echo "| Validate workflows | .github/workflows/** | ${{ needs.validate-workflows.result }} |"
+            echo "| Validate Supabase | supabase/** | ${{ needs.validate-supabase.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          FAILED=0
+          for result in "${{ needs.lint-and-typecheck.result }}" \
+                        "${{ needs.build.result }}" \
+                        "${{ needs.unit-tests.result }}" \
+                        "${{ needs.validate-workflows.result }}" \
+                        "${{ needs.validate-supabase.result }}"; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" = "1" ]; then
+            echo "One or more required jobs failed." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "All jobs that ran for this change set passed. Jobs not listed as 'success' above were intentionally skipped because no relevant files changed." >> "$GITHUB_STEP_SUMMARY"
