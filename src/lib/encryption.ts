@@ -647,6 +647,35 @@ function looksEncrypted(value: string): boolean {
   );
 }
 
+const CHAT_MESSAGES_ENC_PREFIX = "enc:chat:";
+
+/** Encrypt chat message arrays before writing to `chat_sessions.messages`. */
+export async function encryptChatMessages(
+  messages: unknown,
+  key: CryptoKey
+): Promise<string> {
+  const ciphertext = await encryptText(JSON.stringify(messages), key);
+  return `${CHAT_MESSAGES_ENC_PREFIX}${ciphertext}`;
+}
+
+/**
+ * Decrypt chat messages loaded from `chat_sessions`.
+ * Legacy plaintext JSON arrays are returned as-is for backward compatibility.
+ */
+export async function decryptChatMessages(
+  stored: unknown,
+  key: CryptoKey
+): Promise<unknown> {
+  if (typeof stored === "string" && stored.startsWith(CHAT_MESSAGES_ENC_PREFIX)) {
+    const ciphertext = stored.slice(CHAT_MESSAGES_ENC_PREFIX.length);
+    const plaintext = await decryptText(ciphertext, key);
+    return JSON.parse(plaintext);
+  }
+
+  // Legacy plaintext rows (array or already-parsed JSON)
+  return stored;
+}
+
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
 export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
   const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
