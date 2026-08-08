@@ -1,4 +1,14 @@
-name: CI Validation
+name: CI
+
+# ---------------------------------------------------------------------------
+# Orchestrator workflow.
+#
+# `detect-changes` classifies the diff into categories (see
+# docs/guides/CHANGE_AWARE_CI.md). Every other job is a thin `uses:` call
+# into a reusable workflow under .github/workflows/reusable/ — this file
+# holds NO install/lint/build/test steps itself, only which jobs to call and
+# when (see docs/guides/REUSABLE_WORKFLOWS.md).
+# ---------------------------------------------------------------------------
 
 on:
   pull_request:
@@ -6,33 +16,203 @@ on:
     branches: [main]
   workflow_dispatch:
 
-jobs:
-  validate:
-    name: Validate (build, type-check)
-    runs-on: ubuntu-latest
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_VERSION: '20'
+  PACKAGE_MANAGER: 'npm'
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1. Detect + classify changed files.
+  # -------------------------------------------------------------------------
+  detect-changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.filter.outputs.source }}
+      tests: ${{ steps.filter.outputs.tests }}
+      config: ${{ steps.filter.outputs.config }}
+      docs: ${{ steps.filter.outputs.docs }}
+      assets: ${{ steps.filter.outputs.assets }}
+      supabase: ${{ steps.filter.outputs.supabase }}
+      workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Classify changed files
+        id: filter
+        uses: dorny/paths-filter@v3
         with:
-          fetch-depth: 0
+          filters: |
+            workflows:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/pull_request_template.md'
+            config:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'bun.lockb'
+              - 'tsconfig*.json'
+              - 'vite.config.ts'
+              - 'tailwind.config.ts'
+              - 'postcss.config.js'
+              - 'eslint.config.js'
+              - 'components.json'
+              - '.editorconfig'
+              - 'Dockerfile'
+              - 'nginx.conf'
+              - '.env.example'
+            assets:
+              - 'public/**'
+            supabase:
+              - 'supabase/**'
+            tests:
+              - '**/*.test.ts'
+              - '**/*.test.tsx'
+              - '**/*.spec.ts'
+              - '**/*.spec.tsx'
+              - 'src/test/**'
+            source:
+              - 'src/**'
+              - 'index.html'
 
+      - name: Log detected categories
+        run: |
+          {
+            echo "### 🔎 Change categories detected"
+            echo ""
+            echo "| Category | Changed |"
+            echo "|---|---|"
+            echo "| source | ${{ steps.filter.outputs.source }} |"
+            echo "| tests | ${{ steps.filter.outputs.tests }} |"
+            echo "| config | ${{ steps.filter.outputs.config }} |"
+            echo "| docs | ${{ steps.filter.outputs.docs }} |"
+            echo "| assets | ${{ steps.filter.outputs.assets }} |"
+            echo "| supabase | ${{ steps.filter.outputs.supabase }} |"
+            echo "| workflows | ${{ steps.filter.outputs.workflows }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+  # -------------------------------------------------------------------------
+  # 2. Lint + type-check — delegates to reusable/lint-typecheck.yml
+  # -------------------------------------------------------------------------
+  lint-and-typecheck:
+    name: Lint & type-check
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.source == 'true' ||
+      needs.detect-changes.outputs.tests == 'true' ||
+      needs.detect-changes.outputs.config == 'true'
+    uses: ./.github/workflows/reusable/lint-typecheck.yml
+    with:
+      node-version: '20'
+      package-manager: 'npm'
 
-      - name: Install dependencies
-        run: npm install
+  # -------------------------------------------------------------------------
+  # 3. Build — delegates to reusable/build.yml
+  # -------------------------------------------------------------------------
+  build:
+    name: Build
+    needs: [detect-changes, lint-and-typecheck]
+    if: |
+      always() &&
+      needs.lint-and-typecheck.result == 'success' &&
+      (needs.detect-changes.outputs.source == 'true' || needs.detect-changes.outputs.config == 'true')
+    uses: ./.github/workflows/reusable/build.yml
+    with:
+      node-version: '20'
+      package-manager: 'npm'
+      upload-artifact: false
 
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
+  # -------------------------------------------------------------------------
+  # 4. Unit / component tests — delegates to reusable/test.yml
+  # -------------------------------------------------------------------------
+  unit-tests:
+    name: Unit & component tests
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.source == 'true' ||
+      needs.detect-changes.outputs.tests == 'true' ||
+      needs.detect-changes.outputs.config == 'true'
+    uses: ./.github/workflows/reusable/test.yml
+    with:
+      node-version: '20'
+      package-manager: 'npm'
 
-      - name: Type-check
-        run: npm exec tsc -b
+  # -------------------------------------------------------------------------
+  # 5. Workflow validation — delegates to reusable/validate-workflows.yml
+  # -------------------------------------------------------------------------
+  validate-workflows:
+    name: Validate workflows
+    needs: detect-changes
+    if: needs.detect-changes.outputs.workflows == 'true'
+    uses: ./.github/workflows/reusable/validate-workflows.yml
 
-      - name: Build
-        run: npm run build
+  # -------------------------------------------------------------------------
+  # 6. Supabase validation — delegates to reusable/validate-supabase.yml
+  # -------------------------------------------------------------------------
+  validate-supabase:
+    name: Validate Supabase
+    needs: detect-changes
+    if: needs.detect-changes.outputs.supabase == 'true'
+    uses: ./.github/workflows/reusable/validate-supabase.yml
+
+  # -------------------------------------------------------------------------
+  # 7. Single required status check.
+  # -------------------------------------------------------------------------
+  ci-summary:
+    name: CI summary
+    needs:
+      [
+        detect-changes,
+        lint-and-typecheck,
+        build,
+        unit-tests,
+        validate-workflows,
+        validate-supabase,
+      ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build summary + decide pass/fail
+        run: |
+          {
+            echo "### ✅ CI run summary"
+            echo ""
+            echo "| Job | Reusable workflow | Result |"
+            echo "|---|---|---|"
+            echo "| Lint & type-check | reusable/lint-typecheck.yml | ${{ needs.lint-and-typecheck.result }} |"
+            echo "| Build | reusable/build.yml | ${{ needs.build.result }} |"
+            echo "| Unit & component tests | reusable/test.yml | ${{ needs.unit-tests.result }} |"
+            echo "| Validate workflows | reusable/validate-workflows.yml | ${{ needs.validate-workflows.result }} |"
+            echo "| Validate Supabase | reusable/validate-supabase.yml | ${{ needs.validate-supabase.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          FAILED=0
+          for result in "${{ needs.lint-and-typecheck.result }}" \
+                        "${{ needs.build.result }}" \
+                        "${{ needs.unit-tests.result }}" \
+                        "${{ needs.validate-workflows.result }}" \
+                        "${{ needs.validate-supabase.result }}"; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" = "1" ]; then
+            echo "One or more required jobs failed." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "All jobs that ran for this change set passed. Jobs not listed as 'success' above were intentionally skipped because no relevant files changed." >> "$GITHUB_STEP_SUMMARY"

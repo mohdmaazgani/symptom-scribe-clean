@@ -1,0 +1,17 @@
+name: Reusable - Validate Workflows
+
+on:
+  workflow_call: {}
+
+jobs:
+  validate-workflows:
+    name: Validate GitHub Actions workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
