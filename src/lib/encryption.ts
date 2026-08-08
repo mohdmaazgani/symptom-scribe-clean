@@ -6,7 +6,9 @@ let activeSearchKey: CryptoKey | null = null;
 let lastToken: string | null = null;
 
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
-let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null = null;
+let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null =
+  null;
+let readyRejecter: ((reason?: unknown) => void) | null = null;
 
 /*
  * Security Trade-off:
@@ -19,10 +21,22 @@ let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) =
  * but would require migration logic to preserve compatibility.
  */
 
+export class EncryptionKeysClearedError extends Error {
+  constructor(message = "Encryption keys were cleared before they became ready") {
+    super(message);
+    this.name = "EncryptionKeysClearedError";
+  }
+}
+
 function resetReadyPromise() {
-  readyPromise = new Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }>((resolve) => {
-    readyResolver = resolve;
-  });
+  readyPromise = new Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }>(
+    (resolve, reject) => {
+      readyResolver = resolve;
+      readyRejecter = reject;
+    }
+  );
+  // Avoid unhandled rejection if nobody is awaiting yet
+  readyPromise.catch(() => {});
 }
 
 // Initialize immediately
@@ -33,7 +47,14 @@ export function setKeys(encryptionKey: CryptoKey | null, searchKey: CryptoKey | 
   activeSearchKey = searchKey;
   if (encryptionKey && searchKey && readyResolver) {
     readyResolver({ encryptionKey, searchKey });
+    readyResolver = null;
+    readyRejecter = null;
   } else if (!encryptionKey || !searchKey) {
+    if (readyRejecter) {
+      readyRejecter(new EncryptionKeysClearedError());
+      readyResolver = null;
+      readyRejecter = null;
+    }
     resetReadyPromise();
   }
 }
