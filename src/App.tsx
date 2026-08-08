@@ -19,13 +19,10 @@ import { AuthProvider } from "./components/auth/AuthProvider";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
-// Preload Dashboard page for faster navigation
-const preloadDashboard = () => import("./pages/Dashboard");
-
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
 const Auth = lazy(() => import("./pages/Auth/index.tsx"));
-const Dashboard = lazy(() => preloadDashboard());
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const History = lazy(() => import("./pages/History"));
@@ -47,11 +44,6 @@ const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
 const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
-
-// Preload dashboard on app start for faster perceived navigation
-if (typeof window !== "undefined") {
-  preloadDashboard();
-}
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
