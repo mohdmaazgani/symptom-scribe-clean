@@ -263,7 +263,8 @@
   "auth": {
     "backToHome": "Back to Home",
     "badge": "AI-powered healthcare dashboard",
-    "headline": "Care insights that feel calm, clear, and secure.",
+    "headlineAccent": "Care insights",
+    "headlineRest": "that feel calm, clear, and secure.",
     "subheadline": "Track symptoms, health patterns, and personalized guidance from a focused workspace built for everyday care decisions.",
     "featureHistoryTitle": "Smart symptom history",
     "featureHistoryDesc": "Organized health records with trend-aware summaries.",
