@@ -178,7 +178,7 @@ const Index = () => {
           >
             <img
               src="/logo.png"
-              alt="Symptom Scribe Logo"
+              alt={t("home.logoAlt")}
               className="h-7 w-7 object-contain shrink-0"
             />
 
