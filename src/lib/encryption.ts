@@ -667,38 +667,48 @@ function looksEncrypted(value: string): boolean {
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
-export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
-  const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
-  const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
+//
+// The ECDSA P-256 private key used to sign emergency mesh alerts is generated
+// as *non-extractable* (`extractable: false`), so it can never be exported
+// (e.g. as a JWK) by a compromised script, extension, or injected library.
+// Persistence is delegated to IndexedDB via `registerP2PKeyStorage` (see
+// offline-db.ts): IndexedDB's structured-clone algorithm can store
+// non-extractable CryptoKey objects, so the key survives reloads without ever
+// existing as portable key material outside the browser. Only the public key
+// remains extractable, and only its JWK is ever shared (broadcast with
+// alerts so peers can verify the signature).
+//
+// This replaces the previous implementation (issue #1085) which stored the
+// private key as a plaintext, extractable JWK in localStorage under
+// `symptom_scribe_p2p_private_key` — any XSS/extension with localStorage
+// access could exfiltrate it and forge emergency alerts.
 
-  if (storedPrivate && storedPublic) {
-    try {
-      const privateJwk = JSON.parse(storedPrivate);
-      const publicJwk = JSON.parse(storedPublic);
+type P2PKeyPair = { privateKey: CryptoKey; publicKey: CryptoKey };
 
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        privateJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign"]
-      );
+type P2PKeyStorage = {
+  load: () => Promise<P2PKeyPair | null>;
+  save: (privateKey: CryptoKey, publicKey: CryptoKey) => Promise<void>;
+};
 
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        publicJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["verify"]
-      );
+let p2pKeyStorage: P2PKeyStorage | null = null;
+let cachedP2PKeys: P2PKeyPair | null = null;
 
-      return { privateKey, publicKey };
-    } catch (err) {
-      console.warn("Failed to load stored P2P keys, generating new ones:", err);
-    }
-  }
+/**
+ * Registers the IndexedDB-backed persistence for the P2P signing keypair.
+ * Called by offline-db.ts during module initialization; kept behind a
+ * registration hook so encryption.ts never imports the Dexie module directly
+ * (avoiding a circular dependency).
+ */
+export function registerP2PKeyStorage(storage: P2PKeyStorage): void {
+  p2pKeyStorage = storage;
+}
 
-  // Generate new ECDSA P-256 keypair
+// Generates an ECDSA P-256 keypair whose *private* half is non-extractable.
+// `crypto.subtle.generateKey` applies one extractability flag to the whole
+// pair, so the private JWK is exported in memory only and immediately
+// re-imported with `extractable: false`. The public half stays extractable so
+// its JWK can be attached to broadcast alerts for signature verification.
+async function generateNonExtractableP2PKeyPair(): Promise<P2PKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     {
       name: "ECDSA",
@@ -709,15 +719,54 @@ export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publ
   );
 
   const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  const privateKey = await crypto.subtle.importKey(
+    "jwk",
+    privateJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
 
-  localStorage.setItem("symptom_scribe_p2p_private_key", JSON.stringify(privateJwk));
-  localStorage.setItem("symptom_scribe_p2p_public_key", JSON.stringify(publicJwk));
+  return { privateKey, publicKey: keyPair.publicKey };
+}
 
-  return {
-    privateKey: keyPair.privateKey,
-    publicKey: keyPair.publicKey,
-  };
+export async function getP2PSigningKeys(): Promise<P2PKeyPair> {
+  // Remove any plaintext JWK copies left behind by the pre-#1085
+  // implementation. Nothing reads them anymore, and the private key must
+  // never live in localStorage.
+  localStorage.removeItem("symptom_scribe_p2p_private_key");
+  localStorage.removeItem("symptom_scribe_p2p_public_key");
+
+  // 1. Prefer the IndexedDB-persisted keypair (survives reloads; other tabs
+  //    of the same origin share it). If IndexedDB access fails (e.g. private
+  //    browsing / disabled storage), fall back to cache or a fresh pair so an
+  //    emergency alert can still be signed.
+  if (p2pKeyStorage) {
+    try {
+      const stored = await p2pKeyStorage.load();
+      if (stored) {
+        cachedP2PKeys = stored;
+        return stored;
+      }
+    } catch (err) {
+      console.warn("Failed to load P2P signing keys from IndexedDB; using in-memory keys:", err);
+    }
+  }
+
+  // 2. Fall back to the in-memory cache (used when no store is registered).
+  if (cachedP2PKeys) return cachedP2PKeys;
+
+  // 3. Generate a fresh non-extractable pair and persist it.
+  const keys = await generateNonExtractableP2PKeyPair();
+  cachedP2PKeys = keys;
+  if (p2pKeyStorage) {
+    try {
+      await p2pKeyStorage.save(keys.privateKey, keys.publicKey);
+    } catch (err) {
+      console.warn("Failed to persist P2P signing keys to IndexedDB:", err);
+    }
+  }
+  return keys;
 }
 
 export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {
