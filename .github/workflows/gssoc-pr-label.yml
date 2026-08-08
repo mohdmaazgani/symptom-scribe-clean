@@ -1,0 +1,61 @@
+name: GSSoC PR Labeler
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  add-gssoc-label:
+    runs-on: ubuntu-latest
+    # Skip drafts: only label PRs that are ready for review
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Ensure label and add to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const pr_number = context.payload.pull_request.number;
+            const labelName = 'GSSoC';
+            const color = 'CCCCCC';
+            const description = 'Under GirlScript Summer of Code';
+
+            try {
+              // Check if the label exists in the repo
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+              console.log(`Label "${labelName}" already exists. Skipping creation.`);
+            } catch (err) {
+              // If it returns a 404, the label doesn't exist yet, so we build it
+              if (err.status === 404) {
+                try {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: labelName,
+                    color,
+                    description,
+                  });
+                  console.log(`Successfully created missing label: "${labelName}"`);
+                } catch (createErr) {
+                  // Handle race condition if two PRs open at the exact same time
+                  if (createErr.status !== 422) throw createErr;
+                }
+              } else {
+                throw err;
+              }
+            }
+
+            // Apply the label to the opened PR
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pr_number,
+              labels: [labelName],
+            });
+            console.log(`Successfully labeled PR #${pr_number} with "${labelName}"`);
