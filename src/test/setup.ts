@@ -34,5 +34,5 @@ if (typeof global.localStorage === "undefined" || global.localStorage === null) 
     get length() {
       return store.size;
     },
-  } as any;
+  } as Storage;
 }
