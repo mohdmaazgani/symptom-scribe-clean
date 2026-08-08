@@ -52,6 +52,7 @@ const MAX_CHARS = 500;
 interface Message {
   role: "user" | "assistant";
   content: string;
+  animate?: boolean;
 }
 
 const INITIAL_GREETING: Message = {
@@ -188,7 +189,7 @@ const ChatInterface = () => {
             i === prev.length - 1 ? { ...m, content: assistantContent } : m
           );
         }
-        return [...prev, { role: "assistant", content: assistantContent }];
+        return [...prev, { role: "assistant", content: assistantContent, animate: true }];
       });
     };
 
@@ -291,45 +292,22 @@ const ChatInterface = () => {
           }
         }
       }
-
       if (assistantContent) {
         dismissLoading();
-        showSuccess("Analysis complete!", "Your symptoms have been analyzed");
 
-        const finalMessages = [
-          ...newMessages,
-          { role: "assistant" as const, content: assistantContent },
+        const pendingToasts: { type: "info" | "success" | "warning"; title: string; description: string }[] = [
+          { type: "success", title: "Analysis complete!", description: "Your symptoms have been analyzed" }
         ];
-
-        const { error: finalUpdateError } = await supabase
-          .from("chat_sessions")
-          .update({
-            messages: finalMessages as unknown as Json,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", currentSessionId);
-
-        if (finalUpdateError) {
-          console.error("Error updating chat session messages:", finalUpdateError);
-        }
-
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.id === currentSessionId
-              ? {
-                  ...s,
-                  messages: finalMessages as unknown as Json,
-                  updated_at: new Date().toISOString(),
-                }
-              : s
-          )
-        );
 
         const { possibleCauses, recommendations, severityLevel } =
           parseSymptomConsultation(assistantContent);
 
         if (assistantContent.match(/severity(\s+level)?/i)) {
-          showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
+          pendingToasts.push({
+            type: "info",
+            title: "Severity Assessment",
+            description: `AI rates this as ${severityLevel} severity`,
+          });
         }
 
         const riskScore = computeRiskScore(
@@ -350,7 +328,11 @@ const ChatInterface = () => {
               }
             } catch (err) {
               console.error("Image upload failed:", err);
-              showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
+              pendingToasts.push({
+                type: "warning",
+                title: "Upload Failed",
+                description: "Failed to upload attached images, saving without them.",
+              });
               uploadedImages = null;
             }
           }
@@ -396,10 +378,11 @@ const ChatInterface = () => {
               pending_delete: 0,
             });
 
-            showWarning(
-              "Saved Offline",
-              "Could not connect to server. Saved locally and will sync once connection is restored."
-            );
+            pendingToasts.push({
+              type: "warning",
+              title: "Saved Offline",
+              description: "Could not connect to server. Saved locally and will sync once connection is restored.",
+            });
           } else {
             await invalidateCache("symptom_history");
 
@@ -411,9 +394,42 @@ const ChatInterface = () => {
               pending_delete: 0,
             });
 
-            showSuccess("Saved to history", "This analysis has been added to your health records");
+            pendingToasts.push({
+              type: "success",
+              title: "Saved to history",
+              description: "This analysis has been added to your health records",
+            });
           }
         }
+
+        const finalMessages = [
+          ...newMessages,
+          { role: "assistant" as const, content: assistantContent, animate: true, pendingToasts },
+        ];
+
+        const { error: finalUpdateError } = await supabase
+          .from("chat_sessions")
+          .update({
+            messages: finalMessages as unknown as Json,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", currentSessionId);
+
+        if (finalUpdateError) {
+          console.error("Error updating chat session messages:", finalUpdateError);
+        }
+
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === currentSessionId
+              ? {
+                  ...s,
+                  messages: finalMessages as unknown as Json,
+                  updated_at: new Date().toISOString(),
+                }
+              : s
+          )
+        );
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -651,7 +667,24 @@ const ChatInterface = () => {
           )}
 
           {messages.map((message, index) => (
-            <ChatMessage key={index} role={message.role} content={message.content} />
+            <ChatMessage
+              key={index}
+              role={message.role}
+              content={message.content}
+              animate={message.animate}
+              onAnimationComplete={() => {
+                if (message.pendingToasts && message.pendingToasts.length > 0) {
+                  message.pendingToasts.forEach((t) => {
+                    if (t.type === "success") showSuccess(t.title, t.description);
+                    else if (t.type === "info") showInfo(t.title, t.description);
+                    else if (t.type === "warning") showWarning(t.title, t.description);
+                  });
+                  setMessages((prev) =>
+                    prev.map((m, i) => (i === index ? { ...m, pendingToasts: [] } : m))
+                  );
+                }
+              }}
+            />
           ))}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && <ChatLoading />}
