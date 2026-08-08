@@ -6,6 +6,7 @@ import {
   whenKeysReady,
   encryptText,
   decryptText,
+  DecryptionError,
   deriveKeyFromToken,
   deriveSearchKeyFromToken,
   rotateKeysToNewPassword,
@@ -26,6 +27,37 @@ describe("Encryption Key Persistence", () => {
 
     const decrypted = await decryptText(ciphertext, key);
     expect(decrypted).toBe(plaintext);
+  });
+
+  it("throws DecryptionError with name DecryptionError on invalid format", async () => {
+    const key = await deriveKeyFromToken("stable-master-seed", "user-123");
+
+    let thrownErr: unknown;
+    try {
+      await decryptText("invalid-format-no-colon", key);
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    expect(thrownErr).toBeInstanceOf(DecryptionError);
+    expect((thrownErr as DecryptionError).name).toBe("DecryptionError");
+    expect((thrownErr as DecryptionError).message).toBe("Invalid encrypted text format");
+  });
+
+  it("throws DecryptionError on decryption failure (e.g. wrong key or tampered ciphertext)", async () => {
+    const key1 = await deriveKeyFromToken("seed-1", "user-123");
+    const key2 = await deriveKeyFromToken("seed-2", "user-123");
+    const ciphertext = await encryptText("secret data", key1);
+
+    let thrownErr: unknown;
+    try {
+      await decryptText(ciphertext, key2);
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    expect(thrownErr).toBeInstanceOf(DecryptionError);
+    expect((thrownErr as DecryptionError).name).toBe("DecryptionError");
   });
 
   it("resolves whenKeysReady when active keys are set", async () => {
