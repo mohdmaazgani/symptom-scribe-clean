@@ -1,0 +1,25 @@
+name: Reusable - Validate Supabase
+
+on:
+  workflow_call: {}
+
+jobs:
+  validate-supabase:
+    name: Validate Supabase changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check config.toml is valid TOML
+        run: |
+          python3 - <<'PY'
+          import sys
+          try:
+              import tomllib
+          except ImportError:
+              print("tomllib unavailable, skipping"); sys.exit(0)
+          with open("supabase/config.toml", "rb") as f:
+              tomllib.load(f)
+          print("supabase/config.toml is valid TOML")
+          PY
