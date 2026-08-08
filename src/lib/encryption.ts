@@ -4,6 +4,8 @@ import type { Session } from "@supabase/supabase-js";
 let activeKey: CryptoKey | null = null;
 let activeSearchKey: CryptoKey | null = null;
 let lastToken: string | null = null;
+/** Last authenticated user id — needed on logout because getUser() is empty after sign-out. */
+let lastKnownUserId: string | null = null;
 
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
 let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null = null;
@@ -427,6 +429,8 @@ async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
 
+  lastKnownUserId = userId;
+
   const token = session.access_token;
   if (!token) return;
 
@@ -522,21 +526,36 @@ async function handleSessionChange(session: Session) {
   }
 }
 
+function clearPersistedKeyMaterial(userId: string) {
+  clearUserSalt(userId);
+  localStorage.removeItem(SEED_KEY_PREFIX + userId);
+}
+
 async function handleSessionClear() {
   // Clear user-specific data on logout.
   //
-  // This removes the locally cached salt and master seed so that no key
-  // material can be re-derived from this browser/device without the user
-  // authenticating again. Note the salt is recoverable on next login (it's
-  // also stored in the user's Supabase profile, see the sync logic in
-  // `handleSessionChange` above); the seed is not persisted anywhere except
-  // the current device, so it is re-derived from the password on next login.
+  // Prefer lastKnownUserId: by the time onAuthStateChange fires with
+  // session === null, supabase.auth.getUser() no longer returns the user,
+  // so gating the wipe on getUser() left seed/salt in localStorage.
   const { data: { user } } = await supabase.auth.getUser();
-  if (user?.id) {
-    clearUserSalt(user.id);
-    localStorage.removeItem(SEED_KEY_PREFIX + user.id);
+  const userId = lastKnownUserId || user?.id || null;
+
+  if (userId) {
+    clearPersistedKeyMaterial(userId);
+  } else {
+    // Belt-and-suspenders: wipe any leftover seed/salt keys if we lost the id.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith(SEED_KEY_PREFIX) || key.startsWith(SALT_KEY_PREFIX))
+      ) {
+        localStorage.removeItem(key);
+      }
+    }
   }
 
+  lastKnownUserId = null;
   setKeys(null, null);
   lastToken = null;
   if (onLogoutCallback) {
