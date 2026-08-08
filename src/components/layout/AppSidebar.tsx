@@ -1,3 +1,4 @@
+import { FileChartLine } from "lucide-react";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -59,6 +60,7 @@ const menuItems = [
   { titleKey: "sidebar.items.emergency", url: "/emergency", icon: Phone },
   { titleKey: "sidebar.items.brainGames", url: "/brain-games", icon: Brain },
   { titleKey: "sidebar.items.healthFacts", url: "/health-facts", icon: Sparkles },
+    { titleKey: "sidebar.items.healthReports", url: "/health-reports", icon: FileChartLine },
   { titleKey: "sidebar.items.settings", url: "/settings", icon: Settings },
 ];
 
