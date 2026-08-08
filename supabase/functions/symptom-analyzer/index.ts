@@ -68,15 +68,22 @@ serve(async (req: Request): Promise<Response> => {
     const ip =
       req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
 
-    const rateLimitResult = await rateLimit(ip);
+    // Two buckets, both capped at the same per-minute budget:
+    // - by IP, which blunts a flood coming from a single machine;
+    // - by user, so one account cannot burn the AI and Supabase quota by
+    //   spreading the same flood across devices, tabs, or networks.
+    const [ipRateLimit, userRateLimit] = await Promise.all([
+      rateLimit(`ip:${ip}`),
+      rateLimit(`user:${user.id}`),
+    ]);
 
-    if (!rateLimitResult.success) {
+    if (!ipRateLimit.success || !userRateLimit.success) {
       return jsonResponse(
         {
           error: "Rate limit exceeded. Please try again later.",
         },
         429,
-        getCorsHeaders(origin)
+        { ...getCorsHeaders(origin), "Retry-After": "60" }
       );
     }
 

@@ -9,6 +9,7 @@ import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import ReactMarkdown from "react-markdown";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
+import { useSubmitGuard, getRejectionMessage } from "@/hooks/useSubmitGuard";
 import {
   Volume2,
   VolumeX,
@@ -81,6 +82,11 @@ const AIHealthAssistant = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const { toast } = useToast();
+
+  // Throttles the analysis endpoint: no overlapping requests, a short cooldown
+  // between sends, and a per-minute budget. Also covers the suggestion chips,
+  // which are easy to click repeatedly.
+  const runGuardedAnalyze = useSubmitGuard();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -180,10 +186,7 @@ const AIHealthAssistant = () => {
     recognition.start();
   };
 
-  const handleAnalyze = async (text?: string) => {
-    const userMessage = (text ?? symptoms).trim();
-    if (!userMessage || loading) return;
-
+  const analyzeSymptoms = async (userMessage: string) => {
     setSymptoms("");
     setCharCount(0);
     const time = getTime();
@@ -233,6 +236,8 @@ const AIHealthAssistant = () => {
       if (!response.ok || !response.body) {
         if (response.status === 401 || response.status === 403) {
           throw new Error("AUTH_ERROR");
+        } else if (response.status === 429) {
+          throw new Error("RATE_LIMITED");
         } else if (response.status >= 500) {
           throw new Error("SERVER_ERROR");
         } else {
@@ -376,6 +381,8 @@ const AIHealthAssistant = () => {
       } else if (error instanceof Error) {
         if (error.message === "AUTH_ERROR") {
           errorMessage = "Session expired. Please log in again.";
+        } else if (error.message === "RATE_LIMITED") {
+          errorMessage = "Too many requests. Please wait a moment before trying again.";
         } else if (error.message === "SERVER_ERROR") {
           errorMessage = "Server error. Please try again later.";
         }
@@ -385,6 +392,17 @@ const AIHealthAssistant = () => {
       setMessages((prev) => prev.filter((m) => !(m.role === "user" && m.text === userMessage)));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAnalyze = async (text?: string) => {
+    const userMessage = (text ?? symptoms).trim();
+    if (!userMessage || loading) return;
+
+    const outcome = await runGuardedAnalyze(() => analyzeSymptoms(userMessage));
+
+    if (outcome.status === "rejected") {
+      showWarning("Too many requests", getRejectionMessage(outcome.reason, outcome.retryAfterMs));
     }
   };
 

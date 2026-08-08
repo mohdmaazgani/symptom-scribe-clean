@@ -32,6 +32,7 @@ import {
   shouldPersistConsultation,
 } from "@/lib/symptom-consultation";
 import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
+import { useSubmitGuard, getRejectionMessage } from "@/hooks/useSubmitGuard";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
@@ -82,6 +83,10 @@ const ChatInterface = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Throttles the analysis endpoint: no overlapping requests, a short cooldown
+  // between sends, and a per-minute budget.
+  const runGuardedSend = useSubmitGuard();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -168,9 +173,7 @@ const ChatInterface = () => {
     setIsMobileOpen(false);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
+  const sendMessage = async () => {
     const userMessage: Message = { role: "user", content: input.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -251,6 +254,10 @@ const ChatInterface = () => {
         },
         body: JSON.stringify({ messages: [...recentContext, userMessage] }),
       });
+
+      if (response.status === 429) {
+        throw new Error("Too many requests. Please wait a moment before trying again.");
+      }
 
       if (!response.ok || !response.body) {
         throw new Error("Failed to start stream");
@@ -426,6 +433,16 @@ const ChatInterface = () => {
       setIsLoading(false);
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const outcome = await runGuardedSend(sendMessage);
+
+    if (outcome.status === "rejected") {
+      showWarning("Too many requests", getRejectionMessage(outcome.reason, outcome.retryAfterMs));
     }
   };
 
