@@ -132,7 +132,7 @@ export default function GamificationPage() {
           )}
 
           {activeTab === "badges" && (
-            <BadgeDisplay userBadges={userBadges} />
+            <BadgeDisplay />
           )}
         </div>
 

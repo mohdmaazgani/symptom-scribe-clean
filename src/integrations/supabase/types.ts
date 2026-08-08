@@ -48,6 +48,7 @@ export type Database = {
           metric_type: string
           notes: string | null
           recorded_at: string | null
+          search_tokens: string[] | null
           user_id: string
           value: Json
         }
@@ -57,6 +58,7 @@ export type Database = {
           metric_type: string
           notes?: string | null
           recorded_at?: string | null
+          search_tokens?: string[] | null
           user_id: string
           value: Json
         }
@@ -66,6 +68,7 @@ export type Database = {
           metric_type?: string
           notes?: string | null
           recorded_at?: string | null
+          search_tokens?: string[] | null
           user_id?: string
           value?: Json
         }
@@ -73,9 +76,9 @@ export type Database = {
       }
       profiles: {
         Row: {
-          allergies: string[] | null
+          allergies: string | null
           blood_type: string | null
-          chronic_conditions: string[] | null
+          chronic_conditions: string | null
           created_at: string | null
           date_of_birth: string | null
           emergency_contact_name: string | null
@@ -90,9 +93,9 @@ export type Database = {
           encryption_salt: string | null
         }
         Insert: {
-          allergies?: string[] | null
+          allergies?: string | null
           blood_type?: string | null
-          chronic_conditions?: string[] | null
+          chronic_conditions?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -107,9 +110,9 @@ export type Database = {
           encryption_salt?: string | null
         }
         Update: {
-          allergies?: string[] | null
+          allergies?: string | null
           blood_type?: string | null
-          chronic_conditions?: string[] | null
+          chronic_conditions?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -135,13 +138,14 @@ export type Database = {
           recommendations: string[] | null
           resolved: boolean | null
           risk_score: number | null
+          search_tokens: string[] | null
           severity_level: string
           symptoms: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          ai_analysis: string
+          ai_analysis?: string
           created_at?: string | null
           follow_up_date?: string | null
           id?: string
@@ -149,6 +153,7 @@ export type Database = {
           recommendations?: string[] | null
           resolved?: boolean | null
           risk_score?: number | null
+          search_tokens?: string[] | null
           severity_level: string
           symptoms: string
           updated_at?: string | null
@@ -163,6 +168,7 @@ export type Database = {
           recommendations?: string[] | null
           resolved?: boolean | null
           risk_score?: number | null
+          search_tokens?: string[] | null
           severity_level?: string
           symptoms?: string
           updated_at?: string | null
@@ -170,12 +176,226 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          condition_type: string
+          condition_value: number
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          condition_type: string
+          condition_value: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      challenges: {
+        Row: {
+          category: string
+          color: string | null
+          created_at: string
+          description: string | null
+          duration_days: number
+          icon: string | null
+          id: string
+          target_value: number
+          title: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          duration_days: number
+          icon?: string | null
+          id?: string
+          target_value: number
+          title: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          icon?: string | null
+          id?: string
+          target_value?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mood_logs: {
+        Row: {
+          created_at: string
+          id: string
+          logged_at: string
+          mood: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logged_at: string
+          mood: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logged_at?: string
+          mood?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          created_at: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          created_at?: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          created_at?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_challenges: {
+        Row: {
+          best_streak: number
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_checked_in: string | null
+          started_at: string
+          status: string
+          streak_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_checked_in?: string | null
+          started_at?: string
+          status?: string
+          streak_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_checked_in?: string | null
+          started_at?: string
+          status?: string
+          streak_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_user_xp: {
+        Args: {
+          points_to_add: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

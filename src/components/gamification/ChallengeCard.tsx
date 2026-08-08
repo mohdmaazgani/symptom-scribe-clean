@@ -3,12 +3,12 @@ import { CheckCircle2, Clock, Zap, Check, Flame } from "lucide-react";
 interface Challenge {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   duration_days: number;
   target_value: number;
   unit: string;
-  icon?: string;
-  color?: string;
+  icon?: string | null;
+  color?: string | null;
 }
 
 interface UserChallenge {
@@ -16,7 +16,7 @@ interface UserChallenge {
   status: string;
   streak_count: number;
   best_streak: number;
-  last_checked_in?: string;
+  last_checked_in?: string | null;
 }
 
 interface Props {
