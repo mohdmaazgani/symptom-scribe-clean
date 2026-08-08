@@ -143,7 +143,7 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -176,7 +176,7 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -255,10 +255,10 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
   const decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
-      iv: iv,
+      iv: iv as BufferSource,
     },
     key,
-    ciphertext
+    ciphertext as BufferSource
   );
 
   const decoder = new TextDecoder();
@@ -739,7 +739,7 @@ export async function verifyPayload(
         hash: { name: "SHA-256" },
       },
       publicKey,
-      signatureBytes,
+      signatureBytes as BufferSource,
       data
     );
   } catch (err) {
