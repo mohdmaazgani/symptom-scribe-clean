@@ -1,7 +1,7 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 export const MessageSchema = z.object({
-    role: z.enum(["user", "assistant", "system"]),
+    role: z.enum(["user", "assistant"]),
     content: z
         .string()
         .min(1, "Message content cannot be empty")
@@ -19,7 +19,12 @@ export const RequestSchema = z.union([
   z.object({
     mode: z.literal("predict"),
     symptoms: z
-      .array(z.string())
+      .array(
+        z
+          .string()
+          .min(1, "Symptom entry cannot be empty")
+          .max(500, "Symptom entry exceeds limit")
+      )
       .max(50, "Too many symptoms provided"),
   }),
 ]);
