@@ -40,6 +40,23 @@ export interface OfflineSymptom {
   search_tokens?: string[] | null;
 }
 
+export interface OfflineDocument {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  category: string;
+  tags: string[];
+  extracted_text: string;
+  ocr_status: string;
+  created_at: string;
+  updated_at: string;
+  pending_sync: number;
+  pending_delete: number;
+}
+
 export interface MeshAlert {
   id: string;
   sender_id: string;
@@ -58,6 +75,7 @@ class OfflineDatabase extends Dexie {
   healthMetrics!: Table<OfflineMetric>;
   symptomHistory!: Table<OfflineSymptom>;
   pendingEmergencyMesh!: Table<MeshAlert>;
+  documents!: Table<OfflineDocument>;
 
   constructor() {
     super("SymptomScribeOfflineDB");
@@ -69,6 +87,12 @@ class OfflineDatabase extends Dexie {
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
       symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+    });
+    this.version(3).stores({
+      healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+      documents: "id, user_id, category, file_name, created_at, pending_sync, pending_delete",
     });
   }
 }

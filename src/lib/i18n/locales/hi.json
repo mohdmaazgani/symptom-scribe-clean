@@ -18,6 +18,23 @@
     "showPassword": "पासवर्ड दिखाएँ",
     "hidePassword": "पासवर्ड छिपाएँ"
   },
+  "sidebar": {
+    "brand": "Symptom Scribe",
+    "navigation": "नेविगेशन",
+    "items": {
+      "dashboard": "डैशबोर्ड",
+      "aiHealthAssistant": "एआई सहायक",
+      "documents": "दस्तावेज़ हब",
+      "healthMetrics": "स्वास्थ्य मेट्रिक्स",
+      "history": "लक्षण इतिहास",
+      "challenges": "चुनौतियां",
+      "profile": "मेरी प्रोफ़ाइल",
+      "emergency": "आपातकालीन सेवा",
+      "brainGames": "मस्तिष्क खेल",
+      "healthFacts": "स्वास्थ्य तथ्य",
+      "settings": "सेटिंग्स"
+    }
+  },
   "nav": {
     "features": "विशेषताएँ",
     "howItWorks": "यह कैसे काम करता है",

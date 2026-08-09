@@ -18,6 +18,23 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password"
   },
+  "sidebar": {
+    "brand": "Symptom Scribe",
+    "navigation": "Navigation",
+    "items": {
+      "dashboard": "Dashboard",
+      "aiHealthAssistant": "AI Assistant",
+      "documents": "Document Hub",
+      "healthMetrics": "Vitals & Metrics",
+      "history": "Symptom Log",
+      "challenges": "Challenges",
+      "profile": "My Profile",
+      "emergency": "Emergency SOS",
+      "brainGames": "Cognitive Games",
+      "healthFacts": "Health Digest",
+      "settings": "Preferences"
+    }
+  },
   "nav": {
     "features": "Features",
     "howItWorks": "How It Works",

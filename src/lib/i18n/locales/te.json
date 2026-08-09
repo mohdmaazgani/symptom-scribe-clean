@@ -18,6 +18,23 @@
     "showPassword": "పాస్‌వర్డ్ చూపించు",
     "hidePassword": "పాస్‌వర్డ్ దాచు"
   },
+  "sidebar": {
+    "brand": "Symptom Scribe",
+    "navigation": "నెవిగేషన్",
+    "items": {
+      "dashboard": "డాష్‌బోర్డ్",
+      "aiHealthAssistant": "AI సహాయకుడు",
+      "documents": "డాక్యుమెంట్ హబ్",
+      "healthMetrics": "ఆరోగ్య కొలతలు",
+      "history": "లక్షణాల రికార్డు",
+      "challenges": "సవాళ్లు",
+      "profile": "నా ప్రొఫైల్",
+      "emergency": "అత్యవసర సహాయం",
+      "brainGames": "మైండ్ గేమ్‌లు",
+      "healthFacts": "ఆరోగ్య విషయాలు",
+      "settings": "సెట్టింగ్‌లు"
+    }
+  },
   "nav": {
     "features": "ఫీచర్లు",
     "howItWorks": "ఇది ఎలా పనిచేస్తుంది",
