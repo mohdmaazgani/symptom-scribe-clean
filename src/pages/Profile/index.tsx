@@ -5,8 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Loader2 } from "lucide-react";
+import { User, Loader2, Plus, Trash2, HeartHandshake, Users } from "lucide-react";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
+import { useFamily, Dependent } from "@/context/FamilyContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import {
   whenEncryptionReady,
   encryptProfileField,
@@ -16,8 +25,19 @@ import {
 } from "@/lib/encryption";
 
 const Profile = () => {
+  const { dependents, addDependent, deleteDependent } = useFamily();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newDept, setNewDept] = useState({
+    full_name: "",
+    relationship: "child",
+    date_of_birth: "",
+    gender: "other",
+    blood_type: "O+",
+    allergies: "",
+    chronic_conditions: "",
+  });
   const [profile, setProfile] = useState({
     full_name: "",
     date_of_birth: "",
@@ -378,6 +398,230 @@ if (!profile.blood_type) {
           </form>
         </CardContent>
       </Card>
+
+      {/* Family & Dependents Section */}
+      <Card className="max-w-2xl mx-auto shadow-lg bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
+        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-800/60">
+          <div>
+            <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
+              <Users className="h-5 w-5 text-cyan-400" />
+              Family & Dependents
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-400">
+              Manage sub-profiles for children, parents, or spouse to track their health data under your account.
+            </CardDescription>
+          </div>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            size="sm"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Add Family Member
+          </Button>
+        </CardHeader>
+
+        <CardContent className="pt-4">
+          {dependents.length === 0 ? (
+            <div className="py-8 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
+              <HeartHandshake className="h-10 w-10 text-slate-600 mx-auto mb-2" />
+              <p className="text-slate-300 text-sm font-semibold">No Family Members Added</p>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Add dependents to monitor symptoms, prescriptions, and health metrics for your loved ones.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {dependents.map((dept) => (
+                <div
+                  key={dept.id}
+                  className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                      {dept.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white">{dept.full_name}</h4>
+                        <Badge className="bg-slate-800 text-cyan-300 text-[10px] capitalize">
+                          {dept.relationship}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        DOB: {dept.date_of_birth || "N/A"} • Blood Type: {dept.blood_type || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => deleteDependent(dept.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-400 hover:text-rose-400 hover:bg-slate-900"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Family Member Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-md bg-slate-950 border-slate-800 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+              <Plus className="h-5 w-5 text-cyan-400" /> Add Family Dependent Profile
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Enter details for your family member to create their sub-profile.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newDept.full_name) {
+                showWarning("Missing Name", "Please enter family member's name.");
+                return;
+              }
+              const success = await addDependent({
+                full_name: newDept.full_name,
+                relationship: newDept.relationship,
+                date_of_birth: newDept.date_of_birth || null,
+                gender: newDept.gender || null,
+                blood_type: newDept.blood_type || null,
+                allergies: newDept.allergies ? newDept.allergies.split(",").map((s) => s.trim()) : [],
+                chronic_conditions: newDept.chronic_conditions
+                  ? newDept.chronic_conditions.split(",").map((s) => s.trim())
+                  : [],
+              });
+
+              if (success) {
+                setShowAddModal(false);
+                setNewDept({
+                  full_name: "",
+                  relationship: "child",
+                  date_of_birth: "",
+                  gender: "other",
+                  blood_type: "O+",
+                  allergies: "",
+                  chronic_conditions: "",
+                });
+              }
+            }}
+            className="space-y-3 mt-2"
+          >
+            <div className="space-y-1">
+              <Label htmlFor="dept_name" className="text-xs">Full Name <span className="text-red-400">*</span></Label>
+              <Input
+                id="dept_name"
+                value={newDept.full_name}
+                onChange={(e) => setNewDept({ ...newDept, full_name: e.target.value })}
+                placeholder="e.g. Sophia Doe"
+                className="bg-slate-900 border-slate-800 text-xs"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="dept_rel" className="text-xs">Relationship</Label>
+                <Select
+                  value={newDept.relationship}
+                  onValueChange={(val) => setNewDept({ ...newDept, relationship: val })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800">
+                    <SelectItem value="child">Child</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="spouse">Spouse</SelectItem>
+                    <SelectItem value="sibling">Sibling</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="dept_dob" className="text-xs">Date of Birth</Label>
+                <Input
+                  id="dept_dob"
+                  type="date"
+                  value={newDept.date_of_birth}
+                  onChange={(e) => setNewDept({ ...newDept, date_of_birth: e.target.value })}
+                  className="bg-slate-900 border-slate-800 text-xs h-8"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="dept_gender" className="text-xs">Gender</Label>
+                <Select
+                  value={newDept.gender}
+                  onValueChange={(val) => setNewDept({ ...newDept, gender: val })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800">
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="dept_blood" className="text-xs">Blood Type</Label>
+                <Select
+                  value={newDept.blood_type}
+                  onValueChange={(val) => setNewDept({ ...newDept, blood_type: val })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800">
+                    {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bt) => (
+                      <SelectItem key={bt} value={bt}>
+                        {bt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="dept_allergies" className="text-xs">Allergies (comma-separated)</Label>
+              <Input
+                id="dept_allergies"
+                value={newDept.allergies}
+                onChange={(e) => setNewDept({ ...newDept, allergies: e.target.value })}
+                placeholder="Peanuts, Latex"
+                className="bg-slate-900 border-slate-800 text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+                className="text-xs bg-slate-900 border-slate-800"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white">
+                Save Family Member
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
