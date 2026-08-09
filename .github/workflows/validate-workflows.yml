@@ -12,6 +12,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run actionlint
-        uses: docker://rhysd/actionlint:latest
+        # CHANGED: pinned to a specific version instead of :latest. Floating
+        # tags are a supply-chain risk (image can change under us without a
+        # code change to review). Bump this deliberately when needed.
+        uses: docker://rhysd/actionlint:1.7.12
         with:
           args: -color

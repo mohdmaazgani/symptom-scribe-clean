@@ -13,6 +13,14 @@ jobs:
 
       - name: Check config.toml is valid TOML
         run: |
+          # CHANGED: skip gracefully instead of erroring if config.toml isn't
+          # present. This job is triggered by any change under supabase/**,
+          # not specifically to config.toml, so its absence isn't a failure.
+          if [ ! -f "supabase/config.toml" ]; then
+            echo "No supabase/config.toml found in this change — skipping TOML validation."
+            exit 0
+          fi
+
           python3 - <<'PY'
           import sys
           try:

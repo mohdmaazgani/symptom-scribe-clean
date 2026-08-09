@@ -5,9 +5,9 @@ name: CI
 #
 # `detect-changes` classifies the diff into categories (see
 # docs/guides/CHANGE_AWARE_CI.md). Every other job is a thin `uses:` call
-# into a reusable workflow under .github/workflows/reusable/ — this file
-# holds NO install/lint/build/test steps itself, only which jobs to call and
-# when (see docs/guides/REUSABLE_WORKFLOWS.md).
+# into a reusable workflow under .github/workflows/ — this file holds NO
+# install/lint/build/test steps itself, only which jobs to call and when
+# (see docs/guides/REUSABLE_WORKFLOWS.md).
 # ---------------------------------------------------------------------------
 
 on:
@@ -15,6 +15,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base ref to diff against when run manually (defaults to main)'
+        type: string
+        default: 'main'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -62,6 +67,10 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
+          # CHANGED: explicit base so workflow_dispatch runs (no PR context)
+          # diff against a real ref instead of silently comparing against
+          # nothing. PR/push events keep their normal base automatically.
+          base: ${{ github.event_name == 'workflow_dispatch' && inputs.base || github.event.pull_request.base.ref || 'main' }}
           filters: |
             workflows:
               - '.github/workflows/**'
@@ -137,7 +146,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # -------------------------------------------------------------------------
-  # 2. Lint + type-check — delegates to reusable/lint-typecheck.yml
+  # 2. Lint + type-check — delegates to lint-typecheck.yml
   # -------------------------------------------------------------------------
   lint-and-typecheck:
     name: Lint & type-check
@@ -153,7 +162,7 @@ jobs:
       package-manager: 'npm'
 
   # -------------------------------------------------------------------------
-  # 3. Build — delegates to reusable/build.yml
+  # 3. Build — delegates to build.yml
   # -------------------------------------------------------------------------
   build:
     name: Build
@@ -171,23 +180,28 @@ jobs:
       upload-artifact: false
 
   # -------------------------------------------------------------------------
-  # 4. Unit / component tests — delegates to reusable/test.yml
+  # 4. Unit / component tests — delegates to test.yml
   # -------------------------------------------------------------------------
   unit-tests:
     name: Unit & component tests
-    needs: detect-changes
+    needs: [detect-changes, lint-and-typecheck]
+    # CHANGED: now waits on lint-and-typecheck (same always()+result=='success'
+    # idiom used by `build` above) so tests don't burn CI minutes on code
+    # already known to fail type-checking.
     if: |
-      needs.detect-changes.outputs.source == 'true' ||
-      needs.detect-changes.outputs.tests == 'true' ||
-      needs.detect-changes.outputs.config == 'true' ||
-      needs.detect-changes.outputs.run-all == 'true'
+      always() &&
+      needs.lint-and-typecheck.result == 'success' &&
+      (needs.detect-changes.outputs.source == 'true' ||
+       needs.detect-changes.outputs.tests == 'true' ||
+       needs.detect-changes.outputs.config == 'true' ||
+       needs.detect-changes.outputs.run-all == 'true')
     uses: ./.github/workflows/test.yml
     with:
       node-version: '20'
       package-manager: 'npm'
 
   # -------------------------------------------------------------------------
-  # 5. Workflow validation — delegates to reusable/validate-workflows.yml
+  # 5. Workflow validation — delegates to validate-workflows.yml
   # -------------------------------------------------------------------------
   validate-workflows:
     name: Validate workflows
@@ -198,7 +212,7 @@ jobs:
     uses: ./.github/workflows/validate-workflows.yml
 
   # -------------------------------------------------------------------------
-  # 6. Supabase validation — delegates to reusable/validate-supabase.yml
+  # 6. Supabase validation — delegates to validate-supabase.yml
   # -------------------------------------------------------------------------
   validate-supabase:
     name: Validate Supabase
@@ -233,11 +247,11 @@ jobs:
             echo "| Job | Reusable workflow | Result |"
             echo "|---|---|---|"
             echo "| Detect changes | (this workflow) | ${{ needs.detect-changes.result }} |"
-            echo "| Lint & type-check | reusable/lint-typecheck.yml | ${{ needs.lint-and-typecheck.result }} |"
-            echo "| Build | reusable/build.yml | ${{ needs.build.result }} |"
-            echo "| Unit & component tests | reusable/test.yml | ${{ needs.unit-tests.result }} |"
-            echo "| Validate workflows | reusable/validate-workflows.yml | ${{ needs.validate-workflows.result }} |"
-            echo "| Validate Supabase | reusable/validate-supabase.yml | ${{ needs.validate-supabase.result }} |"
+            echo "| Lint & type-check | lint-typecheck.yml | ${{ needs.lint-and-typecheck.result }} |"
+            echo "| Build | build.yml | ${{ needs.build.result }} |"
+            echo "| Unit & component tests | test.yml | ${{ needs.unit-tests.result }} |"
+            echo "| Validate workflows | validate-workflows.yml | ${{ needs.validate-workflows.result }} |"
+            echo "| Validate Supabase | validate-supabase.yml | ${{ needs.validate-supabase.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           FAILED=0
