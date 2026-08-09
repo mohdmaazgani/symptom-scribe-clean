@@ -170,6 +170,114 @@ export type Database = {
         }
         Relationships: []
       }
+      medications: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          dosage: string
+          frequency: string
+          times: string[] | null
+          start_date: string
+          end_date: string | null
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          dosage: string
+          frequency?: string
+          times?: string[] | null
+          start_date?: string
+          end_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          dosage?: string
+          frequency?: string
+          times?: string[] | null
+          start_date?: string
+          end_date?: string | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      medication_log: {
+        Row: {
+          id: string
+          medication_id: string
+          user_id: string
+          scheduled_at: string
+          status: 'taken' | 'skipped' | 'pending'
+          notes: string | null
+          logged_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          medication_id: string
+          user_id: string
+          scheduled_at: string
+          status: 'taken' | 'skipped' | 'pending'
+          notes?: string | null
+          logged_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          medication_id?: string
+          user_id?: string
+          scheduled_at?: string
+          status?: 'taken' | 'skipped' | 'pending'
+          notes?: string | null
+          logged_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
