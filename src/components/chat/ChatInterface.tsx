@@ -421,7 +421,16 @@ const ChatInterface = () => {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to get AI response. Please try again.";
       showError("Analysis failed", errorMsg);
-      setMessages((prev) => prev.filter((m) => m !== userMessage));
+      // Drop the user turn and any partial assistant stream so the UI does not
+      // keep a half-rendered reply after a failed request.
+      setMessages((prev) => {
+        const withoutUser = prev.filter((m) => m !== userMessage);
+        const last = withoutUser[withoutUser.length - 1];
+        if (last?.role === "assistant") {
+          return withoutUser.slice(0, -1);
+        }
+        return withoutUser;
+      });
     } finally {
       setIsLoading(false);
       setSelectedFiles([]);
