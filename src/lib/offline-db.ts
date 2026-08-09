@@ -10,6 +10,7 @@ import {
   generateSearchTokens,
 } from "./encryption";
 import { invalidateCache } from "@/lib/cached-queries";
+import { syncMutex } from "./sync-mutex";
 
 export interface OfflineMetric {
   id: string;
@@ -341,113 +342,129 @@ registerEncryptionHooks({
 export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+  const result = await syncMutex.runExclusive(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
 
-    const key = await whenEncryptionReady();
-    let syncedAny = false;
+      await whenEncryptionReady();
+      let syncedAny = false;
 
-    // 1. Sync pending health metrics deletions
-    const pendingMetricsDeletes = await db.healthMetrics
-      .where("pending_delete")
-      .equals(1)
-      .toArray();
+      // 1. Sync pending health metrics deletions
+      const pendingMetricsDeletes = await db.healthMetrics
+        .where("pending_delete")
+        .equals(1)
+        .toArray();
 
-    for (const record of pendingMetricsDeletes) {
-      const { error } = await supabase
-        .from("health_metrics")
-        .delete()
-        .eq("id", record.id);
+      for (const record of pendingMetricsDeletes) {
+        const { error } = await supabase
+          .from("health_metrics")
+          .delete()
+          .eq("id", record.id);
 
-      if (!error || error.code === "PGRST116") {
-        await db.healthMetrics.delete(record.id);
-        syncedAny = true;
+        if (!error || error.code === "PGRST116") {
+          await db.healthMetrics.delete(record.id);
+          syncedAny = true;
+        }
       }
-    }
 
-    // 2. Sync pending health metrics insertions
-    const pendingMetricsInserts = await db.healthMetrics
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
+      // 2. Sync pending health metrics insertions (with in-flight isolation)
+      const pendingMetricsInserts = await db.healthMetrics
+        .where("pending_sync")
+        .equals(1)
+        .toArray();
 
-    for (const record of pendingMetricsInserts) {
-      const { pending_sync, pending_delete, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("health_metrics")
-        .insert(supabaseData as unknown as TablesInsert<"health_metrics">);
+      for (const record of pendingMetricsInserts) {
+        // Mark as in-flight (pending_sync: 2)
+        await db.healthMetrics.update(record.id, { pending_sync: 2 });
+        const { pending_sync, pending_delete, ...supabaseData } = record;
 
-      if (!error) {
-        await db.healthMetrics.update(record.id, { pending_sync: 0 });
-        syncedAny = true;
+        const { error } = await supabase
+          .from("health_metrics")
+          .insert(supabaseData as unknown as TablesInsert<"health_metrics">);
+
+        if (!error) {
+          await db.healthMetrics.update(record.id, { pending_sync: 0 });
+          syncedAny = true;
+        } else {
+          // Revert to pending on failure
+          await db.healthMetrics.update(record.id, { pending_sync: 1 });
+        }
       }
-    }
 
-    // 3. Sync pending symptom history deletions
-    const pendingSymptomDeletes = await db.symptomHistory
-      .where("pending_delete")
-      .equals(1)
-      .toArray();
+      // 3. Sync pending symptom history deletions
+      const pendingSymptomDeletes = await db.symptomHistory
+        .where("pending_delete")
+        .equals(1)
+        .toArray();
 
-    for (const record of pendingSymptomDeletes) {
-      const { error } = await supabase
-        .from("symptom_history")
-        .delete()
-        .eq("id", record.id);
+      for (const record of pendingSymptomDeletes) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .delete()
+          .eq("id", record.id);
 
-      if (!error || error.code === "PGRST116") {
-        await db.symptomHistory.delete(record.id);
-        syncedAny = true;
+        if (!error || error.code === "PGRST116") {
+          await db.symptomHistory.delete(record.id);
+          syncedAny = true;
+        }
       }
-    }
 
-    // 4. Sync pending symptom history insertions
-    const pendingSymptomInserts = await db.symptomHistory
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
+      // 4. Sync pending symptom history insertions (with in-flight isolation)
+      const pendingSymptomInserts = await db.symptomHistory
+        .where("pending_sync")
+        .equals(1)
+        .toArray();
 
-    for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("symptom_history")
-        .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
+      for (const record of pendingSymptomInserts) {
+        // Mark as in-flight (pending_sync: 2)
+        await db.symptomHistory.update(record.id, { pending_sync: 2 });
+        const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
 
-      if (!error) {
-        await db.symptomHistory.update(record.id, { pending_sync: 0 });
-        syncedAny = true;
+        const { error } = await supabase
+          .from("symptom_history")
+          .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
+
+        if (!error) {
+          await db.symptomHistory.update(record.id, { pending_sync: 0 });
+          syncedAny = true;
+        } else {
+          // Revert to pending on failure
+          await db.symptomHistory.update(record.id, { pending_sync: 1 });
+        }
       }
-    }
 
-    // 5. Sync pending symptom history updates (resolve/reopen)
-    const pendingSymptomUpdates = await db.symptomHistory
-      .where("pending_update")
-      .equals(1)
-      .toArray();
+      // 5. Sync pending symptom history updates
+      const pendingSymptomUpdates = await db.symptomHistory
+        .where("pending_update")
+        .equals(1)
+        .toArray();
 
-    for (const record of pendingSymptomUpdates) {
-      const { error } = await supabase
-        .from("symptom_history")
-        .update({ resolved: record.resolved })
-        .eq("id", record.id);
+      for (const record of pendingSymptomUpdates) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .update({ resolved: record.resolved })
+          .eq("id", record.id);
 
-      if (!error) {
-        await db.symptomHistory.update(record.id, { pending_update: 0 });
-        syncedAny = true;
+        if (!error) {
+          await db.symptomHistory.update(record.id, { pending_update: 0 });
+          syncedAny = true;
+        }
       }
-    }
 
-    if (syncedAny) {
-      await Promise.all([
-        invalidateCache("health_metrics").catch(() => {}),
-        invalidateCache("symptom_history").catch(() => {}),
-      ]);
-    }
+      if (syncedAny) {
+        await Promise.all([
+          invalidateCache("health_metrics").catch(() => {}),
+          invalidateCache("symptom_history").catch(() => {}),
+        ]);
+      }
 
-    return syncedAny;
-  } catch (error) {
-    console.error("Error during offline synchronization:", error);
-    return false;
-  }
+      return syncedAny;
+    } catch (error) {
+      console.error("Error during offline synchronization:", error);
+      return false;
+    }
+  });
+
+  return result ?? false;
 };
