@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/lib/toast-helpers";
+import { showSuccess, showError, showWarning } from "@/lib/toast-helpers";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
+import { rotateKeysToNewPassword } from "@/lib/encryption";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -29,14 +30,35 @@ const ResetPassword = () => {
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       showError("Update Failed", error.message);
       return;
     }
 
+    // Re-derive the encryption keys from the new password and re-encrypt all
+    // existing records (local + server-side) so they stay decryptable (#999).
+    let keysRotated = false;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.email) {
+        keysRotated = await rotateKeysToNewPassword(password, user.email, user.id);
+      }
+    } catch (rotateErr) {
+      console.error("Failed to rotate encryption keys after password reset:", rotateErr);
+    }
+
+    setLoading(false);
+
     showSuccess("Password Updated!", "You can now sign in with your new password.");
+    if (!keysRotated) {
+      showWarning(
+        "Existing Records Not Re-encrypted",
+        "This device did not have your previous encryption key, so records saved before this reset cannot be decrypted."
+      );
+    }
     navigate("/auth");
   };
 

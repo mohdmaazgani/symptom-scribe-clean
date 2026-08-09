@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
+
 import {
   Card,
   CardContent,
@@ -247,7 +249,7 @@ const Metrics = () => {
     if (metricType === "heart_rate") {
       const hr = Number(value);
       if (hr < 30 || hr > 250) {
-        alert("Heart Rate must be between 30 and 250 BPM");
+        showWarning("Invalid Heart Rate", "Heart rate must be between 30 and 250 BPM");
         return;
       }
     }
@@ -255,23 +257,23 @@ const Metrics = () => {
     if (metricType === "temperature") {
       const temp = Number(value);
       if (temp < 86 || temp > 113) {
-        alert("Temperature must be between 86°F and 113°F");
+        showWarning("Invalid Temperature", "Temperature must be between 86°F and 113°F");
         return;
       }
     }
 
     if (metricType === "weight") {
       const wt = Number(value);
-      if (wt <= 0 || wt > 500) {
-        alert("Weight must be between 1 and 500 lbs");
+      if (wt <= 0 || wt > 700) {
+        showWarning("Invalid Weight", "Weight must be between 1 and 700 lbs");
         return;
       }
     }
 
     if (metricType === "blood_sugar") {
       const sugar = Number(value);
-      if (sugar < 20 || sugar > 1000) {
-        alert("Blood Sugar must be between 20 and 1000 mg/dL");
+      if (sugar < 20 || sugar > 400) {
+        showWarning("Invalid Blood Sugar", "Blood sugar must be between 20 and 400 mg/dL");
         return;
       }
     }
@@ -279,7 +281,7 @@ const Metrics = () => {
     if (metricType === "oxygen_saturation") {
       const oxygen = Number(value);
       if (oxygen < 70 || oxygen > 100) {
-        alert("Oxygen Saturation must be between 70% and 100%");
+        showWarning("Invalid Oxygen Saturation", "Oxygen saturation must be between 70% and 100%");
         return;
       }
     }
@@ -287,9 +289,40 @@ const Metrics = () => {
     if (metricType === "blood_pressure") {
       const sys = Number(systolic);
       const dia = Number(diastolic);
+      if (sys < 60 || sys > 250) {
+        showWarning("Invalid Systolic Pressure", "Systolic pressure must be between 60 and 250 mmHg");
+        return;
+      }
+      if (dia < 30 || dia > 150) {
+        showWarning("Invalid Diastolic Pressure", "Diastolic pressure must be between 30 and 150 mmHg");
+        return;
+      }
+      if (sys <= dia) {
+        showWarning("Invalid Blood Pressure", "Systolic pressure must be greater than diastolic pressure");
+        return;
+      }
+    }
 
-      if (sys < 50 || sys > 300 || dia < 30 || dia > 200) {
-        alert("Blood Pressure values are out of valid range");
+    if (metricType === "sleep") {
+      const sleepVal = Number(value);
+      if (sleepVal < 0 || sleepVal > 24) {
+        showWarning("Invalid Sleep Duration", "Sleep duration must be between 0 and 24 hours");
+        return;
+      }
+    }
+
+    if (metricType === "steps") {
+      const stepsVal = Number(value);
+      if (stepsVal < 0 || stepsVal > 100000) {
+        showWarning("Invalid Steps Count", "Steps must be between 0 and 100,000");
+        return;
+      }
+    }
+
+    if (metricType === "respiratory_rate") {
+      const rr = Number(value);
+      if (rr < 6 || rr > 60) {
+        showWarning("Invalid Respiratory Rate", "Respiratory rate must be between 6 and 60 breaths per minute");
         return;
       }
     }
@@ -465,7 +498,7 @@ const Metrics = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" role="group" aria-label="Select a metric type to record">
         {metricTypes.map((metric) => {
           const Icon = metric.icon;
           const isSelected = metricType === metric.value;
@@ -488,7 +521,7 @@ const Metrics = () => {
               }}
             >
               <CardContent className="pt-6 text-center">
-                <Icon className="w-8 h-8 mx-auto mb-2 text-primary" />
+                <Icon className="w-8 h-8 mx-auto mb-2 text-primary" aria-hidden="true" />
                 <p className="text-sm font-medium">{metric.label}</p>
               </CardContent>
             </Card>
@@ -506,7 +539,7 @@ const Metrics = () => {
             <DialogDescription>Enter your latest reading below.</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" role="form" aria-label={`Record ${selectedMetric?.label ?? 'measurement'} form`}>
             {metricType === "blood_pressure" ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -518,7 +551,10 @@ const Metrics = () => {
                     value={systolic}
                     onChange={(e) => setSystolic(e.target.value)}
                     required
+                    aria-required="true"
+                    aria-describedby="systolic-hint"
                   />
+                  <p id="systolic-hint" className="text-xs text-muted-foreground">Enter a value between 60 and 250 mmHg</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="diastolic">Diastolic</Label>
@@ -529,7 +565,10 @@ const Metrics = () => {
                     value={diastolic}
                     onChange={(e) => setDiastolic(e.target.value)}
                     required
+                    aria-required="true"
+                    aria-describedby="diastolic-hint"
                   />
+                  <p id="diastolic-hint" className="text-xs text-muted-foreground">Enter a value between 30 and 150 mmHg</p>
                 </div>
               </div>
             ) : (
@@ -539,11 +578,14 @@ const Metrics = () => {
                   id="value"
                   type="number"
                   step="0.1"
-                  placeholder="Enter value"
+                  placeholder={`Enter value in ${selectedMetric?.unit ?? 'units'}`}
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-describedby="value-hint"
                 />
+                <p id="value-hint" className="text-xs text-muted-foreground">Enter a valid measurement value</p>
               </div>
             )}
 
@@ -558,7 +600,7 @@ const Metrics = () => {
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="w-full" aria-label={loading ? "Saving metric" : "Record metric"}>
               {loading ? "Saving..." : "Record Metric"}
             </Button>
           </form>
@@ -574,7 +616,7 @@ const Metrics = () => {
             </CardDescription>
           </div>
           {historyView === "chart" && (
-            <Button onClick={downloadChart}>
+            <Button onClick={downloadChart} aria-label="Download chart as PNG image">
               Download Chart
             </Button>
           )}
@@ -583,19 +625,26 @@ const Metrics = () => {
         <CardContent>
           {historyLoading ? (
             historyView === "table" ? <MetricsTableSkeleton /> : <MetricsChartSkeleton />
-          ) : records.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-lg font-medium">No health metrics yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Record your first measurement above to start tracking trends.
-              </p>
-            </div>
+        ) : records.length === 0 ? (
+          <EmptyState
+          icon={
+          <Activity
+            className="w-8 h-8 text-teal-600 dark:text-teal-400"
+            strokeWidth={1.5}
+           />
+           }
+          title="Add your first health metric"
+          description="Record a measurement above to start tracking trends over time."
+          ctaText="Add Metric"
+          onCtaClick={() => setFormOpen(true)}
+          />
           ) : (
-            <>
+            <div className="animate-fade-in">
               <div className="flex flex-wrap gap-3 mb-4">
                 <Select
                   value={historyMetricFilter}
                   onValueChange={setHistoryMetricFilter}
+                  aria-label="Filter metrics by type"
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter metric" />
@@ -613,6 +662,7 @@ const Metrics = () => {
                 <Select
                   value={timeframeFilter}
                   onValueChange={setTimeframeFilter}
+                  aria-label="Filter by time range"
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select timeframe" />
@@ -629,38 +679,46 @@ const Metrics = () => {
                     variant={sortOrder === "newest" ? "default" : "outline"}
                     onClick={() => setSortOrder("newest")}
                     className="gap-2"
+                    aria-pressed={sortOrder === "newest"}
                   >
-                    <ArrowUpDown className="h-4 w-4" />
+                    <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
                     Newest First
                   </Button>
                   <Button
                     variant={sortOrder === "oldest" ? "default" : "outline"}
                     onClick={() => setSortOrder("oldest")}
                     className="gap-2"
+                    aria-pressed={sortOrder === "oldest"}
                   >
-                    <ArrowUpDown className="h-4 w-4" />
+                    <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
                     Oldest First
                   </Button>
                 </div>
               </div>
 
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-4" role="tablist" aria-label="Metrics history view">
                 <Button
                   variant={historyView === "table" ? "default" : "outline"}
                   onClick={() => setHistoryView("table")}
+                  role="tab"
+                  aria-selected={historyView === "table"}
+                  aria-controls="metrics-history-panel"
                 >
                   Table
                 </Button>
                 <Button
                   variant={historyView === "chart" ? "default" : "outline"}
                   onClick={() => setHistoryView("chart")}
+                  role="tab"
+                  aria-selected={historyView === "chart"}
+                  aria-controls="metrics-history-panel"
                 >
                   Chart
                 </Button>
               </div>
 
               {historyView === "table" && (
-                <div className="rounded-xl border overflow-x-auto">
+                <div className="rounded-xl border overflow-x-auto" id="metrics-history-panel" role="tabpanel">
                   <Table className="min-w-[600px]">
                     <TableHeader>
                       <TableRow>
@@ -689,7 +747,7 @@ const Metrics = () => {
                           <TableCell>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon">
+                                <Button variant="destructive" size="icon" aria-label="Delete metric record">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -777,7 +835,7 @@ const Metrics = () => {
                     </ResponsiveContainer>
                   </div>
                 ))}
-            </>
+            </div>
           )}
         </CardContent>
       </Card>

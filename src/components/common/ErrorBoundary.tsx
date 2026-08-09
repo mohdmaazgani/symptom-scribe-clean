@@ -35,10 +35,10 @@ class ErrorBoundary extends Component<Props, State> {
     // Replace with Sentry or your logging service in production
     if (process.env.NODE_ENV === "production") {
       // Sentry.captureException(error, { extra: errorInfo });
-      console.error("Production error logged:", error);
+      console.warn("Production error logged:", error);
     } else {
-      console.error("Application Error:", error);
-      console.error("Error Info:", errorInfo);
+      console.warn("Application Error:", error);
+      console.warn("Error Info:", errorInfo);
     }
   }
 
