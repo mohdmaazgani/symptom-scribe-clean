@@ -23,6 +23,9 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  pull-requests: read   # CHANGED: needed so paths-filter never has to silently
+                         # fall back to the GitHub API without permission, and
+                         # required outright for workflow_dispatch runs.
 
 env:
   NODE_VERSION: '20'
@@ -43,9 +46,17 @@ jobs:
       assets: ${{ steps.filter.outputs.assets }}
       supabase: ${{ steps.filter.outputs.supabase }}
       workflows: ${{ steps.filter.outputs.workflows }}
+      # CHANGED: true when nothing changed matched any of the categories
+      # above. Downstream jobs treat this as "run everything, to be safe."
+      run-all: ${{ steps.classify.outputs.run-all }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # CHANGED: moved here from paths-filter's `with:`,
+                            # where it had no effect. This is what actually
+                            # gives paths-filter enough git history to diff
+                            # locally instead of falling back to the API.
 
       - name: Classify changed files
         id: filter
@@ -88,6 +99,26 @@ jobs:
               - 'src/**'
               - 'index.html'
 
+      # CHANGED: new step. If every known category came back false, the
+      # change didn't match any filter (e.g. .nvmrc, vercel.json,
+      # .prettierrc, CODEOWNERS, an uncatalogued root config, etc).
+      # Rather than let every downstream job skip silently, flag it so
+      # jobs can fall back to running the full suite.
+      - name: Decide whether to run everything
+        id: classify
+        run: |
+          if [ "${{ steps.filter.outputs.source }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.tests }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.config }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.docs }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.assets }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.supabase }}" = "false" ] && \
+             [ "${{ steps.filter.outputs.workflows }}" = "false" ]; then
+            echo "run-all=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run-all=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Log detected categories
         run: |
           {
@@ -102,6 +133,7 @@ jobs:
             echo "| assets | ${{ steps.filter.outputs.assets }} |"
             echo "| supabase | ${{ steps.filter.outputs.supabase }} |"
             echo "| workflows | ${{ steps.filter.outputs.workflows }} |"
+            echo "| run-all (unmatched fallback) | ${{ steps.classify.outputs.run-all }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # -------------------------------------------------------------------------
@@ -113,8 +145,9 @@ jobs:
     if: |
       needs.detect-changes.outputs.source == 'true' ||
       needs.detect-changes.outputs.tests == 'true' ||
-      needs.detect-changes.outputs.config == 'true'
-    uses: ./.github/workflows/reusable/lint-typecheck.yml
+      needs.detect-changes.outputs.config == 'true' ||
+      needs.detect-changes.outputs.run-all == 'true'
+    uses: ./.github/workflows/lint-typecheck.yml
     with:
       node-version: '20'
       package-manager: 'npm'
@@ -128,8 +161,10 @@ jobs:
     if: |
       always() &&
       needs.lint-and-typecheck.result == 'success' &&
-      (needs.detect-changes.outputs.source == 'true' || needs.detect-changes.outputs.config == 'true')
-    uses: ./.github/workflows/reusable/build.yml
+      (needs.detect-changes.outputs.source == 'true' ||
+       needs.detect-changes.outputs.config == 'true' ||
+       needs.detect-changes.outputs.run-all == 'true')
+    uses: ./.github/workflows/build.yml
     with:
       node-version: '20'
       package-manager: 'npm'
@@ -144,8 +179,9 @@ jobs:
     if: |
       needs.detect-changes.outputs.source == 'true' ||
       needs.detect-changes.outputs.tests == 'true' ||
-      needs.detect-changes.outputs.config == 'true'
-    uses: ./.github/workflows/reusable/test.yml
+      needs.detect-changes.outputs.config == 'true' ||
+      needs.detect-changes.outputs.run-all == 'true'
+    uses: ./.github/workflows/test.yml
     with:
       node-version: '20'
       package-manager: 'npm'
@@ -156,8 +192,10 @@ jobs:
   validate-workflows:
     name: Validate workflows
     needs: detect-changes
-    if: needs.detect-changes.outputs.workflows == 'true'
-    uses: ./.github/workflows/reusable/validate-workflows.yml
+    if: |
+      needs.detect-changes.outputs.workflows == 'true' ||
+      needs.detect-changes.outputs.run-all == 'true'
+    uses: ./.github/workflows/validate-workflows.yml
 
   # -------------------------------------------------------------------------
   # 6. Supabase validation — delegates to reusable/validate-supabase.yml
@@ -165,8 +203,10 @@ jobs:
   validate-supabase:
     name: Validate Supabase
     needs: detect-changes
-    if: needs.detect-changes.outputs.supabase == 'true'
-    uses: ./.github/workflows/reusable/validate-supabase.yml
+    if: |
+      needs.detect-changes.outputs.supabase == 'true' ||
+      needs.detect-changes.outputs.run-all == 'true'
+    uses: ./.github/workflows/validate-supabase.yml
 
   # -------------------------------------------------------------------------
   # 7. Single required status check.
@@ -192,6 +232,7 @@ jobs:
             echo ""
             echo "| Job | Reusable workflow | Result |"
             echo "|---|---|---|"
+            echo "| Detect changes | (this workflow) | ${{ needs.detect-changes.result }} |"
             echo "| Lint & type-check | reusable/lint-typecheck.yml | ${{ needs.lint-and-typecheck.result }} |"
             echo "| Build | reusable/build.yml | ${{ needs.build.result }} |"
             echo "| Unit & component tests | reusable/test.yml | ${{ needs.unit-tests.result }} |"
@@ -200,6 +241,15 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           FAILED=0
+
+          # CHANGED: detect-changes is now checked. It runs unconditionally,
+          # so anything other than 'success' here (failure, cancelled, or
+          # even skipped, which should never legitimately happen for this
+          # job) means we can't trust the classification and must fail.
+          if [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            FAILED=1
+          fi
+
           for result in "${{ needs.lint-and-typecheck.result }}" \
                         "${{ needs.build.result }}" \
                         "${{ needs.unit-tests.result }}" \
@@ -211,7 +261,7 @@ jobs:
           done
 
           if [ "$FAILED" = "1" ]; then
-            echo "One or more required jobs failed." >> "$GITHUB_STEP_SUMMARY"
+            echo "One or more required jobs failed (or change detection itself failed)." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 
