@@ -350,30 +350,57 @@ const History = () => {
 
   const exportCSV = () => {
     const headers = [
-  "Date",
-  "Symptoms",
-  "Severity",
-  "Risk Score",
-  "Possible Causes",
-  "Recommendations",
-  "Resolved",
-];
-    const rows = history.map((entry) => [
-  new Date(entry.created_at).toLocaleDateString(),
-  `"${entry.symptoms.replace(/"/g, '""')}"`,
-  entry.severity_level,
-  entry.risk_score,
-  `"${entry.possible_causes.join("; ").replace(/"/g, '""')}"`,
-  `"${entry.recommendations.join("; ").replace(/"/g, '""')}"`,
-  entry.resolved ? "Yes" : "No",
-]);
+      "Date",
+      "Symptoms",
+      "Severity",
+      "Risk Score",
+      "Possible Causes",
+      "Recommendations",
+      "Resolved",
+    ];
+    const rows = history.map((entry) => {
+      const date = new Date(entry.created_at);
+      const formattedDate = isNaN(date.getTime())
+        ? ""
+        : date.toLocaleDateString("en-US"); // consistent short format to avoid long locale-specific strings showing as ######## in Excel
+
+      const cleanText = (text: string) => {
+        if (!text) return "";
+        return stripMarkdownFormatting(text).replace(/\*/g, "");
+      };
+
+      const symptomsClean = cleanText(entry.symptoms);
+      const severity = entry.severity_level || "";
+      const riskScore = entry.risk_score !== undefined && entry.risk_score !== null ? entry.risk_score : "";
+
+      const possibleCausesClean = entry.possible_causes
+        ? entry.possible_causes.map((cause) => cleanText(cause)).join("; ")
+        : "";
+
+      const recommendationsClean = entry.recommendations
+        ? entry.recommendations.map((rec) => cleanText(rec)).join("; ")
+        : "";
+
+      const resolved = entry.resolved ? "Yes" : "No";
+
+      return [
+        formattedDate,
+        `"${symptomsClean.replace(/"/g, '""')}"`,
+        severity,
+        riskScore,
+        `"${possibleCausesClean.replace(/"/g, '""')}"`,
+        `"${recommendationsClean.replace(/"/g, '""')}"`,
+        resolved,
+      ];
+    });
+
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" }); // UTF-8 BOM for Excel compatibility
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     const date = new Date().toISOString().split("T")[0];
-a.download = `symptom-history-${date}.csv`;
+    a.download = `symptom-history-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
