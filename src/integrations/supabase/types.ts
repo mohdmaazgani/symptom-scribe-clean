@@ -22,6 +22,9 @@ export type Database = {
           title: string | null
           updated_at: string | null
           user_id: string
+          phase: "gathering" | "ready" | "complete"
+          collected_info: Json
+          questions_asked: number
         }
         Insert: {
           created_at?: string | null
@@ -30,6 +33,9 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           user_id: string
+          phase?: "gathering" | "ready" | "complete"
+          collected_info?: Json
+          questions_asked?: number
         }
         Update: {
           created_at?: string | null
@@ -38,6 +44,9 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           user_id?: string
+          phase?: "gathering" | "ready" | "complete"
+          collected_info?: Json
+          questions_asked?: number
         }
         Relationships: []
       }

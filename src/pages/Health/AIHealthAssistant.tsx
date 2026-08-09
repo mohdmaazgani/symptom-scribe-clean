@@ -7,6 +7,8 @@ import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import ReactMarkdown from "react-markdown";
+import { type TriagePhase, type CollectedInfo } from "@/types/triage";
+
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
 import {
@@ -75,6 +77,11 @@ const AIHealthAssistant = () => {
     { role: "user" | "assistant"; text: string; time: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
+
+  const [phase, setPhase] = useState<TriagePhase>("gathering");
+  const [collectedInfo, setCollectedInfo] = useState<CollectedInfo>({});
+  const [questionsAsked, setQuestionsAsked] = useState<number>(0);
+  const [parseFailures, setParseFailures] = useState<number>(0);
   const [isListening, setIsListening] = useState(false);
   const [currentlyReadingText, setCurrentlyReadingText] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -227,6 +234,10 @@ const AIHealthAssistant = () => {
         },
         body: JSON.stringify({
           messages: [...recentContext, { role: "user", content: userMessage }],
+          phase,
+          collectedInfo,
+          questionsAsked,
+          parseFailures,
         }),
       });
 
@@ -244,6 +255,11 @@ const AIHealthAssistant = () => {
       const decoder = new TextDecoder();
       let textBuffer = "";
       let streamDone = false;
+
+      let latestPhase = phase;
+      let latestCollectedInfo = collectedInfo;
+      let latestQuestionsAsked = questionsAsked;
+      let latestParseFailures = parseFailures;
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -269,6 +285,19 @@ const AIHealthAssistant = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) upsertAssistant(content);
+
+            if (parsed.triageState) {
+              const state = parsed.triageState;
+              latestPhase = state.phase;
+              latestCollectedInfo = state.collectedInfo;
+              latestQuestionsAsked = state.questionsAsked;
+              latestParseFailures = state.parseFailures || 0;
+
+              setPhase(latestPhase);
+              setCollectedInfo(latestCollectedInfo);
+              setQuestionsAsked(latestQuestionsAsked);
+              setParseFailures(latestParseFailures);
+            }
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
@@ -283,7 +312,7 @@ const AIHealthAssistant = () => {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (user) {
+        if (user && (latestPhase === "complete" || latestPhase === "ready")) {
           const { possibleCauses, recommendations, severityLevel } =
             parseSymptomConsultation(assistantContent);
 
@@ -553,6 +582,11 @@ const AIHealthAssistant = () => {
                       >
                         {msg.text.replace(/•/g, "-")}
                       </ReactMarkdown>
+                      {msg.role === "assistant" && i === messages.length - 1 && phase === "gathering" && questionsAsked > 0 && (
+                        <div className="text-[10px] text-muted-foreground mt-2 border-t border-border/40 pt-1.5 font-medium select-none">
+                          Clarifying Question {questionsAsked} of ~4
+                        </div>
+                      )}
                     </div>
                   </div>
                   <span
