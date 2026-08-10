@@ -647,7 +647,7 @@ Play brain-training games.
 For detailed troubleshooting instructions, see:
 
 ```text
-TROUBLESHOOTING.md
+TROUBLESHOOT.md
 ```
 
 Common issues include:

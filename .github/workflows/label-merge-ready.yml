@@ -1,0 +1,141 @@
+name: Auto Label Merge Ready
+
+on:
+  workflow_run:
+    workflows: ["CI Validation", "Tests"]
+    types: [completed]
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  actions: read
+  contents: read
+
+jobs:
+  update-merge-ready-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update merge-ready label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const LABEL = 'merge-ready';
+
+            // Ensure the label exists before trying to attach it — issues.addLabels
+            // fails with 422 when the label has never been created in the repo.
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: LABEL });
+            } catch (err) {
+              if (err.status === 404) {
+                try {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: LABEL,
+                    color: '0e8a16',
+                    description: 'All required CI checks have passed on the head commit',
+                  });
+                  console.log(`Created missing label "${LABEL}".`);
+                } catch (createErr) {
+                  // Race condition if two runs create it at the same time
+                  if (createErr.status !== 422) throw createErr;
+                }
+              } else {
+                throw err;
+              }
+            }
+
+            // Determine which PR(s) to inspect and on which head SHA.
+            let headSha;
+            const prNumbers = new Set();
+
+            if (context.eventName === 'workflow_run') {
+              const run = context.payload.workflow_run;
+              headSha = run.head_sha;
+
+              // PRs associated with the completed CI run (may be empty for fork PRs).
+              for (const pr of run.pull_requests || []) {
+                prNumbers.add(pr.number);
+              }
+
+              // Fallback: resolve PRs whose head commit matches this SHA.
+              if (prNumbers.size === 0) {
+                try {
+                  const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                    owner,
+                    repo,
+                    commit_sha: headSha,
+                  });
+                  for (const pr of data) prNumbers.add(pr.number);
+                } catch (err) {
+                  console.log(`Could not resolve PRs for ${headSha}: ${err.message}`);
+                }
+              }
+            } else {
+              // pull_request_target: a new commit invalidates any previous result.
+              headSha = context.payload.pull_request.head.sha;
+              prNumbers.add(context.payload.pull_request.number);
+            }
+
+            if (prNumbers.size === 0) {
+              console.log(`No PRs to process for ${context.eventName}.`);
+              return;
+            }
+
+            // Merge-ready only when BOTH gate workflows have a successful run on this SHA.
+            let allGreen = false;
+            if (context.eventName === 'workflow_run') {
+              allGreen = true;
+              for (const workflowFile of ['ci.yml', 'tests.yml']) {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner,
+                  repo,
+                  workflow_id: workflowFile,
+                  head_sha: headSha,
+                  per_page: 1,
+                });
+                const run = data.total_count > 0 ? data.workflow_runs[0] : null;
+                if (!run || run.conclusion !== 'success') {
+                  allGreen = false;
+                }
+              }
+            }
+
+            for (const number of prNumbers) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: number,
+              });
+
+              // Drafts can never be merge-ready.
+              if (pr.draft) {
+                console.log(`PR #${number} is a draft; skipping.`);
+                continue;
+              }
+
+              const hasLabel = pr.labels.some((l) => l.name === LABEL);
+
+              if (allGreen && !hasLabel) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  labels: [LABEL],
+                });
+                console.log(`Added "${LABEL}" to PR #${number}.`);
+              } else if (!allGreen && hasLabel) {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  name: LABEL,
+                });
+                console.log(`Removed "${LABEL}" from PR #${number}.`);
+              } else {
+                console.log(`PR #${number} label state is correct (green=${allGreen}).`);
+              }
+            }

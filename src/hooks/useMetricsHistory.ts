@@ -28,7 +28,7 @@ export function useMetricsHistory(userId: string | null) {
               metric_type: record.metric_type,
               value: record.value,
               notes: record.notes,
-              recorded_at: record.recorded_at || new Date().toISOString(),
+              recorded_at: record.recorded_at ?? new Date().toISOString(),
               pending_sync: 0,
               pending_delete: 0,
             }));
@@ -87,7 +87,7 @@ export function useMetricsHistory(userId: string | null) {
 
       setRecords(sortedRecords);
     } catch (err) {
-      console.error("Error loading local metrics:", err);
+      console.warn("Error loading local metrics:", err);
     } finally {
       setLoading(false);
     }

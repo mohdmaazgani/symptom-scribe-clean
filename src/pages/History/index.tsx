@@ -23,6 +23,7 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
+import { stripMarkdownFormatting } from "@/lib/symptom-consultation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -235,7 +236,7 @@ const History = () => {
           setHistory(decryptedRecords as unknown as SymptomEntry[]);
         }
       } catch (err) {
-        console.error("Error loading local symptoms:", err);
+        console.warn("Error loading local symptoms:", err);
       } finally {
         setLoading(false);
       }
@@ -321,21 +322,85 @@ const History = () => {
     }
   };
 
+  const deleteAllEntries = async () => {
+    try {
+      if (navigator.onLine) {
+        const { error } = await supabase
+          .from("symptom_history")
+          .delete()
+          .eq("user_id", history[0]?.user_id || "");
+
+        if (error) throw error;
+        await invalidateCache("symptom_history");
+        await db.symptomHistory.clear();
+      } else {
+        const allRecords = await db.symptomHistory.toArray();
+        for (const record of allRecords) {
+          await db.symptomHistory.update(record.id, { pending_delete: 1 });
+        }
+      }
+
+      showSuccess("All records deleted", "Your symptom history has been permanently cleared.");
+      setHistory([]);
+    } catch (error) {
+      console.error("Error deleting all history:", error);
+      showError("Delete failed", "Could not clear your health records.");
+    }
+  };
+
   const exportCSV = () => {
-    const headers = ["Date", "Symptoms", "Severity", "Risk Score", "Resolved"];
-    const rows = history.map((entry) => [
-      new Date(entry.created_at).toLocaleDateString(),
-      `"${entry.symptoms.replace(/"/g, '""')}"`,
-      entry.severity_level,
-      entry.risk_score,
-      entry.resolved ? "Yes" : "No",
-    ]);
+    const headers = [
+      "Date",
+      "Symptoms",
+      "Severity",
+      "Risk Score",
+      "Possible Causes",
+      "Recommendations",
+      "Resolved",
+    ];
+    const rows = history.map((entry) => {
+      const date = new Date(entry.created_at);
+      const formattedDate = isNaN(date.getTime())
+        ? ""
+        : date.toLocaleDateString("en-US"); // consistent short format to avoid long locale-specific strings showing as ######## in Excel
+
+      const cleanText = (text: string) => {
+        if (!text) return "";
+        return stripMarkdownFormatting(text).replace(/\*/g, "");
+      };
+
+      const symptomsClean = cleanText(entry.symptoms);
+      const severity = entry.severity_level || "";
+      const riskScore = entry.risk_score !== undefined && entry.risk_score !== null ? entry.risk_score : "";
+
+      const possibleCausesClean = entry.possible_causes
+        ? entry.possible_causes.map((cause) => cleanText(cause)).join("; ")
+        : "";
+
+      const recommendationsClean = entry.recommendations
+        ? entry.recommendations.map((rec) => cleanText(rec)).join("; ")
+        : "";
+
+      const resolved = entry.resolved ? "Yes" : "No";
+
+      return [
+        formattedDate,
+        `"${symptomsClean.replace(/"/g, '""')}"`,
+        severity,
+        riskScore,
+        `"${possibleCausesClean.replace(/"/g, '""')}"`,
+        `"${recommendationsClean.replace(/"/g, '""')}"`,
+        resolved,
+      ];
+    });
+
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" }); // UTF-8 BOM for Excel compatibility
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "symptom-history.csv";
+    const date = new Date().toISOString().split("T")[0];
+    a.download = `symptom-history-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -452,6 +517,31 @@ const History = () => {
               <CalendarIcon className="w-3.5 h-3.5" />
               Calendar View
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete All
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all symptom history?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove all {history.length} consultation records. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={deleteAllEntries}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete All Records
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
           {history.length > 0 && (
             <div className="flex gap-2">
@@ -562,7 +652,7 @@ const History = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               {filteredHistory.map((entry) => (
                 <Card key={entry.id} className={entry.resolved ? "opacity-70" : ""}>
                   <CardHeader>
@@ -634,7 +724,7 @@ const History = () => {
                           <p className="text-sm font-semibold mb-1">Possible Causes:</p>
                           <ul className="text-sm text-muted-foreground list-disc list-inside">
                             {entry.possible_causes.map((cause, idx) => (
-                              <li key={idx}>{cause}</li>
+                              <li key={idx}>{stripMarkdownFormatting(cause)}</li>
                             ))}
                           </ul>
                         </div>
@@ -644,7 +734,7 @@ const History = () => {
                           <p className="text-sm font-semibold mb-1">Recommendations:</p>
                           <ul className="text-sm text-muted-foreground list-disc list-inside">
                             {entry.recommendations.map((rec, idx) => (
-                              <li key={idx}>{rec}</li>
+                              <li key={idx}>{stripMarkdownFormatting(rec)}</li>
                             ))}
                           </ul>
                         </div>
