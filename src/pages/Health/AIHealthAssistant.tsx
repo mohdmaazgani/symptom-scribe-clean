@@ -80,17 +80,19 @@ const AIHealthAssistant = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Cleanup recognition and speech synthesis on unmount
+  // Cleanup recognition, speech synthesis, and in-flight chat stream on unmount
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
       window.speechSynthesis?.cancel();
+      streamAbortRef.current?.abort();
     };
   }, []);
 
@@ -190,6 +192,10 @@ const AIHealthAssistant = () => {
     setMessages((prev) => [...prev, { role: "user", text: userMessage, time }]);
     setLoading(true);
 
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+
     let assistantContent = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -228,6 +234,7 @@ const AIHealthAssistant = () => {
         body: JSON.stringify({
           messages: [...recentContext, { role: "user", content: userMessage }],
         }),
+        signal: abortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -366,6 +373,10 @@ const AIHealthAssistant = () => {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        dismissLoading();
+        return;
+      }
       console.error("Chat error:", error);
       dismissLoading();
 
@@ -384,6 +395,9 @@ const AIHealthAssistant = () => {
       showError("Analysis failed", errorMessage);
       setMessages((prev) => prev.filter((m) => !(m.role === "user" && m.text === userMessage)));
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setLoading(false);
     }
   };

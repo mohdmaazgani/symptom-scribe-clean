@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -81,7 +81,25 @@ const ChatInterface = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+
+  const previewUrls = useMemo(
+    () => selectedFiles.map((file) => URL.createObjectURL(file)),
+    [selectedFiles]
+  );
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -177,6 +195,10 @@ const ChatInterface = () => {
     setInput("");
     setIsLoading(true);
 
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+
     let assistantContent = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -250,6 +272,7 @@ const ChatInterface = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ messages: [...recentContext, userMessage] }),
+        signal: abortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -416,6 +439,10 @@ const ChatInterface = () => {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        dismissLoading();
+        return;
+      }
       console.error("Chat error:", error);
       dismissLoading();
       const errorMsg =
@@ -423,6 +450,9 @@ const ChatInterface = () => {
       showError("Analysis failed", errorMsg);
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setIsLoading(false);
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -663,9 +693,9 @@ const ChatInterface = () => {
           {selectedFiles.length > 0 && (
             <div className="flex gap-2 mb-3 overflow-x-auto p-2 border border-border/50 rounded-xl bg-background/50">
               {selectedFiles.map((file, idx) => (
-                <div key={idx} className="relative shrink-0">
+                <div key={`${file.name}-${file.lastModified}-${idx}`} className="relative shrink-0">
                   <img
-                    src={URL.createObjectURL(file)}
+                    src={previewUrls[idx]}
                     alt={`Preview ${idx + 1}`}
                     className="w-16 h-16 object-cover rounded-md border border-border"
                   />
