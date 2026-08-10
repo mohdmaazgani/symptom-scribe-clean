@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
+import { AuthProvider } from "./components/auth/AuthProvider";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 import { ProfileProvider } from "@/contexts/ProfileContext";
@@ -43,6 +44,7 @@ const Contact = lazy(() => import("./pages/Contact/index.tsx"));
 const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
+const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -129,9 +131,10 @@ const App = () => {
         <Sonner />
         <ProfileProvider>
           <BrowserRouter>
-            <ScrollToTop />
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
+            <AuthProvider>
+              <ScrollToTop />
+              <Suspense fallback={<LoadingScreen />}>
+                <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -245,6 +248,16 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/reminders"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reminders />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/privacy"
@@ -277,6 +290,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </AuthProvider>
         </BrowserRouter>
         </ProfileProvider>
         </TooltipProvider>

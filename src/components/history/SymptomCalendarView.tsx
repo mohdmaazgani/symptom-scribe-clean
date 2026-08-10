@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { stripMarkdownFormatting } from "@/lib/symptom-consultation";
 
 export interface SymptomEntry {
   id: string;
@@ -550,7 +551,7 @@ export const SymptomCalendarView = ({
                           <ul className="list-disc list-inside text-muted-foreground pl-1 mt-0.5 space-y-0.5">
                             {entry.possible_causes.map((c, i) => (
                               <li key={i} className="truncate">
-                                {c}
+                                {stripMarkdownFormatting(c)}
                               </li>
                             ))}
                           </ul>
@@ -563,7 +564,7 @@ export const SymptomCalendarView = ({
                           <ul className="list-disc list-inside text-muted-foreground pl-1 mt-0.5 space-y-0.5">
                             {entry.recommendations.map((r, i) => (
                               <li key={i} className="truncate">
-                                {r}
+                                {stripMarkdownFormatting(r)}
                               </li>
                             ))}
                           </ul>

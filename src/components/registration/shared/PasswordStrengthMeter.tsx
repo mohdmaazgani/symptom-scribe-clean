@@ -58,7 +58,7 @@ export function PasswordStrengthMeter({
       setCopiedGenerator(true);
       setTimeout(() => setCopiedGenerator(false), 2000);
     } catch {
-      console.error("Failed to copy password");
+      console.warn("Failed to copy password");
     }
   };
 

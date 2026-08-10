@@ -18,6 +18,7 @@ import {
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,26 +58,26 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "AI Health Assistant", url: "/ai-health-assistant", icon: Bot },
-  { title: "Health Metrics", url: "/metrics", icon: Activity },
-  { title: "History", url: "/history", icon: History },
-  { title: "Challenges", url: "/gamification", icon: Trophy },
-  { title: "Profile", url: "/profile", icon: User },
-  { title: "Emergency", url: "/emergency", icon: Phone },
-  { title: "Brain Games", url: "/brain-games", icon: Brain },
-  { title: "Health Facts", url: "/health-facts", icon: Sparkles },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
+  { titleKey: "sidebar.items.healthMetrics", url: "/metrics", icon: Activity },
+  { titleKey: "sidebar.items.history", url: "/history", icon: History },
+  { titleKey: "sidebar.items.challenges", url: "/gamification", icon: Trophy },
+  { titleKey: "sidebar.items.profile", url: "/profile", icon: User },
+  { titleKey: "sidebar.items.emergency", url: "/emergency", icon: Phone },
+  { titleKey: "sidebar.items.brainGames", url: "/brain-games", icon: Brain },
+  { titleKey: "sidebar.items.healthFacts", url: "/health-facts", icon: Sparkles },
+  { titleKey: "sidebar.items.settings", url: "/settings", icon: Settings },
 ];
 
 const themeOptions = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "cosmic", label: "Cosmic" },
-  { value: "deep-blue", label: "Deep Blue" },
-  { value: "forest", label: "Forest" },
-  { value: "orange", label: "Orange" },
-  { value: "pastel-pink", label: "Pastel Pink" },
+  "light",
+  "dark",
+  "cosmic",
+  "deep-blue",
+  "forest",
+  "orange",
+  "pastel-pink",
 ];
 
 export function AppSidebar() {
@@ -84,6 +85,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { profiles, activeProfile, switchProfile } = useProfile();
   const [themesOpen, setThemesOpen] = useState(false);
@@ -128,9 +130,7 @@ export function AppSidebar() {
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (typeof window !== "undefined" && window.isGameActive) {
-      const confirmLeave = window.confirm(
-        "Are you sure you want to leave? Your active game progress will be lost."
-      );
+      const confirmLeave = window.confirm(t("sidebar.leaveGameConfirm"));
       if (!confirmLeave) {
         e.preventDefault();
         return;
@@ -144,8 +144,8 @@ export function AppSidebar() {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to sign out",
+        title: t("sidebar.signOutErrorTitle"),
+        description: t("sidebar.signOutErrorDescription"),
         variant: "destructive",
       });
     } else {
@@ -159,7 +159,7 @@ export function AppSidebar() {
         <NavLink to="/" className="flex items-center" onClick={handleNavClick}>
           {!isCollapsed && (
             <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
-              Health Tracker
+              {t("sidebar.brand")}
             </h2>
           )}
         </NavLink>
@@ -198,7 +198,7 @@ export function AppSidebar() {
         <SidebarGroup>
           {/* ✨ updated: letter-spacing + slightly smaller weight for section label */}
           <SidebarGroupLabel className="tracking-wide text-[11px] text-sidebar-foreground/50">
-            Navigation
+            {t("sidebar.navigation")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             {/* ✨ updated: small gap between rows so the tinted active state has breathing room */}
@@ -206,7 +206,7 @@ export function AppSidebar() {
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       className={`py-2 transition-all duration-300 ease-in-out hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md${
@@ -217,7 +217,9 @@ export function AppSidebar() {
                     >
                       <NavLink to={item.url} end onClick={handleNavClick}>
                         <item.icon className="h-[17px] w-[17px]" />
-                        {!isCollapsed && <span className="text-[13.5px]">{item.title}</span>}
+                        {!isCollapsed && (
+                          <span className="text-[13.5px]">{t(item.titleKey)}</span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -229,10 +231,10 @@ export function AppSidebar() {
                   ref={themeTriggerRef}
                   onClick={() => setThemesOpen((prev) => !prev)}
                   className="py-2 transition-all duration-300 ease-in-out hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md"
-                  aria-label="Themes"
+                  aria-label={t("sidebar.themes")}
                 >
                   <Palette className="h-[17px] w-[17px]" />
-                  {!isCollapsed && <span className="text-[13.5px]">Themes</span>}
+                  {!isCollapsed && <span className="text-[13.5px]">{t("sidebar.themes")}</span>}
                   {!isCollapsed && (
                     <span className="ml-auto text-muted-foreground">
                       <PanelLeftClose className="h-4 w-4" />
@@ -245,24 +247,27 @@ export function AppSidebar() {
                   {/* ✨ updated: matching rounded-md + transition-colors for consistency with nav items */}
                   <SidebarMenuButton className="rounded-md transition-colors hover:bg-destructive/10 text-destructive py-2">
                     <LogOut className="h-[17px] w-[17px]" />{" "}
-                    {!isCollapsed && <span className="text-[13.5px]">Sign Out</span>}
+                    {!isCollapsed && (
+                      <span className="text-[13.5px]">{t("sidebar.signOut")}</span>
+                    )}
                   </SidebarMenuButton>
                 </AlertDialogTrigger>
 
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle> Confirm Sign Out</AlertDialogTitle>
+                    <AlertDialogTitle>{t("sidebar.confirmSignOutTitle")}</AlertDialogTitle>
 
                     <AlertDialogDescription>
-                      Are you sure you want to sign out? You will need to sign in again to access
-                      your account.
+                      {t("sidebar.confirmSignOutDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
 
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
 
-                    <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                    <AlertDialogAction onClick={handleSignOut}>
+                      {t("sidebar.signOut")}
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -283,24 +288,25 @@ export function AppSidebar() {
             style={{ left: 272 }}
           >
             <div className="mb-3 px-1 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Themes
+              {t("sidebar.themes")}
             </div>
             <div className="flex flex-col gap-1.5">
               {themeOptions.map((option) => {
-                const isActive = activeTheme === option.value;
+                const isActive = activeTheme === option;
+                const label = t(`sidebar.themeOptions.${option}`);
                 return (
                   <button
-                    key={option.value}
+                    key={option}
                     type="button"
-                    onClick={() => setTheme(option.value)}
+                    onClick={() => setTheme(option)}
                     className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors ${
                       isActive
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
-                    aria-label={option.label}
+                    aria-label={label}
                   >
-                    <span>{option.label}</span>
+                    <span>{label}</span>
                     {isActive ? <Check className="h-4 w-4" /> : null}
                   </button>
                 );

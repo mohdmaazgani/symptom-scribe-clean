@@ -1,0 +1,445 @@
+{
+  "common": {
+    "appName": "Symptom Scribe",
+    "productName": "Smart Health Tracker",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "getStarted": "Get Started",
+    "getStartedFree": "Get Started Free",
+    "goToDashboard": "Go to Dashboard",
+    "cancel": "Cancel",
+    "close": "Close",
+    "verify": "Verify",
+    "redirecting": "Redirecting...",
+    "loading": "Loading...",
+    "email": "Email",
+    "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "nav": {
+    "features": "Features",
+    "howItWorks": "How It Works",
+    "whyChooseUs": "Why Choose Us",
+    "reviews": "Reviews",
+    "faq": "FAQ",
+    "contact": "Contact"
+  },
+  "hero": {
+    "badge": "AI-Powered Health Analysis",
+    "headingLine1": "Smart Health",
+    "headingLine2": "Tracker",
+    "subtitle": "Describe your symptoms and get instant AI-powered insights on possible causes, severity levels, and self-care recommendations.",
+    "getStarted": "Get Started Free",
+    "signIn": "Sign In",
+    "toastWelcomeTitle": "Welcome to Smart Health Tracker",
+    "toastWelcomeDesc": "Sign in to start tracking your health",
+    "toastBackTitle": "Welcome back!",
+    "toastBackDesc": "Please sign in to continue",
+    "pillSecureTitle": "Private & Secure",
+    "pillSecureDesc": "Your health data stays confidential",
+    "pillInstantTitle": "Instant Analysis",
+    "pillInstantDesc": "Get insights in seconds",
+    "pillEvidenceTitle": "Evidence-Based",
+    "pillEvidenceDesc": "Powered by medical knowledge"
+  },
+  "home": {
+    "features": {
+      "heading": "Comprehensive Health Tracking",
+      "subtitle": "Everything you need to monitor, analyze, and improve your health in one powerful platform",
+      "aiAssistant": {
+        "title": "AI Health Assistant",
+        "desc": "Get instant symptom analysis with severity assessment and personalized recommendations"
+      },
+      "analytics": {
+        "title": "Health Analytics",
+        "desc": "Track your health metrics with visual analytics and trend analysis over time"
+      },
+      "history": {
+        "title": "Complete History",
+        "desc": "Maintain detailed records of all consultations and health events in one place"
+      },
+      "emergency": {
+        "title": "Emergency Resources",
+        "desc": "Quick access to emergency contacts and critical health information when needed"
+      }
+    },
+    "howItWorks": {
+      "heading": "How It Works",
+      "subtitle": "Three simple steps to better health management",
+      "step1": {
+        "title": "Sign Up & Set Profile",
+        "desc": "Create your account and set up your health profile with basic information and health goals."
+      },
+      "step2": {
+        "title": "Track & Analyze",
+        "desc": "Input your symptoms, track your metrics, and let our AI analyze your health data for insights."
+      },
+      "step3": {
+        "title": "Get Recommendations",
+        "desc": "Receive personalized health recommendations and know when to seek professional care."
+      }
+    },
+    "why": {
+      "heading": "Why Choose Smart Health Tracker",
+      "subtitle": "Powerful features that make health management effortless",
+      "insights": {
+        "title": "AI-Powered Insights",
+        "desc": "Advanced AI algorithms analyze your symptoms and provide evidence-based recommendations instantly"
+      },
+      "tracking": {
+        "title": "Comprehensive Tracking",
+        "desc": "Monitor multiple health metrics including vitals, symptoms, medications, and lifestyle factors"
+      },
+      "privacy": {
+        "title": "Privacy & Security",
+        "desc": "Your health data is encrypted and stored securely with industry-leading security standards"
+      },
+      "games": {
+        "title": "Brain Games",
+        "desc": "Engage in cognitive exercises to keep your mind sharp while tracking mental wellness"
+      },
+      "emergency": {
+        "title": "Emergency Access",
+        "desc": "Quick access to emergency numbers and nearby hospitals when every second counts"
+      },
+      "education": {
+        "title": "Health Education",
+        "desc": "Access curated health facts and educational content to improve your health literacy"
+      }
+    },
+    "testimonials": {
+      "heading": "What Our Users Say",
+      "subtitle": "Join thousands of satisfied users taking control of their health",
+      "showTestimonial": "Show testimonial {{index}}",
+      "one": {
+        "role": "Health Enthusiast",
+        "content": "This app helped me track my symptoms and understand when to seek medical help. The AI analysis is surprisingly accurate!"
+      },
+      "two": {
+        "role": "Fitness Coach",
+        "content": "I use this daily to monitor my clients' health metrics. The comprehensive tracking and analytics are game-changing."
+      },
+      "three": {
+        "role": "Medical Professional",
+        "content": "An excellent tool for preliminary health awareness. It empowers patients to make informed decisions about their health."
+      }
+    },
+    "faq": {
+      "heading": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about Smart Health Tracker",
+      "q1": "Is this a replacement for visiting a doctor?",
+      "a1": "No, Smart Health Tracker is designed to provide general health information and help you understand when to seek professional medical care. It should never replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.",
+      "q2": "How accurate is the AI health analysis?",
+      "a2": "Our AI is trained on medical knowledge bases and provides evidence-based insights. However, it's designed for educational purposes and preliminary assessment only. The accuracy depends on the quality and completeness of information you provide. For definitive diagnosis, always consult healthcare professionals.",
+      "q3": "Is my health data secure and private?",
+      "a3": "Yes, we take data security seriously. All health data is encrypted both in transit and at rest. We comply with healthcare data protection standards and never share your personal health information with third parties without your explicit consent. You have full control over your data.",
+      "q4": "What features are included in the platform?",
+      "a4": "The platform includes AI-powered symptom analysis, health metrics tracking, consultation history, brain games for cognitive health, emergency resources, health education facts, personalized dashboards, and comprehensive analytics. All features are designed to work together for holistic health management.",
+      "q5": "Can I use this for tracking chronic conditions?",
+      "a5": "Yes, the platform is excellent for tracking chronic conditions over time. You can monitor symptoms, track medications, record vitals, and observe trends. This information can be valuable to share with your healthcare provider. However, always follow your doctor's treatment plan for managing chronic conditions.",
+      "q6": "Is there a mobile app available?",
+      "a6": "Smart Health Tracker is a progressive web application (PWA) that works seamlessly on all devices - desktop, tablet, and mobile. You can access it through your web browser and even add it to your home screen for a native app-like experience. No separate app download required!"
+    },
+    "cta": {
+      "heading": "Ready to Take Control of Your Health?",
+      "subtitle": "Join thousands of users who are already using Smart Health Tracker to monitor their health, understand their symptoms, and make informed decisions about their wellbeing.",
+      "note": "No credit card required • Free to use • Secure & Private"
+    },
+    "footer": {
+      "tagline": "Your intelligent health companion for symptom analysis, health tracking, and wellness insights powered by AI.",
+      "viewOnGithub": "View on GitHub",
+      "platform": "Platform",
+      "resources": "Resources",
+      "legal": "Legal",
+      "symptomChecker": "AI Symptom Checker",
+      "healthMetrics": "Health Metrics",
+      "consultationHistory": "Consultation History",
+      "brainTraining": "Brain Training",
+      "healthLibrary": "Health Library",
+      "emergencyGuide": "Emergency Guide",
+      "faq": "FAQ",
+      "blog": "Blog",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "medicalDisclaimer": "Medical Disclaimer",
+      "contactSupport": "Contact Support",
+      "copyright": "© 2026 Symptom Scribe. All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "disclaimer": "Disclaimer",
+      "accessibility": "Accessibility",
+      "informationalNotice": "For informational purposes only. Always consult a qualified healthcare provider for medical advice."
+    }
+  },
+  "sidebar": {
+    "brand": "Health Tracker",
+    "navigation": "Navigation",
+    "themes": "Themes",
+    "signOut": "Sign Out",
+    "confirmSignOutTitle": "Confirm Sign Out",
+    "confirmSignOutDescription": "Are you sure you want to sign out? You will need to sign in again to access your account.",
+    "leaveGameConfirm": "Are you sure you want to leave? Your active game progress will be lost.",
+    "signOutErrorTitle": "Error",
+    "signOutErrorDescription": "Failed to sign out",
+    "items": {
+      "dashboard": "Dashboard",
+      "aiHealthAssistant": "AI Health Assistant",
+      "healthMetrics": "Health Metrics",
+      "history": "History",
+      "challenges": "Challenges",
+      "profile": "Profile",
+      "emergency": "Emergency",
+      "brainGames": "Brain Games",
+      "healthFacts": "Health Facts",
+      "settings": "Settings"
+    },
+    "themeOptions": {
+      "light": "Light",
+      "dark": "Dark",
+      "cosmic": "Cosmic",
+      "deep-blue": "Deep Blue",
+      "forest": "Forest",
+      "orange": "Orange",
+      "pastel-pink": "Pastel Pink"
+    }
+  },
+  "emergencyQuickAccess": {
+    "openLabel": "Open emergency quick actions",
+    "needHelp": "Need Help?",
+    "title": "Quick Emergency Actions",
+    "callServices": "Call Emergency Services",
+    "callNumbers": "112 / 911 / 999",
+    "openGuide": "Open First Aid & Emergency Guide",
+    "checkingContact": "Checking your emergency contact...",
+    "noContactTitle": "No emergency contact configured",
+    "addInProfile": "Add one in your profile",
+    "alertContact": "Alert {{name}}",
+    "defaultContactName": "Emergency Contact",
+    "acquiringLocation": "Acquiring location...",
+    "sendingAlert": "Sending alert...",
+    "alertBroadcast": "Alert broadcast",
+    "broadcastFailedRetry": "Broadcast failed — tap to retry",
+    "footerNote": "In a life-threatening emergency, always call your local emergency number first.",
+    "onMobileTitle": "On mobile?",
+    "onMobileDesc": "This button dials emergency services directly on a phone.",
+    "authRequiredTitle": "Authentication Required",
+    "authRequiredDesc": "Please sign in to alert your emergency contact",
+    "noContactSavedTitle": "No Contact Saved",
+    "noContactSavedDesc": "Set up an emergency contact in your Health Profile page first.",
+    "alertSentTitle": "Alert Sent!",
+    "alertQueuedTitle": "Offline: Broadcast Queued",
+    "alertSentDesc": "Emergency alert broadcast to {{name}}.",
+    "alertQueuedDesc": "No connection. Alert signed and queued on the local mesh for {{name}}.",
+    "broadcastFailedTitle": "Broadcast Failed"
+  },
+  "dashboard": {
+    "welcome": "Welcome, <1>{{name}}</1>",
+    "welcomeSubtitle": "Advanced analytics & personalized health insights",
+    "title": "Health Dashboard",
+    "subtitle": "Overview of your health tracking journey",
+    "lastUpdated": "Last updated: {{time}}",
+    "wellnessScoreLabel": "Wellness Score: {{score}}%",
+    "wellnessShort": "Well",
+    "totalConsultations": "Total Consultations",
+    "totalConsultationsDesc": "Lifetime symptom checks",
+    "activeIssues": "Active Issues",
+    "activeIssuesDesc": "Requiring follow-up",
+    "overallWellness": "Overall Wellness",
+    "avgRisk": "Avg Risk:",
+    "recentActivity": "Recent Activity",
+    "recentActivityDesc": "Last 7 days",
+    "recentChecks": "Recent Symptom Checks",
+    "recentChecksDesc": "Your most recent health consultations",
+    "emptyTitle": "No health data yet — start tracking!",
+    "emptyDescription": "Consult the AI Assistant to log your first symptom check.",
+    "emptyCta": "Start Tracking",
+    "welcomeToastTitle": "Welcome!",
+    "welcomeToastDesc": "Start by consulting with the AI Assistant",
+    "connectionErrorTitle": "Connection Error",
+    "connectionErrorDesc": "Failed to load dashboard data"
+  },
+  "auth": {
+    "backToHome": "Back to Home",
+    "badge": "AI-powered healthcare dashboard",
+    "headline": "Care insights that feel calm, clear, and secure.",
+    "subheadline": "Track symptoms, health patterns, and personalized guidance from a focused workspace built for everyday care decisions.",
+    "featureHistoryTitle": "Smart symptom history",
+    "featureHistoryDesc": "Organized health records with trend-aware summaries.",
+    "featurePrivacyTitle": "Private by design",
+    "featurePrivacyDesc": "A secure entry point with accessible contrast and focus states.",
+    "cardTitle": "Smart Health Tracker",
+    "cardDescription": "Manage your health with AI-powered insights",
+    "emailPlaceholder": "your@email.com",
+    "forgotPassword": "Forgot Password?",
+    "signingIn": "Signing In...",
+    "verifying": "Verifying...",
+    "mfaPrompt": "Enter the 6-digit code from your authenticator app",
+    "validationErrorTitle": "Validation Error",
+    "signInFailedTitle": "Sign In Failed",
+    "invalidCodeTitle": "Invalid Code",
+    "verificationFailedTitle": "Verification Failed",
+    "incorrectCodeTitle": "Incorrect Code",
+    "incorrectCodeDesc": "The code you entered is incorrect or expired",
+    "emailRequiredTitle": "Email Required",
+    "emailRequiredDesc": "Please enter your email address before resetting your password",
+    "resetFailedTitle": "Reset Failed",
+    "resetEmailSentTitle": "Reset Email Sent",
+    "resetEmailSentDesc": "Please check your inbox for the password reset link"
+  },
+  "settings": {
+    "title": "Account Settings",
+    "subtitle": "Manage your account security and preferences",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language for the app interface",
+    "tabs": {
+      "password": "Change Password",
+      "passwordShort": "Password",
+      "twoFactor": "Two-Factor Auth",
+      "twoFactorShort": "2FA",
+      "language": "Language",
+      "languageShort": "Lang",
+      "accessibility": "Accessibility",
+      "accessibilityShort": "A11y",
+      "delete": "Delete Account",
+      "deleteShort": "Delete"
+    },
+    "password": {
+      "title": "Change Password",
+      "description": "Update your password to keep your account secure",
+      "current": "Current Password",
+      "currentPlaceholder": "Enter your current password",
+      "new": "New Password",
+      "newPlaceholder": "Create a strong password",
+      "confirm": "Confirm New Password",
+      "confirmPlaceholder": "Re-enter your new password",
+      "mismatch": "Passwords do not match",
+      "match": "Passwords match",
+      "updating": "Updating...",
+      "update": "Update Password"
+    },
+    "delete": {
+      "title": "Delete Account",
+      "description": "This action cannot be undone",
+      "warningTitle": "Warning: Permanent Deletion",
+      "warning1": "Your account will be permanently deleted",
+      "warning2": "All your health data and history will be removed",
+      "warning3": "This action cannot be reversed",
+      "warning4": "You will need to create a new account to use the service again",
+      "confirmLabel": "Confirm with your password",
+      "confirmPlaceholder": "Enter your password to confirm",
+      "button": "Delete My Account",
+      "dialogTitle": "Delete Account?",
+      "dialogQuestion": "Are you absolutely sure you want to delete your account?",
+      "dialogWarning": "This will permanently remove all your data and cannot be undone.",
+      "dialogNote": "You will be logged out and redirected to the login page.",
+      "deleting": "Deleting...",
+      "confirmButton": "Delete Account"
+    },
+    "toasts": {
+      "validationErrorTitle": "Validation Error",
+      "enterCurrentPassword": "Please enter your current password",
+      "enterNewPassword": "Please enter a new password",
+      "passwordsDoNotMatch": "New passwords do not match",
+      "weakPasswordTitle": "Weak Password",
+      "weakPasswordDesc": "Password does not meet strength requirements",
+      "invalidPasswordTitle": "Invalid Password",
+      "currentPasswordIncorrect": "Current password is incorrect",
+      "passwordIncorrect": "Password is incorrect",
+      "updateFailedTitle": "Update Failed",
+      "passwordUpdatedTitle": "Password Updated!",
+      "passwordUpdatedDesc": "Your password has been changed successfully",
+      "unexpectedErrorTitle": "Error",
+      "unexpectedErrorDesc": "An unexpected error occurred",
+      "enterPasswordToConfirm": "Please enter your password to confirm",
+      "deletionFailedTitle": "Deletion Failed",
+      "accountDeletedTitle": "Account Deleted",
+      "accountDeletedDesc": "Your account has been deleted successfully",
+      "unauthorizedTitle": "Unauthorized",
+      "unauthorizedDesc": "You are not authorized to delete this account",
+      "userNotFoundTitle": "User Not Found",
+      "userNotFoundDesc": "The account could not be found",
+      "networkErrorTitle": "Network Error",
+      "networkErrorDesc": "Please check your internet connection and try again",
+      "deletionUnexpectedDesc": "An unexpected error occurred while deleting your account"
+    }
+  },
+  "accessibility": {
+    "title": "Accessibility Mode",
+    "description": "Adjust visual and interaction settings to improve readability and usability.",
+    "fontSize": "Font Size",
+    "current": "Current:",
+    "sizes": {
+      "normal": "Normal",
+      "normalDesc": "Default text size",
+      "large": "Large",
+      "largeDesc": "125% — easier to read",
+      "xLarge": "X-Large",
+      "xLargeDesc": "150% — maximum readability"
+    },
+    "highContrast": "High-Contrast Mode",
+    "highContrastDesc": "Increases colour contrast for better visibility",
+    "dyslexiaFont": "Dyslexia-Friendly Font",
+    "dyslexiaFontDesc": "Uses OpenDyslexic — a typeface designed to improve readability for dyslexic users",
+    "improvedSpacing": "Improved Spacing",
+    "improvedSpacingDesc": "Increases line height and letter spacing for easier reading",
+    "reducedMotion": "Reduce Motion",
+    "reducedMotionDesc": "Disables non-essential animations and transitions",
+    "reset": "Reset to Defaults",
+    "resetLabel": "Reset all accessibility settings to defaults"
+  },
+  "notFound": {
+    "brandSubtitle": "Health • AI • Wellness Platform",
+    "code": "404 — Page not found",
+    "heading": "Nothing here.",
+    "descriptionPrefix": "The page",
+    "descriptionSuffix": "doesn’t exist or may have been moved.",
+    "goBack": "Go back"
+  },
+  "chat": {
+    "title": "AI Health Assistant",
+    "subtitle": "Describe your symptoms for instant AI analysis",
+    "disclaimerLabel": "Medical Disclaimer:",
+    "disclaimerText": "This provides general information only. Always seek professional medical advice for diagnosis or treatment."
+  },
+  "healthLibrary": {
+    "title": "Health Library",
+    "subtitle": "Trusted, evidence-based health information to help you make informed decisions about your wellbeing.",
+    "featured": "Featured Articles",
+    "ctaQuestion": "Have a health question? Let our AI assistant help.",
+    "ctaButton": "Ask AI Symptom Checker",
+    "articles": {
+      "heart": {
+        "title": "Understanding Heart Health",
+        "desc": "Learn about maintaining cardiovascular wellness through diet and exercise.",
+        "tag": "Cardiology"
+      },
+      "mental": {
+        "title": "Mental Health Basics",
+        "desc": "A guide to recognizing signs of stress, anxiety, and how to seek help.",
+        "tag": "Mental Health"
+      },
+      "vitals": {
+        "title": "Tracking Your Vitals",
+        "desc": "How to monitor blood pressure, heart rate, and other key metrics at home.",
+        "tag": "Wellness"
+      },
+      "nutrition": {
+        "title": "Nutrition & Diet",
+        "desc": "Evidence-based guidance on balanced eating and nutritional choices.",
+        "tag": "Nutrition"
+      },
+      "sleep": {
+        "title": "Sleep & Recovery",
+        "desc": "The science of sleep and why quality rest is critical for good health.",
+        "tag": "Sleep"
+      },
+      "glossary": {
+        "title": "Symptom Glossary",
+        "desc": "An A–Z reference of common symptoms, their causes, and when to seek care.",
+        "tag": "Reference"
+      }
+    }
+  }
+}

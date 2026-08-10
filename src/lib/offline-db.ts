@@ -1,6 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { supabase } from "@/integrations/supabase/client";
-import { type Json } from "@/integrations/supabase/types";
+import { type Json, type TablesInsert, type TablesUpdate } from "@/integrations/supabase/types";
 import {
   encryptText,
   decryptText,
@@ -185,6 +185,121 @@ export async function decryptMetric(record: OfflineMetric, key: CryptoKey): Prom
   return decrypted;
 }
 
+/**
+ * Re-encrypts the user's server-side rows after a key rotation so that data
+ * stored in Supabase (which only ever contains ciphertext) stays decryptable
+ * under the new key (issue #999).
+ *
+ * Each row is decrypted with the old key and re-encrypted with the new key;
+ * rows that cannot be decrypted (e.g. created under a key this device never
+ * had) are skipped and logged instead of aborting the whole rotation. After
+ * the pass, the Redis-backed read caches for both tables are invalidated so
+ * callers do not keep serving old-key ciphertext.
+ */
+async function reEncryptServerData(
+  oldKey: CryptoKey,
+  newKey: CryptoKey,
+  newSearchKey: CryptoKey
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  let reEncrypted = 0;
+  let skipped = 0;
+  let total = 0;
+
+  // 1. Re-encrypt health_metrics rows.
+  const { data: metricRows, error: metricError } = await supabase
+    .from("health_metrics")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (metricError) {
+    console.error("Failed to fetch server health_metrics for re-encryption:", metricError);
+  } else {
+    for (const row of metricRows ?? []) {
+      total++;
+      try {
+        const decrypted = await decryptMetric(row as unknown as OfflineMetric, oldKey);
+        const encrypted = await encryptMetric(decrypted, newKey, newSearchKey);
+        // `search_tokens` exists in the DB (migration 20260616143000) but is
+        // missing from the generated types; cast keeps the column writeable.
+        const payload = {
+          value: encrypted.value,
+          notes: encrypted.notes,
+          search_tokens: encrypted.search_tokens ?? null,
+        } as unknown as TablesUpdate<"health_metrics">;
+        const { error } = await supabase
+          .from("health_metrics")
+          .update(payload)
+          .eq("id", row.id);
+        if (error) {
+          skipped++;
+          console.warn(`Failed to re-encrypt health_metrics row ${row.id}:`, error.message);
+        } else {
+          reEncrypted++;
+        }
+      } catch (err) {
+        skipped++;
+        console.warn(`Skipping health_metrics row ${row.id} (cannot decrypt with old key):`, err);
+      }
+    }
+  }
+
+  // 2. Re-encrypt symptom_history rows.
+  const { data: symptomRows, error: symptomError } = await supabase
+    .from("symptom_history")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (symptomError) {
+    console.error("Failed to fetch server symptom_history for re-encryption:", symptomError);
+  } else {
+    for (const row of symptomRows ?? []) {
+      total++;
+      try {
+        const decrypted = await decryptSymptom(row as unknown as OfflineSymptom, oldKey);
+        const encrypted = await encryptSymptom(decrypted, newKey, newSearchKey);
+        const payload = {
+          symptoms: encrypted.symptoms,
+          ai_analysis: encrypted.ai_analysis,
+          possible_causes: encrypted.possible_causes,
+          recommendations: encrypted.recommendations,
+          search_tokens: encrypted.search_tokens ?? null,
+        } as unknown as TablesUpdate<"symptom_history">;
+        const { error } = await supabase
+          .from("symptom_history")
+          .update(payload)
+          .eq("id", row.id);
+        if (error) {
+          skipped++;
+          console.warn(`Failed to re-encrypt symptom_history row ${row.id}:`, error.message);
+        } else {
+          reEncrypted++;
+        }
+      } catch (err) {
+        skipped++;
+        console.warn(`Skipping symptom_history row ${row.id} (cannot decrypt with old key):`, err);
+      }
+    }
+  }
+
+  if (skipped > 0) {
+    console.warn(
+      `Server-side re-encryption finished: ${reEncrypted} re-encrypted, ${skipped} skipped of ${total} rows.`
+    );
+  }
+
+  // Cached copies of these tables still hold old-key ciphertext; drop them so
+  // callers re-fetch the re-encrypted rows.
+  await Promise.all([
+    invalidateCache("health_metrics").catch(() => {}),
+    invalidateCache("symptom_history").catch(() => {}),
+  ]);
+}
+
 // Register Encryption Hooks for Auth Lifecycles
 registerEncryptionHooks({
   onLogout: async () => {
@@ -218,6 +333,14 @@ registerEncryptionHooks({
       } catch (clearErr) {
         console.error("Failed to clear database after migration failure:", clearErr);
       }
+    }
+
+    // Also re-encrypt server-side rows so the Supabase copies stay decryptable
+    // under the new key (issue #999). Failures here must not clear local data.
+    try {
+      await reEncryptServerData(oldKey, newKey, newSearchKey);
+    } catch (err) {
+      console.error("Failed to re-encrypt server-side data after key rotation:", err);
     }
   },
 });
@@ -260,7 +383,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       const { pending_sync, pending_delete, ...supabaseData } = record;
       const { error } = await supabase
         .from("health_metrics")
-        .insert(supabaseData);
+        .insert(supabaseData as unknown as TablesInsert<"health_metrics">);
 
       if (!error) {
         await db.healthMetrics.update(record.id, { pending_sync: 0 });
@@ -296,7 +419,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
       const { error } = await supabase
         .from("symptom_history")
-        .insert(supabaseData);
+        .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
 
       if (!error) {
         await db.symptomHistory.update(record.id, { pending_sync: 0 });

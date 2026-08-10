@@ -248,8 +248,13 @@ const HealthFacts = () => {
     }
 
     const remaining = FACTS.filter((f) => !shownIds.current.has(f.id));
-    const rngIndex = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1) * remaining.length);
-    const pick = remaining[rngIndex];
+    const pick =
+  remaining[
+    Math.floor(
+      (crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1)) *
+        remaining.length
+    )
+  ];
     shownIds.current.add(pick.id);
 
     setCurrentFact(pick);

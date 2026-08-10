@@ -194,6 +194,10 @@ describe("Dashboard", () => {
     // Re-apply defaults that vi.clearAllMocks() removes:
     mockAuthUser();
     mockFromWithProfile();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ predictions: [] }),
+    });
   });
 
   // 1. Loading state
@@ -216,7 +220,7 @@ describe("Dashboard", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/No symptom history yet/i)
+        screen.getByText(/No health data yet/i)
       ).toBeInTheDocument();
     });
   });
