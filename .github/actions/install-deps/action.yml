@@ -1,0 +1,36 @@
+name: 'Install Node dependencies'
+description: 'Sets up Node.js and installs project dependencies with caching. Assumes the repo is already checked out.'
+
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: '20'
+  package-manager:
+    description: "Package manager to use: 'npm' or 'bun'"
+    required: false
+    default: 'npm'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.package-manager == 'npm' && 'npm' || '' }}
+
+    - name: Install dependencies (npm)
+      if: inputs.package-manager == 'npm'
+      shell: bash
+      run: npm install
+
+    - name: Install Bun
+      if: inputs.package-manager == 'bun'
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install dependencies (bun)
+      if: inputs.package-manager == 'bun'
+      shell: bash
+      run: bun install
+
