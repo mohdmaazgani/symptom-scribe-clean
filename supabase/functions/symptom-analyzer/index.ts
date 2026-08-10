@@ -253,7 +253,10 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
 ⚠️ Important: This is general health information only. Consult a qualified healthcare provider for diagnosis and treatment.
 `;
 
-    const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+    const conversationText = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n");
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
