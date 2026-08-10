@@ -18,7 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Activity,
@@ -33,7 +35,7 @@ import {
   Footprints,
 } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
-import { showSuccess, showError, showWarning, showInfo } from "@/lib/toast-helpers";
+import { showSuccess, showError, showWarning } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
 import { db, syncOfflineData, type OfflineMetric, encryptMetric } from "@/lib/offline-db";
 import { whenKeysReady } from "@/lib/encryption";
@@ -78,6 +80,109 @@ import { Trash2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { useRef } from "react";
 
+const numberField = (label: string) =>
+  z.number({
+    required_error: `${label} is required`,
+    invalid_type_error: `${label} must be a valid number`,
+  });
+
+const weightMetricSchema = z.object({
+  value: numberField("Weight")
+    .min(20, "Weight must be between 20 and 500 kg")
+    .max(500, "Weight must be between 20 and 500 kg"),
+});
+
+const bloodPressureMetricSchema = z
+  .object({
+    systolic: numberField("Systolic pressure")
+      .min(60, "Systolic pressure must be between 60 and 300 mmHg")
+      .max(300, "Systolic pressure must be between 60 and 300 mmHg"),
+    diastolic: numberField("Diastolic pressure")
+      .min(40, "Diastolic pressure must be between 40 and 200 mmHg")
+      .max(200, "Diastolic pressure must be between 40 and 200 mmHg"),
+  })
+  .refine((data) => data.systolic > data.diastolic, {
+    message: "Systolic pressure must be greater than diastolic pressure",
+    path: ["systolic"],
+  });
+
+const heartRateMetricSchema = z.object({
+  value: numberField("Heart rate")
+    .min(30, "Heart rate must be between 30 and 250 BPM")
+    .max(250, "Heart rate must be between 30 and 250 BPM"),
+});
+
+const temperatureMetricSchema = z.object({
+  value: numberField("Temperature")
+    .min(86, "Temperature must be between 86°F and 113°F")
+    .max(113, "Temperature must be between 86°F and 113°F"),
+});
+
+const bloodGlucoseMetricSchema = z.object({
+  value: numberField("Blood glucose")
+    .min(20, "Blood glucose must be between 20 and 600 mg/dL")
+    .max(600, "Blood glucose must be between 20 and 600 mg/dL"),
+});
+
+const metricFormSchema = z
+  .object({
+    metricType: z.string().min(1, "Please select a metric type"),
+    value: z.number().optional(),
+    systolic: z.number().optional(),
+    diastolic: z.number().optional(),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const addIssues = (result: { success: false; error: z.ZodError }) => {
+      result.error.issues.forEach((issue) => {
+        ctx.addIssue(issue);
+      });
+    };
+
+    if (data.metricType === "weight") {
+      const result = weightMetricSchema.safeParse({ value: data.value });
+      if (!result.success) addIssues(result);
+      return;
+    }
+
+    if (data.metricType === "blood_pressure") {
+      const result = bloodPressureMetricSchema.safeParse({
+        systolic: data.systolic,
+        diastolic: data.diastolic,
+      });
+      if (!result.success) addIssues(result);
+      return;
+    }
+
+    if (data.metricType === "heart_rate") {
+      const result = heartRateMetricSchema.safeParse({ value: data.value });
+      if (!result.success) addIssues(result);
+      return;
+    }
+
+    if (data.metricType === "temperature") {
+      const result = temperatureMetricSchema.safeParse({ value: data.value });
+      if (!result.success) addIssues(result);
+      return;
+    }
+
+    if (data.metricType === "blood_sugar") {
+      const result = bloodGlucoseMetricSchema.safeParse({ value: data.value });
+      if (!result.success) addIssues(result);
+      return;
+    }
+
+    if (data.metricType !== "blood_pressure" && data.value === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["value"],
+        message: "Value is required",
+      });
+    }
+  });
+
+type MetricFormValues = z.infer<typeof metricFormSchema>;
+
 const metricTypes = [
   {
     value: "blood_pressure",
@@ -87,7 +192,7 @@ const metricTypes = [
   },
   { value: "heart_rate", label: "Heart Rate", icon: Heart, unit: "bpm" },
   { value: "temperature", label: "Temperature", icon: Thermometer, unit: "°F" },
-  { value: "weight", label: "Weight", icon: Weight, unit: "lbs" },
+  { value: "weight", label: "Weight", icon: Weight, unit: "kg" },
   { value: "blood_sugar", label: "Blood Sugar", icon: Droplet, unit: "mg/dL" },
   {
     value: "oxygen_saturation",
@@ -170,6 +275,60 @@ const MetricsChartSkeleton = () => (
 const Metrics = () => {
   const chartRef = useRef<HTMLDivElement>(null);
 
+  const valueInputConstraints: Record<
+    string,
+    { min: number; max: number; step: number; hint: string }
+  > = {
+    heart_rate: {
+      min: 30,
+      max: 250,
+      step: 1,
+      hint: "Enter a value between 30 and 250 BPM",
+    },
+    temperature: {
+      min: 86,
+      max: 113,
+      step: 0.1,
+      hint: "Enter a value between 86°F and 113°F",
+    },
+    weight: {
+      min: 20,
+      max: 500,
+      step: 0.1,
+      hint: "Enter a value between 20 and 500 kg",
+    },
+    blood_sugar: {
+      min: 20,
+      max: 600,
+      step: 1,
+      hint: "Enter a value between 20 and 600 mg/dL",
+    },
+    oxygen_saturation: {
+      min: 70,
+      max: 100,
+      step: 1,
+      hint: "Enter a value between 70% and 100%",
+    },
+    sleep: {
+      min: 0,
+      max: 24,
+      step: 0.1,
+      hint: "Enter a value between 0 and 24 hours",
+    },
+    steps: {
+      min: 0,
+      max: 100000,
+      step: 1,
+      hint: "Enter a value between 0 and 100,000 steps",
+    },
+    respiratory_rate: {
+      min: 6,
+      max: 60,
+      step: 1,
+      hint: "Enter a value between 6 and 60 breaths per minute",
+    },
+  };
+
   const downloadChart = async () => {
     if (!chartRef.current) return;
     const dataUrl = await toPng(chartRef.current);
@@ -180,14 +339,23 @@ const Metrics = () => {
   };
   
   const [metricType, setMetricType] = useState("");
-  const [value, setValue] = useState("");
-  const [systolic, setSystolic] = useState("");
-  const [diastolic, setDiastolic] = useState("");
-  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const { toast } = useToast();
   const [historyUserId, setHistoryUserId] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<MetricFormValues>({
+    resolver: zodResolver(metricFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      metricType: "",
+      notes: "",
+    },
+  });
 
   const {
     records,
@@ -239,88 +407,36 @@ const Metrics = () => {
     };
   }, [refresh]);
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: MetricFormValues) => {
+    if (!data.metricType) return;
+    const selectedMetricType = data.metricType;
 
-    if (!metricType) return;
-    if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
-    if (metricType !== "blood_pressure" && !value) return;
-
-    if (metricType === "heart_rate") {
-      const hr = Number(value);
-      if (hr < 30 || hr > 250) {
-        showWarning("Invalid Heart Rate", "Heart rate must be between 30 and 250 BPM");
-        return;
-      }
-    }
-    
-    if (metricType === "temperature") {
-      const temp = Number(value);
-      if (temp < 86 || temp > 113) {
-        showWarning("Invalid Temperature", "Temperature must be between 86°F and 113°F");
-        return;
-      }
-    }
-
-    if (metricType === "weight") {
-      const wt = Number(value);
-      if (wt <= 0 || wt > 700) {
-        showWarning("Invalid Weight", "Weight must be between 1 and 700 lbs");
-        return;
-      }
-    }
-
-    if (metricType === "blood_sugar") {
-      const sugar = Number(value);
-      if (sugar < 20 || sugar > 400) {
-        showWarning("Invalid Blood Sugar", "Blood sugar must be between 20 and 400 mg/dL");
-        return;
-      }
-    }
-
-    if (metricType === "oxygen_saturation") {
-      const oxygen = Number(value);
+    if (selectedMetricType === "oxygen_saturation") {
+      const oxygen = Number(data.value);
       if (oxygen < 70 || oxygen > 100) {
         showWarning("Invalid Oxygen Saturation", "Oxygen saturation must be between 70% and 100%");
         return;
       }
     }
 
-    if (metricType === "blood_pressure") {
-      const sys = Number(systolic);
-      const dia = Number(diastolic);
-      if (sys < 60 || sys > 250) {
-        showWarning("Invalid Systolic Pressure", "Systolic pressure must be between 60 and 250 mmHg");
-        return;
-      }
-      if (dia < 30 || dia > 150) {
-        showWarning("Invalid Diastolic Pressure", "Diastolic pressure must be between 30 and 150 mmHg");
-        return;
-      }
-      if (sys <= dia) {
-        showWarning("Invalid Blood Pressure", "Systolic pressure must be greater than diastolic pressure");
-        return;
-      }
-    }
-
-    if (metricType === "sleep") {
-      const sleepVal = Number(value);
+    if (selectedMetricType === "sleep") {
+      const sleepVal = Number(data.value);
       if (sleepVal < 0 || sleepVal > 24) {
         showWarning("Invalid Sleep Duration", "Sleep duration must be between 0 and 24 hours");
         return;
       }
     }
 
-    if (metricType === "steps") {
-      const stepsVal = Number(value);
+    if (selectedMetricType === "steps") {
+      const stepsVal = Number(data.value);
       if (stepsVal < 0 || stepsVal > 100000) {
         showWarning("Invalid Steps Count", "Steps must be between 0 and 100,000");
         return;
       }
     }
 
-    if (metricType === "respiratory_rate") {
-      const rr = Number(value);
+    if (selectedMetricType === "respiratory_rate") {
+      const rr = Number(data.value);
       if (rr < 6 || rr > 60) {
         showWarning("Invalid Respiratory Rate", "Respiratory rate must be between 6 and 60 breaths per minute");
         return;
@@ -336,17 +452,17 @@ const Metrics = () => {
       setHistoryUserId(user.id);
       
       let metricValue: { value?: number; systolic?: number; diastolic?: number } = {};
-      if (metricType === "blood_pressure") {
+      if (selectedMetricType === "blood_pressure") {
         metricValue = {
-          systolic: parseInt(systolic),
-          diastolic: parseInt(diastolic),
+          systolic: Number(data.systolic),
+          diastolic: Number(data.diastolic),
         };
       } else {
-        metricValue = { value: parseFloat(value) };
+        metricValue = { value: Number(data.value) };
       }
 
       const metricLabel = metricTypes.find(
-        (m) => m.value === metricType,
+        (m) => m.value === selectedMetricType,
       )?.label;
 
       const recordId = crypto.randomUUID();
@@ -357,9 +473,9 @@ const Metrics = () => {
       const record = {
         id: recordId,
         user_id: user.id,
-        metric_type: metricType,
+        metric_type: selectedMetricType,
         value: metricValue as Json,
-        notes: notes || null,
+        notes: data.notes || null,
         recorded_at: recordedAt,
         pending_sync: navigator.onLine ? 0 : 1,
         pending_delete: 0,
@@ -402,10 +518,6 @@ const Metrics = () => {
         );
       }
 
-      setValue("");
-      setSystolic("");
-      setDiastolic("");
-      setNotes("");
       closeForm();
 
       refresh();
@@ -464,14 +576,24 @@ const Metrics = () => {
   const handleMetricCardSelect = (metric: string) => {
     // Reset any previous entry so each card opens a clean form
     setMetricType(metric);
-    setValue("");
-    setSystolic("");
-    setDiastolic("");
-    setNotes("");
+    reset({
+      metricType: metric,
+      value: undefined,
+      systolic: undefined,
+      diastolic: undefined,
+      notes: "",
+    });
     setFormOpen(true);
   };
 
   const closeForm = () => {
+    reset({
+      metricType: "",
+      value: undefined,
+      systolic: undefined,
+      diastolic: undefined,
+      notes: "",
+    });
     setFormOpen(false);
     // Clear after the close animation so the card highlight resets without the
     // modal contents visibly flipping mid-fade.
@@ -480,6 +602,7 @@ const Metrics = () => {
 
   const selectedMetric = metricTypes.find((m) => m.value === metricType);
   const SelectedIcon = selectedMetric?.icon;
+  const selectedValueConstraint = valueInputConstraints[metricType];
 
   return (
     <div className="space-y-6">
@@ -539,7 +662,8 @@ const Metrics = () => {
             <DialogDescription>Enter your latest reading below.</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4" role="form" aria-label={`Record ${selectedMetric?.label ?? 'measurement'} form`}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" role="form" aria-label={`Record ${selectedMetric?.label ?? "measurement"} form`}>
+            <input type="hidden" {...register("metricType")} />
             {metricType === "blood_pressure" ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -548,13 +672,20 @@ const Metrics = () => {
                     id="systolic"
                     type="number"
                     placeholder="120"
-                    value={systolic}
-                    onChange={(e) => setSystolic(e.target.value)}
+                    min={60}
+                    max={300}
                     required
                     aria-required="true"
                     aria-describedby="systolic-hint"
+                    aria-invalid={Boolean(errors.systolic)}
+                    {...register("systolic", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
                   />
-                  <p id="systolic-hint" className="text-xs text-muted-foreground">Enter a value between 60 and 250 mmHg</p>
+                  <p id="systolic-hint" className="text-xs text-muted-foreground">Enter a value between 60 and 300 mmHg</p>
+                  {errors.systolic?.message && (
+                    <p className="mt-1 text-sm text-destructive">{errors.systolic.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="diastolic">Diastolic</Label>
@@ -562,13 +693,20 @@ const Metrics = () => {
                     id="diastolic"
                     type="number"
                     placeholder="80"
-                    value={diastolic}
-                    onChange={(e) => setDiastolic(e.target.value)}
+                    min={40}
+                    max={200}
                     required
                     aria-required="true"
                     aria-describedby="diastolic-hint"
+                    aria-invalid={Boolean(errors.diastolic)}
+                    {...register("diastolic", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
                   />
-                  <p id="diastolic-hint" className="text-xs text-muted-foreground">Enter a value between 30 and 150 mmHg</p>
+                  <p id="diastolic-hint" className="text-xs text-muted-foreground">Enter a value between 40 and 200 mmHg</p>
+                  {errors.diastolic?.message && (
+                    <p className="mt-1 text-sm text-destructive">{errors.diastolic.message}</p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -577,15 +715,22 @@ const Metrics = () => {
                 <Input
                   id="value"
                   type="number"
-                  step="0.1"
-                  placeholder={`Enter value in ${selectedMetric?.unit ?? 'units'}`}
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
+                  min={selectedValueConstraint?.min}
+                  max={selectedValueConstraint?.max}
+                  step={selectedValueConstraint?.step ?? 0.1}
+                  placeholder={`Enter value in ${selectedMetric?.unit ?? "units"}`}
                   required
                   aria-required="true"
                   aria-describedby="value-hint"
+                  aria-invalid={Boolean(errors.value)}
+                  {...register("value", {
+                    setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                  })}
                 />
-                <p id="value-hint" className="text-xs text-muted-foreground">Enter a valid measurement value</p>
+                <p id="value-hint" className="text-xs text-muted-foreground">{selectedValueConstraint?.hint ?? "Enter a valid measurement value"}</p>
+                {errors.value?.message && (
+                  <p className="mt-1 text-sm text-destructive">{errors.value.message}</p>
+                )}
               </div>
             )}
 
@@ -595,12 +740,11 @@ const Metrics = () => {
                 id="notes"
                 type="text"
                 placeholder="Any additional notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                {...register("notes")}
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full" aria-label={loading ? "Saving metric" : "Record metric"}>
+            <Button type="submit" disabled={loading || !isValid} className="w-full" aria-label={loading ? "Saving metric" : "Record metric"}>
               {loading ? "Saving..." : "Record Metric"}
             </Button>
           </form>
