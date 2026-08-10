@@ -119,10 +119,6 @@ const App = () => {
               }
             } catch (err) {
               console.warn("Failed parsing or encrypting pending profile:", err);
-
-              }
-            } catch (err) {
-              console.error("Failed parsing or encrypting pending profile:", err);
             }
           }
         }
