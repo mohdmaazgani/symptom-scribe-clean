@@ -62,49 +62,24 @@ export const compressImage = (
   });
 };
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
-
-/**
- * Upload a symptom attachment to a private bucket and return the storage object path.
- * Callers should persist the path (not a signed URL) and mint signed URLs when rendering.
- */
 export const uploadSymptomImage = async (file: File, userId: string): Promise<string> => {
-  const fileExt = file.name.split(".").pop() || "jpg";
-  const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${userId}/${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
 
-  const { error } = await supabase.storage.from("symptom-attachments").upload(fileName, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
+  const { error, data } = await supabase.storage
+    .from("symptom-attachments")
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
 
   if (error) {
     throw error;
   }
 
-  // Verify the owner can mint a signed URL (fails closed if bucket is misconfigured)
-  const { error: signedError } = await supabase.storage
+  const { data: publicUrlData } = supabase.storage
     .from("symptom-attachments")
-    .createSignedUrl(fileName, SIGNED_URL_TTL_SECONDS);
+    .getPublicUrl(fileName);
 
-  if (signedError) {
-    throw signedError;
-  }
-
-  return fileName;
-};
-
-/** Refresh a signed URL from a storage path (`userId/uuid.ext`). */
-export const createSymptomImageSignedUrl = async (
-  path: string,
-  expiresIn = SIGNED_URL_TTL_SECONDS
-): Promise<string> => {
-  const { data, error } = await supabase.storage
-    .from("symptom-attachments")
-    .createSignedUrl(path, expiresIn);
-
-  if (error || !data?.signedUrl) {
-    throw error || new Error("Failed to create signed URL");
-  }
-
-  return data.signedUrl;
+  return publicUrlData.publicUrl;
 };
