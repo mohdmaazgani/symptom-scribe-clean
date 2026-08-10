@@ -300,6 +300,7 @@ registerEncryptionHooks({
     try {
       await db.healthMetrics.clear();
       await db.symptomHistory.clear();
+      await db.pendingEmergencyMesh.clear();
     } catch (err) {
       console.error("Error clearing database on logout:", err);
     }

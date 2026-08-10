@@ -1,38 +1,38 @@
-name: CI Validation
+name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 jobs:
-  validate:
-    name: Validate (build, type-check)
+  lint-typecheck-build:
+    name: Lint, Type-Check & Build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Lint
+      - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
 
-      - name: Type-check
-        run: npm exec tsc -b
+      - name: TypeScript type-check
+        run: npx tsc --noEmit
 
-      - name: Build
+      - name: Vite production build
         run: npm run build
+        env:
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

@@ -767,7 +767,7 @@ const Index = () => {
       
       {/* Medical Disclaimer - Subtle */}
       <div className="text-center mt-6 pt-4 border-t border-border/50">
-        <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
+        <p className="text-sm text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
           <AlertCircle className="w-3 h-3" />
           <span>{t("home.footer.informationalNotice")}</span>
           <Heart className="w-3 h-3" />
