@@ -413,7 +413,7 @@ const History = () => {
 
     doc.setFontSize(10);
     doc.setTextColor(100);
-    const generatedOn = new Date().toLocaleString();
+    const generatedOn = new Date().toLocaleString("en-GB");
     doc.text(`Generated on: ${generatedOn}`, 14, 25);
 
     if (history.length > 0) {
@@ -660,7 +660,7 @@ const History = () => {
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg break-words">{entry.symptoms}</CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(entry.created_at).toLocaleString()}
+                          {new Date(entry.created_at).toLocaleString("en-GB")}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
