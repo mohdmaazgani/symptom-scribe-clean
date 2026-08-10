@@ -606,7 +606,7 @@ export const SymptomCalendarView = ({
                               <AlertDialogTitle>Delete Symptom Entry?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 Are you sure you want to delete this entry logged on{" "}
-                                {new Date(entry.created_at).toLocaleDateString()}?
+                                {new Date(entry.created_at).toLocaleDateString("en-GB")}?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

@@ -362,7 +362,7 @@ const History = () => {
       const date = new Date(entry.created_at);
       const formattedDate = isNaN(date.getTime())
         ? ""
-        : date.toLocaleDateString("en-US"); // consistent short format to avoid long locale-specific strings showing as ######## in Excel
+        : date.toLocaleDateString("en-GB"); // consistent short format to avoid long locale-specific strings showing as ######## in Excel
 
       const cleanText = (text: string) => {
         if (!text) return "";
@@ -419,10 +419,10 @@ const History = () => {
     if (history.length > 0) {
       const oldestDate = new Date(
         Math.min(...history.map((e) => new Date(e.created_at).getTime()))
-      ).toLocaleDateString();
+      ).toLocaleDateString("en-GB");
       const newestDate = new Date(
         Math.max(...history.map((e) => new Date(e.created_at).getTime()))
-      ).toLocaleDateString();
+      ).toLocaleDateString("en-GB");
       doc.text(`Date range: ${oldestDate} - ${newestDate}`, 14, 31);
       doc.text(`Total entries: ${history.length}`, 14, 37);
     }
@@ -431,7 +431,7 @@ const History = () => {
       startY: 44,
       head: [["Date", "Symptoms", "Severity", "Risk Score", "Status"]],
       body: history.map((entry) => [
-        new Date(entry.created_at).toLocaleDateString(),
+        new Date(entry.created_at).toLocaleDateString("en-GB"),
         entry.symptoms,
         entry.severity_level,
         `${entry.risk_score}/100`,
