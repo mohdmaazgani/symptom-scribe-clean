@@ -32,7 +32,6 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       getUser: vi.fn(),
       getSession: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
     },
     from: vi.fn(),
   },
@@ -124,38 +123,18 @@ function mockAuthUser(user: typeof mockUser | null = mockUser) {
     data: { session: user ? { access_token: "mock-token" } : null },
   });
 }
-/** Sets up supabase.from mock to return a valid profile (for ProfileProvider). */
-function mockFromWithProfile() {
-  (supabase.from as Mock).mockImplementation((table: string) => {
-    if (table === "profiles") {
-      return {
-        select: () => ({
-          eq: () => ({
-            order: vi.fn().mockResolvedValue({
-              data: [{ id: "mock-profile-id", is_primary: true, full_name: "Mock User" }],
-              error: null,
-            }),
-            maybeSingle: () =>
-              Promise.resolve({
-                data: { full_name: "User" },
-              }),
+(supabase.from as Mock).mockReturnValue({
+    select: () => ({
+      eq: () => ({
+        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        maybeSingle: () =>
+          Promise.resolve({
+            data: { full_name: "User" },
           }),
-        }),
-      };
-    }
-    return {
-      select: () => ({
-        eq: () => ({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          maybeSingle: () =>
-            Promise.resolve({
-              data: null,
-            }),
-        }),
       }),
-    };
+    }),
   });
-}
+
 
 // ---------------------------------------------------------------------------
 // Sample fixture data
@@ -191,9 +170,6 @@ describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMetricsArray.value = [];
-    // Re-apply defaults that vi.clearAllMocks() removes:
-    mockAuthUser();
-    mockFromWithProfile();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ predictions: [] }),

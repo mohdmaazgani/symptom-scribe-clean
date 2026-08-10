@@ -23,7 +23,6 @@ import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
-import { useProfile } from "@/contexts/ProfileContext";
 import { stripMarkdownFormatting } from "@/lib/symptom-consultation";
 import {
   AlertDialog,
@@ -40,7 +39,6 @@ import {
 interface SymptomEntry {
   id: string;
   user_id?: string;
-  profile_id?: string | null;
   symptoms: string;
   severity_level: string;
   possible_causes: string[];
@@ -95,7 +93,6 @@ const History = () => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
-  const { activeProfile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(
@@ -124,13 +121,13 @@ const History = () => {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!user || !activeProfile) return;
+        if (!user) return;
 
         const keys = await whenKeysReady();
         const searchTokens = queryText ? await generateSearchTokens(queryText, keys.searchKey) : [];
 
         if (navigator.onLine) {
-          let query = supabase.from("symptom_history").select("*").eq("user_id", user.id).eq("profile_id", activeProfile.id);
+          let query = supabase.from("symptom_history").select("*").eq("user_id", user.id);
 
           if (severityFilter !== "all") {
             query = query.eq("severity_level", severityFilter);
@@ -146,10 +143,10 @@ const History = () => {
           if (data) {
             if (!queryText && severityFilter === "all") {
               await db.symptomHistory
-                .where({ user_id: user.id })
+                .where("user_id")
+                .equals(user.id)
                 .filter(
                   (record) =>
-                    record.profile_id === activeProfile.id &&
                     record.pending_sync === 0 &&
                     record.pending_delete === 0 &&
                     record.pending_update === 0
@@ -160,7 +157,6 @@ const History = () => {
             const localEntries = data.map((record) => ({
               id: record.id,
               user_id: record.user_id,
-              profile_id: record.profile_id,
               symptoms: record.symptoms || "",
               severity_level: record.severity_level || "low",
               possible_causes: record.possible_causes,
@@ -190,15 +186,16 @@ const History = () => {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (user && activeProfile) {
+        if (user) {
           const keys = await whenKeysReady();
           const searchTokens = queryText
             ? await generateSearchTokens(queryText, keys.searchKey)
             : [];
 
           let localQuery = db.symptomHistory
-            .where({ user_id: user.id })
-            .filter((record) => record.profile_id === activeProfile.id && record.pending_delete === 0);
+            .where("user_id")
+            .equals(user.id)
+            .filter((record) => record.pending_delete === 0);
 
           if (severityFilter !== "all") {
             localQuery = localQuery.filter((record) => record.severity_level === severityFilter);
@@ -244,7 +241,7 @@ const History = () => {
         setLoading(false);
       }
     },
-    [severityFilter, activeProfile]
+    [severityFilter]
   );
 
   useEffect(() => {

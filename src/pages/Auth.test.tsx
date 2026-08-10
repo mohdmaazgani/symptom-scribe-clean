@@ -47,8 +47,12 @@ vi.mock("react-router-dom", async () => {
 // Mock the Supabase client. The onAuthStateChange callback is captured so
 // tests can invoke it directly to simulate an existing session on mount.
 // ---------------------------------------------------------------------------
-const { authStateChangeHolders } = vi.hoisted(() => ({
-  authStateChangeHolders: [] as ((event: string, session: any) => void)[],
+const { authStateChangeHolder } = vi.hoisted(() => ({
+  authStateChangeHolder: {
+    current: undefined as
+      | ((event: string, session: unknown) => void)
+      | undefined,
+  },
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -56,11 +60,8 @@ vi.mock("@/integrations/supabase/client", () => ({
       signInWithPassword: vi.fn(),
       resetPasswordForEmail: vi.fn(),
       onAuthStateChange: vi.fn((callback) => {
-        authStateChangeHolders.push(callback);
-        return { data: { subscription: { unsubscribe: () => {
-          const index = authStateChangeHolders.indexOf(callback);
-          if (index > -1) authStateChangeHolders.splice(index, 1);
-        } } } };
+        authStateChangeHolder.current = callback;
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
       }),
       mfa: {
         getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({
@@ -104,7 +105,7 @@ describe("Auth", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    authStateChangeHolders.length = 0;
+    authStateChangeHolder.current = undefined;
   });
 
   afterEach(() => {
@@ -314,8 +315,8 @@ describe("Auth", () => {
   it("redirects to /dashboard when onAuthStateChange reports an existing session", async () => {
     render(<Auth />);
 
-    expect(authStateChangeHolders.length).toBeGreaterThan(0);
-    authStateChangeHolders.forEach(cb => cb("SIGNED_IN", { user: { id: "user-1" } }));
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("SIGNED_IN", { user: { id: "user-1" } });
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
@@ -334,10 +335,10 @@ describe("Auth", () => {
 
     render(<Auth />);
 
-    expect(authStateChangeHolders.length).toBeGreaterThan(0);
-    authStateChangeHolders.forEach(cb => cb("PASSWORD_RECOVERY", {
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("PASSWORD_RECOVERY", {
       user: { id: "user-1" },
-    }));
+    });
 
     expect(mockNavigate).toHaveBeenCalledWith("/reset-password");
     expect(mockNavigate).not.toHaveBeenCalledWith("/dashboard");
@@ -347,8 +348,8 @@ describe("Auth", () => {
   it("does not navigate when there is no session", () => {
     render(<Auth />);
 
-    expect(authStateChangeHolders.length).toBeGreaterThan(0);
-    authStateChangeHolders.forEach(cb => cb("SIGNED_OUT", null));
+    expect(authStateChangeHolder.current).toBeDefined();
+    authStateChangeHolder.current?.("SIGNED_OUT", null);
 
     expect(mockNavigate).not.toHaveBeenCalled();
   });
