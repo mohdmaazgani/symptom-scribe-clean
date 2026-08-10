@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { meshNetwork, type MeshPeer } from "@/lib/mesh-network";
 import { db, type MeshAlert } from "@/lib/offline-db";
 import { whenEncryptionReady, decryptProfileField } from "@/lib/encryption";
-import { useProfile } from "@/contexts/ProfileContext";
 
 
 // ─── Mobile Detection ────────────────────────────────────────────────────────
@@ -213,7 +212,6 @@ const Emergency = () => {
   const [detectedCountry, setDetectedCountry]     = useState<string | null>(null);
 
   // Emergency Contact & Broadcast states
-  const { activeProfile } = useProfile();
   const [profile, setProfile] = useState<{
     emergency_contact_name: string | null;
     emergency_contact_phone: string | null;
@@ -284,19 +282,46 @@ const Emergency = () => {
     };
   }, []);
 
-  // Sync emergency contact with active profile
+  // Fetch emergency contact profile info
   useEffect(() => {
-    if (activeProfile) {
-      setProfile({
-        full_name: activeProfile.full_name || null,
-        emergency_contact_name: activeProfile.emergency_contact_name || null,
-        emergency_contact_phone: activeProfile.emergency_contact_phone || null,
-      });
-      setProfileLoading(false);
-    } else {
-      setProfileLoading(true);
-    }
-  }, [activeProfile]);
+    const fetchProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setProfileLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, emergency_contact_name, emergency_contact_phone")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Error loading emergency profile info:", error);
+        } else if (data) {
+          const key = await whenEncryptionReady();
+          const decryptedFullName = await decryptProfileField(data.full_name, key);
+          const decryptedEmergencyName = await decryptProfileField(data.emergency_contact_name, key);
+          const decryptedEmergencyPhone = await decryptProfileField(data.emergency_contact_phone, key);
+
+          setProfile({
+            full_name: decryptedFullName,
+            emergency_contact_name: decryptedEmergencyName,
+            emergency_contact_phone: decryptedEmergencyPhone,
+          });
+        }
+
+      } catch (err) {
+        console.warn("Error loading profile:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleAlertContacts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
