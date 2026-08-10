@@ -23,6 +23,14 @@ import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/contexts/ProfileContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sidebar,
   SidebarContent,
@@ -79,6 +87,7 @@ export function AppSidebar() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { profiles, activeProfile, switchProfile } = useProfile();
   const [themesOpen, setThemesOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isCollapsed = state === "collapsed";
@@ -162,6 +171,30 @@ export function AppSidebar() {
       </div>
 
       <SidebarContent>
+        {profiles.length > 1 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="tracking-wide text-[11px] text-sidebar-foreground/50">
+              Active Profile
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="px-3 py-2">
+              <Select
+                value={activeProfile?.id}
+                onValueChange={switchProfile}
+              >
+                <SelectTrigger className="w-full bg-sidebar border-sidebar-border text-sidebar-foreground text-sm">
+                  <SelectValue placeholder="Select a profile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name || "Unknown Profile"} {p.relationship && p.relationship !== "Self" ? `(${p.relationship})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
           {/* ✨ updated: letter-spacing + slightly smaller weight for section label */}
           <SidebarGroupLabel className="tracking-wide text-[11px] text-sidebar-foreground/50">

@@ -18,6 +18,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
@@ -126,8 +127,9 @@ const App = () => {
     <AccessibilityProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
+        <Toaster />
+        <Sonner />
+        <ProfileProvider>
           <BrowserRouter>
             <AuthProvider>
               <ScrollToTop />
@@ -290,6 +292,7 @@ const App = () => {
           </Suspense>
           </AuthProvider>
         </BrowserRouter>
+        </ProfileProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </AccessibilityProvider>

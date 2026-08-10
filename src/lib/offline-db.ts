@@ -14,6 +14,7 @@ import { invalidateCache } from "@/lib/cached-queries";
 export interface OfflineMetric {
   id: string;
   user_id: string;
+  profile_id?: string | null;
   metric_type: string;
   value: Json;
   notes: string | null;
@@ -26,6 +27,7 @@ export interface OfflineMetric {
 export interface OfflineSymptom {
   id: string;
   user_id: string;
+  profile_id?: string | null;
   symptoms: string;
   severity_level: string;
   possible_causes: string[] | null;
@@ -68,6 +70,11 @@ class OfflineDatabase extends Dexie {
     this.version(2).stores({
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
       symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+    });
+    this.version(3).stores({
+      healthMetrics: "id, user_id, profile_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, profile_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
     });
   }
