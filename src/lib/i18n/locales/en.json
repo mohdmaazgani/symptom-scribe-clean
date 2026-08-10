@@ -258,7 +258,17 @@
     "welcomeToastTitle": "Welcome!",
     "welcomeToastDesc": "Start by consulting with the AI Assistant",
     "connectionErrorTitle": "Connection Error",
-    "connectionErrorDesc": "Failed to load dashboard data"
+    "connectionErrorDesc": "Failed to load dashboard data",
+    "environmentalInsights": {
+      "title": "Environmental Insights",
+      "optInDescription": "See if weather or air quality lines up with your logged symptoms. Your location is never shared automatically.",
+      "useMyLocation": "Use my location",
+      "enterManually": "Enter coordinates manually instead",
+      "forgetLocation": "Forget location",
+      "subtitle": "Based on the last 7 days near your saved location",
+      "loading": "Fetching current conditions…",
+      "noLogsYet": "Log a symptom this week to start seeing correlations here."
+    }
   },
   "auth": {
     "backToHome": "Back to Home",
