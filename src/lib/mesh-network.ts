@@ -148,32 +148,9 @@ class MeshNetworkManager {
     this.listeners.clear();
   }
 
-  public cleanupStalePeers() {
-    const now = Date.now();
-    const activePeersCountBefore = this.peers.size;
-    for (const [id, peer] of this.peers.entries()) {
-      if (now - peer.lastSeen > 25000) {
-        this.peers.delete(id);
-      }
-    }
-    if (this.peers.size !== activePeersCountBefore) {
-      this.notifyListeners();
-    }
-  }
-
-  private postMessage(msg: MeshMessage, retryCount: number = 0) {
-    if (!this.channel) return;
-    try {
+  private postMessage(msg: MeshMessage) {
+    if (this.channel) {
       this.channel.postMessage(msg);
-    } catch (err) {
-      console.warn(`Mesh Network: Channel postMessage error (attempt ${retryCount + 1}):`, err);
-      if (retryCount < 3) {
-        setTimeout(() => {
-          this.postMessage(msg, retryCount + 1);
-        }, Math.pow(2, retryCount) * 100);
-      } else {
-        console.error("Mesh Network: BroadcastChannel deadlock detected; falling back to offline IndexedDB storage.");
-      }
     }
   }
 
