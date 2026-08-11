@@ -44,7 +44,6 @@ const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
 const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
-const Medications = lazy(() => import("./pages/Medications/Index.tsx"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -253,16 +252,6 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <Reminders />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/medications"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Medications />
                     </Layout>
                   </ProtectedRoute>
                 }
