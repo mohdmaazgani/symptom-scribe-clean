@@ -632,10 +632,10 @@ const AIHealthAssistant = () => {
                                 else if (t.type === "info") showInfo(t.title, t.description);
                                 else if (t.type === "warning") showWarning(t.title, t.description);
                               });
-                              setMessages((prev) =>
-                                prev.map((m, idx) => (idx === i ? { ...m, pendingToasts: [] } : m))
-                              );
                             }
+                            setMessages((prev) =>
+                              prev.map((m, idx) => (idx === i ? { ...m, animate: false, pendingToasts: [] } : m))
+                            );
                           }}
                         />
                       ) : (

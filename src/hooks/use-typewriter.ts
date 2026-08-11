@@ -2,66 +2,104 @@ import { useState, useEffect, useRef } from "react";
 
 export function useTypewriter(text: string, speed: number = 25, enabled: boolean = true) {
   const cleanedText = text
-    .replace(/READY_FOR_ANALYSIS\s*\{.*?\}[ \t]*/g, "")
-    .replace(/READY_FOR_ANALYSIS(\s*\{.*)?$/g, "");
+    .replace(/READY_FOR_ANALYSIS\s*\{[\s\S]*?\}[ \t]*/g, "")
+    .replace(/READY_FOR_ANALYSIS([\s\S]*)$/g, "");
+
   const [displayedText, setDisplayedText] = useState("");
   const [isFinished, setIsFinished] = useState(false);
-  const prevTextRef = useRef("");
+
+  const cleanedTextRef = useRef(cleanedText);
+  const displayedTextRef = useRef("");
+  const isFinishedRef = useRef(false);
+  const currentTokenIndexRef = useRef(0);
+
+  // Keep cleanedTextRef up to date
+  useEffect(() => {
+    cleanedTextRef.current = cleanedText;
+  }, [cleanedText]);
+
+  // Check for continuation and reset if needed
+  useEffect(() => {
+    if (!enabled) return;
+
+    const isContinuation = displayedTextRef.current && cleanedText.startsWith(displayedTextRef.current);
+    if (!isContinuation) {
+      setDisplayedText("");
+      displayedTextRef.current = "";
+      currentTokenIndexRef.current = 0;
+      setIsFinished(false);
+      isFinishedRef.current = false;
+    } else if (cleanedText.length > displayedTextRef.current.length) {
+      // It is a continuation but target text has grown, so we are not finished typing yet
+      setIsFinished(false);
+      isFinishedRef.current = false;
+    }
+  }, [cleanedText, enabled]);
 
   useEffect(() => {
-    if (!enabled || !cleanedText) {
+    if (!enabled) {
       setDisplayedText(cleanedText);
       setIsFinished(true);
-      prevTextRef.current = cleanedText;
+      displayedTextRef.current = cleanedText;
+      isFinishedRef.current = true;
       return;
     }
 
-    // SSE/Streaming check: If the new text is an extension of the previous text
-    // (i.e. it starts with the previous text and is longer), it means we are actively streaming.
-    // In this case, we immediately catch up to display the new text chunk without delay.
-    const isStreaming = prevTextRef.current && cleanedText.startsWith(prevTextRef.current) && cleanedText !== prevTextRef.current;
-    if (isStreaming) {
-      setDisplayedText(cleanedText);
+    if (!cleanedText) {
+      setDisplayedText("");
       setIsFinished(true);
-      prevTextRef.current = cleanedText;
+      displayedTextRef.current = "";
+      isFinishedRef.current = true;
       return;
     }
-
-    // Otherwise, we treat it as a new static string (e.g. from history or static responses)
-    // and trigger the typewriter/progressive reveal effect.
-    prevTextRef.current = cleanedText;
-    setIsFinished(false);
-
-    // Split text into tokens (words and whitespaces)
-    const tokens = cleanedText.split(/(\s+)/);
-    let currentIndex = 0;
-    setDisplayedText("");
 
     const interval = setInterval(() => {
+      const target = cleanedTextRef.current;
+      const tokens = target.split(/(\s+)/);
+      const currentIndex = currentTokenIndexRef.current;
+
       if (currentIndex >= tokens.length) {
-        setDisplayedText(cleanedText);
-        setIsFinished(true);
-        clearInterval(interval);
+        // Caught up and typed all tokens
+        if (!isFinishedRef.current) {
+          setIsFinished(true);
+          isFinishedRef.current = true;
+        }
         return;
       }
 
-      const nextToken = tokens[currentIndex];
-      setDisplayedText((prev) => prev + nextToken);
-      
-      if (currentIndex === tokens.length - 1) {
-        setIsFinished(true);
-        clearInterval(interval);
-      }
+      // We are behind the target tokens. Type next token.
+      setIsFinished(false);
+      isFinishedRef.current = false;
 
-      currentIndex++;
+      // To prevent typing lag if we fall far behind, we can catch up by typing multiple tokens.
+      // E.g., if we are more than 6 tokens behind, we type 3 tokens per tick instead of 1.
+      const tokensBehind = tokens.length - currentIndex;
+      const tokensToAppend = tokensBehind > 6 ? 3 : 1;
+
+      const nextIndex = Math.min(currentIndex + tokensToAppend, tokens.length);
+      const nextText = tokens.slice(0, nextIndex).join("");
+
+      currentTokenIndexRef.current = nextIndex;
+      displayedTextRef.current = nextText;
+      setDisplayedText(nextText);
+
+      if (nextIndex >= tokens.length) {
+        setIsFinished(true);
+        isFinishedRef.current = true;
+      }
     }, speed);
 
     return () => clearInterval(interval);
-  }, [cleanedText, speed, enabled]);
+  }, [enabled, speed]);
 
   const skip = () => {
-    setDisplayedText(cleanedText);
+    const target = cleanedTextRef.current;
+    const tokens = target.split(/(\s+)/);
+    setDisplayedText(target);
     setIsFinished(true);
+    displayedTextRef.current = target;
+    isFinishedRef.current = true;
+    currentTokenIndexRef.current = tokens.length;
   };
 
   return { displayedText, isFinished, skip };

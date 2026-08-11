@@ -59,25 +59,38 @@ describe("useTypewriter hook", () => {
     expect(result.current.isFinished).toBe(true);
   });
 
-  it("should immediately update displayedText when text grows (active SSE streaming)", () => {
+  it("should type progressively when text grows (active SSE streaming) without resetting", () => {
     const { result, rerender } = renderHook(
       ({ text }) => useTypewriter(text, 25, true),
       { initialProps: { text: "Hello" } }
     );
 
-    // Let first render run its effect to set base catch-up
     expect(result.current.displayedText).toBe("");
     
-    // Advance timer to finish first word
+    // Advance timer to type first word
     act(() => {
       vi.advanceTimersByTime(25);
     });
     expect(result.current.displayedText).toBe("Hello");
+    expect(result.current.isFinished).toBe(true);
 
     // Rerender with extended text (simulating SSE append)
     rerender({ text: "Hello world" });
     
-    // It should instantly catch up to "Hello world" without animation lag
+    // It should not instantly catch up, and isFinished should become false
+    expect(result.current.displayedText).toBe("Hello");
+    expect(result.current.isFinished).toBe(false);
+
+    // Advance timer to trigger next token (" ")
+    act(() => {
+      vi.advanceTimersByTime(25);
+    });
+    expect(result.current.displayedText).toBe("Hello ");
+
+    // Advance timer to trigger last token ("world")
+    act(() => {
+      vi.advanceTimersByTime(25);
+    });
     expect(result.current.displayedText).toBe("Hello world");
     expect(result.current.isFinished).toBe(true);
   });
@@ -93,6 +106,20 @@ describe("useTypewriter hook", () => {
     const partialText = `READY_FOR_ANALYSIS { "symptom": "head`;
     const { result } = renderHook(() => useTypewriter(partialText, 25, false));
     expect(result.current.displayedText).toBe("");
+    expect(result.current.isFinished).toBe(true);
+  });
+
+  it("should strip multiline READY_FOR_ANALYSIS tags from displayedText", () => {
+    const multilineTag = `READY_FOR_ANALYSIS {\n  "symptom": "headache",\n  "severity": "moderate"\n}\n\nBased on assessment:`;
+    const { result } = renderHook(() => useTypewriter(multilineTag, 25, false));
+    expect(result.current.displayedText).toBe("\n\nBased on assessment:");
+    expect(result.current.isFinished).toBe(true);
+  });
+
+  it("should strip incomplete multiline READY_FOR_ANALYSIS tags from displayedText during stream", () => {
+    const partialMultilineText = `Based on assessment:\nREADY_FOR_ANALYSIS {\n  "symptom": "head`;
+    const { result } = renderHook(() => useTypewriter(partialMultilineText, 25, false));
+    expect(result.current.displayedText).toBe("Based on assessment:\n");
     expect(result.current.isFinished).toBe(true);
   });
 });

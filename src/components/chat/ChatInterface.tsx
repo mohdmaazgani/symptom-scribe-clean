@@ -53,7 +53,15 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   animate?: boolean;
+  pendingToasts?: { type: "info" | "success" | "warning"; title: string; description: string }[];
 }
+
+const cleanMessagesForDb = (msgs: Message[]): { role: "user" | "assistant"; content: string }[] => {
+  return msgs.map(({ role, content }) => ({
+    role,
+    content,
+  }));
+};
 
 const INITIAL_GREETING: Message = {
   role: "assistant",
@@ -215,7 +223,7 @@ const ChatInterface = () => {
           .insert({
             user_id: user.id,
             title,
-            messages: newMessages as unknown as Json,
+            messages: cleanMessagesForDb(newMessages) as unknown as Json,
           })
           .select()
           .single();
@@ -228,7 +236,7 @@ const ChatInterface = () => {
         const { error: updateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: newMessages as unknown as Json,
+            messages: cleanMessagesForDb(newMessages) as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -407,10 +415,12 @@ const ChatInterface = () => {
           { role: "assistant" as const, content: assistantContent, animate: true, pendingToasts },
         ];
 
+        setMessages(finalMessages);
+
         const { error: finalUpdateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: finalMessages as unknown as Json,
+            messages: cleanMessagesForDb(finalMessages) as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -424,7 +434,7 @@ const ChatInterface = () => {
             s.id === currentSessionId
               ? {
                   ...s,
-                  messages: finalMessages as unknown as Json,
+                  messages: cleanMessagesForDb(finalMessages) as unknown as Json,
                   updated_at: new Date().toISOString(),
                 }
               : s
@@ -679,10 +689,12 @@ const ChatInterface = () => {
                     else if (t.type === "info") showInfo(t.title, t.description);
                     else if (t.type === "warning") showWarning(t.title, t.description);
                   });
-                  setMessages((prev) =>
-                    prev.map((m, i) => (i === index ? { ...m, pendingToasts: [] } : m))
-                  );
                 }
+                setMessages((prev) =>
+                  prev.map((m, i) =>
+                    i === index ? { ...m, animate: false, pendingToasts: [] } : m
+                  )
+                );
               }}
             />
           ))}
