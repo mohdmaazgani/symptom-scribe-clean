@@ -140,6 +140,10 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-offline-salt");
 
+  // `salt` is always a Uint8Array at runtime (getUserSalt() or TextEncoder).
+  // The cast only reconciles TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion happens, and
+  // none is needed.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
@@ -173,6 +177,9 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-search-salt");
 
+  // Same as deriveKeyFromToken: `salt` is always a Uint8Array at runtime; the
+  // cast only satisfies the TS Uint8Array<ArrayBufferLike> vs BufferSource
+  // typing gap.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
@@ -252,6 +259,10 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
   const iv = hexToUint8Array(ivHex);
   const ciphertext = hexToUint8Array(ciphertextHex);
 
+  // `iv`/`ciphertext` are Uint8Arrays decoded from the hex `ivHex:cipherHex`
+  // format produced by encryptText(), so they are always byte arrays at
+  // runtime. The casts only reconcile TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion is needed.
   const decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
@@ -733,6 +744,8 @@ export async function verifyPayload(
     const data = encoder.encode(payload);
     const signatureBytes = hexToUint8Array(signatureHex);
 
+    // `signatureBytes` is a Uint8Array decoded from the hex signature string
+    // produced by signPayload(); the cast only reconciles the TS typing.
     return await crypto.subtle.verify(
       {
         name: "ECDSA",

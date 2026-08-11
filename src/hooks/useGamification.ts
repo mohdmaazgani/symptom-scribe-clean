@@ -74,6 +74,9 @@ export interface UserBadge {
   badges: Badge | null;
 }
 
+// `mood` is typed as `string` (matching the generated Supabase type) because
+// the DB column is text and may legitimately contain values beyond the current
+// MoodType union. New input stays constrained to MoodType via useLogMood().
 export interface MoodLog {
   id: string;
   mood: string;
