@@ -75,8 +75,11 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from "recharts";
-import { Trash2 } from "lucide-react";
+import { Trash2, Target, Trophy, Award, CheckCircle2, Sparkles, Plus } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toPng } from "html-to-image";
 import { useRef } from "react";
 
@@ -272,6 +275,28 @@ const MetricsChartSkeleton = () => (
   </div>
 );
 
+export interface Goal {
+  id: string;
+  user_id: string;
+  metric_type: string;
+  title: string;
+  target_value: number;
+  unit: string;
+  start_date: string;
+  end_date: string;
+  status: "active" | "completed" | "failed";
+  created_at?: string;
+}
+
+export interface Achievement {
+  id: string;
+  user_id: string;
+  badge_name: string;
+  badge_icon: string;
+  description: string;
+  earned_at: string;
+}
+
 const Metrics = () => {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -365,7 +390,17 @@ const Metrics = () => {
     sortOrder,
     setSortOrder,
   } = useMetricsHistory(historyUserId);
-  
+
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    metric_type: "steps",
+    title: "",
+    target_value: "",
+    end_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+  });
+
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -374,11 +409,79 @@ const Metrics = () => {
 
       if (user) {
         setHistoryUserId(user.id);
+        fetchGoalsAndAchievements(user.id);
       }
     };
 
     fetchUser();
   }, []);
+
+  const fetchGoalsAndAchievements = async (userId: string) => {
+    try {
+      const { data: goalsData } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (goalsData) setGoals(goalsData as Goal[]);
+
+      const { data: achievementsData } = await supabase
+        .from("achievements")
+        .select("*")
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false });
+
+      if (achievementsData) setAchievements(achievementsData as Achievement[]);
+    } catch (err) {
+      console.warn("Goals/Achievements fetch error:", err);
+    }
+  };
+
+  const handleCreateGoal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGoal.title || !newGoal.target_value) {
+      showWarning("Missing Fields", "Please specify title and target value.");
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const metricInfo = metricTypes.find((m) => m.value === newGoal.metric_type);
+    const unit = metricInfo?.unit || "";
+
+    const payload = {
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      metric_type: newGoal.metric_type,
+      title: newGoal.title,
+      target_value: parseFloat(newGoal.target_value),
+      unit: unit,
+      start_date: new Date().toISOString().split("T")[0],
+      end_date: newGoal.end_date,
+      status: "active",
+    };
+
+    const { error } = await supabase.from("goals").insert(payload);
+
+    if (error) {
+      showError("Goal Creation Failed", error.message);
+    } else {
+      showSuccess("Goal Created!", `Target: ${newGoal.target_value} ${unit}`);
+      setShowGoalModal(false);
+      setNewGoal({
+        metric_type: "steps",
+        title: "",
+        target_value: "",
+        end_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+      });
+      fetchGoalsAndAchievements(user.id);
+    }
+  };
 
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
@@ -606,19 +709,28 @@ const Metrics = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
-          {!isOnline && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 px-3 py-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-ping" />
-              Offline Mode
-            </span>
-          )}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground">Health Metrics</h1>
+            {!isOnline && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 px-3 py-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-ping" />
+                Offline Mode
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground">
+            Track your vital signs, set personal health goals, and analyze progress.
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Track your vital signs and health measurements
-        </p>
+
+        <Button
+          onClick={() => setShowGoalModal(true)}
+          className="bg-primary text-primary-foreground font-medium text-xs px-4 py-2 flex items-center gap-1.5 self-start md:self-auto"
+        >
+          <Target className="h-4 w-4" /> Set New Goal
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" role="group" aria-label="Select a metric type to record">
@@ -651,6 +763,134 @@ const Metrics = () => {
           );
         })}
       </div>
+
+      {/* Set Goal Modal */}
+      <Dialog open={showGoalModal} onOpenChange={setShowGoalModal}>
+        <DialogContent className="sm:max-w-md bg-slate-950 border-slate-800 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Target className="w-5 h-5 text-primary" /> Set New Health Goal
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Define a target threshold (e.g. 10,000 steps daily or 8 hours sleep) to track your progress.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateGoal} className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label htmlFor="goal_title" className="text-xs">Goal Title</Label>
+              <Input
+                id="goal_title"
+                placeholder="e.g. Walk 10,000 Steps Daily"
+                value={newGoal.title}
+                onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                required
+                className="bg-slate-900 border-slate-800 text-xs"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="goal_metric" className="text-xs">Metric Type</Label>
+                <Select
+                  value={newGoal.metric_type}
+                  onValueChange={(val) => setNewGoal({ ...newGoal, metric_type: val })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-xs h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800">
+                    {metricTypes.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label} ({m.unit})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="goal_target" className="text-xs">Target Value</Label>
+                <Input
+                  id="goal_target"
+                  type="number"
+                  placeholder="10000"
+                  value={newGoal.target_value}
+                  onChange={(e) => setNewGoal({ ...newGoal, target_value: e.target.value })}
+                  required
+                  className="bg-slate-900 border-slate-800 text-xs h-9"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="goal_end_date" className="text-xs">Target End Date</Label>
+              <Input
+                id="goal_end_date"
+                type="date"
+                value={newGoal.end_date}
+                onChange={(e) => setNewGoal({ ...newGoal, end_date: e.target.value })}
+                required
+                className="bg-slate-900 border-slate-800 text-xs h-9"
+              />
+            </div>
+
+            <Button type="submit" className="w-full bg-primary text-primary-foreground font-medium text-xs">
+              Create Goal
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Active Goals & Analytics Section */}
+      {goals.length > 0 && (
+        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-800/60">
+            <div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                <Target className="h-5 w-5 text-primary" />
+                Active Health Goals & Progress
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Track real-time progress toward your target health milestones.
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {goals.map((g) => {
+              const matchingRecords = records.filter((r: OfflineMetric) => r.metric_type === g.metric_type);
+              const latestVal = matchingRecords[0]?.value as { value?: number } | undefined;
+              const currentVal = latestVal?.value || 0;
+              const percent = Math.min(100, Math.round((currentVal / g.target_value) * 100));
+
+              return (
+                <div key={g.id} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white truncate" title={g.title}>{g.title}</h4>
+                    <Badge className={percent >= 100 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"}>
+                      {percent >= 100 ? "Goal Met!" : `${percent}%`}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Latest: <strong className="text-white">{currentVal}</strong> {g.unit}</span>
+                      <span>Target: <strong className="text-white">{g.target_value}</strong> {g.unit}</span>
+                    </div>
+                    <Progress value={percent} className="h-2 bg-slate-800" />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60">
+                    <span>Target Date: {new Date(g.end_date).toLocaleDateString()}</span>
+                    <span className="capitalize text-slate-400">{g.metric_type.replace("_", " ")}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={formOpen} onOpenChange={(open) => (open ? setFormOpen(true) : closeForm())}>
         <DialogContent className="sm:max-w-md">
@@ -949,8 +1189,24 @@ const Metrics = () => {
                           tick={{ fontSize: 10 }}
                           minTickGap={25}
                         />
-                        <YAxis tick={{ fontSize: 10 }} />
                         <Tooltip labelFormatter={(value) => formatDate(value)} />
+                        {(() => {
+                          const activeGoalForFilter = goals.find((g) => g.metric_type === historyMetricFilter);
+                          return activeGoalForFilter ? (
+                            <ReferenceLine
+                              y={activeGoalForFilter.target_value}
+                              stroke="#10b981"
+                              strokeDasharray="4 4"
+                              strokeWidth={2}
+                              label={{
+                                value: `Target Goal: ${activeGoalForFilter.target_value} ${activeGoalForFilter.unit}`,
+                                fill: "#10b981",
+                                position: "top",
+                                fontSize: 11,
+                              }}
+                            />
+                          ) : null;
+                        })()}
                         {isBloodPressure ? (
                           <>
                             <Line
