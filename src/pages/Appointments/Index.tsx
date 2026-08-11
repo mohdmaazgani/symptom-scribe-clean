@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
@@ -34,7 +34,7 @@ const AppointmentsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Fetch appointments and symptom history from Supabase
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     try {
@@ -76,11 +76,11 @@ const AppointmentsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [fetchData]);
 
   // Handle Add / Edit Appointment
   const handleSaveAppointment = async (
@@ -381,7 +381,7 @@ const AppointmentsPage: React.FC = () => {
                     appointment_date: editingAppointment.appointment_date,
                     location: editingAppointment.location || "",
                     notes: editingAppointment.notes || "",
-                    status: editingAppointment.status as any,
+                    status: editingAppointment.status as AddAppointmentFormValues["status"],
                     symptom_history_id: editingAppointment.symptom_history_id || "",
                     file_name: editingAppointment.file_name,
                   }
