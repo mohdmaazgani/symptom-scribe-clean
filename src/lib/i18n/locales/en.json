@@ -193,8 +193,7 @@
       "emergency": "Emergency",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings",
-      "nutritionHydration": "Nutrition & Hydration"
+      "settings": "Settings"
     },
     "themeOptions": {
       "light": "Light",
