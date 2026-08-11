@@ -20,6 +20,7 @@ import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
 // Lazy-loaded pages
+const SleepTracker = lazy(() => import("./pages/SleepTracker/index.tsx"));
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
 const Auth = lazy(() => import("./pages/Auth/index.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -285,7 +286,17 @@ const App = () => {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="*" element={<NotFound />} />
+                            <Route
+                path="/sleep-tracker"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SleepTracker />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+<Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </AuthProvider>
