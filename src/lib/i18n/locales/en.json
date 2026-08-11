@@ -193,8 +193,7 @@
       "emergency": "Emergency",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings",
-      "bodyMap": "Anatomy Map"
+      "settings": "Settings"
     },
     "themeOptions": {
       "light": "Light",
