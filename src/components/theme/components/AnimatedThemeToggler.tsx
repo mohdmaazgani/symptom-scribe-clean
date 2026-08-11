@@ -13,16 +13,6 @@ import {
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 
-const THEMES = [
-  { value: "light", label: "☀️ Light" },
-  { value: "dark", label: "🌙 Dark" },
-  { value: "cosmic", label: "🌌 Cosmic" },
-  { value: "deep-blue", label: "🔵 Deep Blue" },
-  { value: "forest", label: "🌲 Forest Green" },
-  { value: "orange", label: "🌅 Orange Sunset" },
-  { value: "pastel-pink", label: "🌸 Pastel Pink" },
-];
-
 export function AnimatedThemeToggler({ className = "" }) {
   // next-themes is the single source of truth for theme state/persistence.
   // `resolvedTheme` is what's actually applied (system -> light/dark).
@@ -32,11 +22,21 @@ export function AnimatedThemeToggler({ className = "" }) {
   // React mounts (preventing a page-wide flash). Seed local mount state
   // from that class so the icon itself doesn't flash to the wrong state
   // during the brief window before `resolvedTheme` is available.
+  const themes = [
+    { value: "light", label: "☀️ Light" },
+    { value: "dark", label: "🌙 Dark" },
+    { value: "cosmic", label: "🌌 Cosmic" },
+    { value: "deep-blue", label: "🔵 Deep Blue" },
+    { value: "forest", label: "🌲 Forest Green" },
+    { value: "orange", label: "🌅 Orange Sunset" },
+    { value: "pastel-pink", label: "🌸 Pastel Pink" },
+  ];
+
   const [mounted, setMounted] = useState(false);
   const [preMountTheme, setPreMountTheme] = useState("light");
   useEffect(() => {
     const root = document.documentElement;
-    const activeClass = THEMES.map((t) => t.value).find((cls) => root.classList.contains(cls));
+    const activeClass = themes.map((t) => t.value).find((cls) => root.classList.contains(cls));
     setPreMountTheme(activeClass ?? "light");
     setMounted(true);
   }, []);
@@ -147,7 +147,7 @@ export function AnimatedThemeToggler({ className = "" }) {
           value={resolvedTheme ?? "light"}
           onValueChange={(value) => setTheme(value)}
         >
-          {THEMES.map((theme) => (
+          {themes.map((theme) => (
             <DropdownMenuRadioItem key={theme.value} value={theme.value}>
               {theme.label}
             </DropdownMenuRadioItem>
