@@ -66,11 +66,11 @@ const AppointmentsPage: React.FC = () => {
         map[item.id] = item;
       });
       setSymptomMap(map);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error loading appointments:", error);
       toast({
         title: "Error Loading Appointments",
-        description: error.message || "Failed to fetch appointments.",
+        description: error instanceof Error ? error.message : "Failed to fetch appointments.",
         variant: "destructive",
       });
     } finally {
@@ -150,11 +150,11 @@ const AppointmentsPage: React.FC = () => {
       setIsDialogOpen(false);
       setEditingAppointment(null);
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving appointment:", error);
       toast({
         title: "Save Failed",
-        description: error.message || "Failed to save appointment details.",
+        description: error instanceof Error ? error.message : "Failed to save appointment details.",
         variant: "destructive",
       });
     } finally {
@@ -178,11 +178,11 @@ const AppointmentsPage: React.FC = () => {
       if (error) throw error;
       toast({ title: "Appointment Deleted", description: "Appointment removed." });
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting appointment:", error);
       toast({
         title: "Delete Failed",
-        description: error.message || "Could not delete appointment.",
+        description: error instanceof Error ? error.message : "Could not delete appointment.",
         variant: "destructive",
       });
     }
@@ -204,11 +204,11 @@ const AppointmentsPage: React.FC = () => {
       if (error) throw error;
       toast({ title: "Status Updated", description: `Appointment marked as ${newStatus}.` });
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating appointment status:", error);
       toast({
         title: "Update Failed",
-        description: error.message || "Could not update status.",
+        description: error instanceof Error ? error.message : "Could not update status.",
         variant: "destructive",
       });
     }
