@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromDocument } from "@/lib/ocr";
 import { db, type OfflineDocument } from "@/lib/offline-db";
-import { showSuccess, showError, showInfo } from "@/utils/toastUtils";
+import { showSuccess, showError, showInfo } from "@/lib/toast-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
