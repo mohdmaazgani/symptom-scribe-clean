@@ -69,11 +69,11 @@ const MedicationsPage: React.FC = () => {
 
       setMedications(medRes.data || []);
       setLogs((logRes.data as MedicationLog[]) || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error loading medications data:", error);
       toast({
         title: "Error Loading Data",
-        description: error.message || "Failed to fetch medications.",
+        description: error instanceof Error ? error.message : "Failed to fetch medications.",
         variant: "destructive",
       });
     } finally {
@@ -157,11 +157,11 @@ const MedicationsPage: React.FC = () => {
       setIsDialogOpen(false);
       setEditingMedication(null);
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving medication:", error);
       toast({
         title: "Save Failed",
-        description: error.message || "Failed to save medication details.",
+        description: error instanceof Error ? error.message : "Failed to save medication details.",
         variant: "destructive",
       });
     } finally {
@@ -185,11 +185,11 @@ const MedicationsPage: React.FC = () => {
       if (error) throw error;
       toast({ title: "Medication Deleted", description: "Medication removed from your schedule." });
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting medication:", error);
       toast({
         title: "Delete Failed",
-        description: error.message || "Could not delete medication.",
+        description: error instanceof Error ? error.message : "Could not delete medication.",
         variant: "destructive",
       });
     }
@@ -216,11 +216,11 @@ const MedicationsPage: React.FC = () => {
       });
 
       await fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error logging dose:", error);
       toast({
         title: "Log Failed",
-        description: error.message || "Could not record dose adherence status.",
+        description: error instanceof Error ? error.message : "Could not record dose adherence status.",
         variant: "destructive",
       });
     }
@@ -337,7 +337,7 @@ const MedicationsPage: React.FC = () => {
                 ? {
                     name: editingMedication.name,
                     dosage: editingMedication.dosage,
-                    frequency: editingMedication.frequency as any,
+                    frequency: editingMedication.frequency as AddMedicationFormValues["frequency"],
                     times: editingMedication.times ? editingMedication.times.join(", ") : "",
                     start_date: editingMedication.start_date,
                     end_date: editingMedication.end_date || "",
