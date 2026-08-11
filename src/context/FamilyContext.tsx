@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toastUtils";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 
 export interface Dependent {
   id: string;
@@ -145,8 +145,8 @@ export const FamilyProvider = ({ children }: FamilyProviderProps) => {
       showSuccess("Family Profile Added", `${deptData.full_name} added to your family profiles.`);
       await fetchDependents();
       return true;
-    } catch (err: any) {
-      showError("Error", err.message || "Failed to add family member");
+    } catch (error) {
+      showError("Error", error instanceof Error ? error.message : "Failed to add family member");
       return false;
     }
   };
@@ -166,8 +166,8 @@ export const FamilyProvider = ({ children }: FamilyProviderProps) => {
       showSuccess("Updated", "Family profile details saved.");
       await fetchDependents();
       return true;
-    } catch (err: any) {
-      showError("Error", err.message);
+    } catch (error) {
+      showError("Error", error instanceof Error ? error.message : "Failed to update family member");
       return false;
     }
   };
@@ -187,8 +187,8 @@ export const FamilyProvider = ({ children }: FamilyProviderProps) => {
       }
       await fetchDependents();
       return true;
-    } catch (err: any) {
-      showError("Error", err.message);
+    } catch (error) {
+      showError("Error", error instanceof Error ? error.message : "Failed to delete family member");
       return false;
     }
   };

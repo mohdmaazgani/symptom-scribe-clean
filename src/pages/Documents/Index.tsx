@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   FileText,
   UploadCloud,
@@ -24,7 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { extractTextFromDocument } from "@/lib/ocr";
 import { db, type OfflineDocument } from "@/lib/offline-db";
-import { showSuccess, showError, showInfo } from "@/utils/toastUtils";
+import { showSuccess, showError, showInfo } from "@/lib/toast-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -86,11 +86,7 @@ export default function DocumentHub() {
   const [copied, setCopied] = useState(false);
 
   // Re-fetch documents whenever activeProfile changes
-  useEffect(() => {
-    fetchDocuments();
-  }, [activeProfile.id]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const {
@@ -133,7 +129,11 @@ export default function DocumentHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeProfile.id, activeProfile.isPrimary]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   // Add tag handler
   const handleAddTag = () => {
@@ -235,9 +235,9 @@ export default function DocumentHub() {
       setUploadTags([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchDocuments();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Upload error:", err);
-      showError("Upload Failed", err.message || "Failed to process and save document.");
+      showError("Upload Failed", err instanceof Error ? err.message : "Failed to process and save document.");
     } finally {
       setTimeout(() => {
         setIsUploading(false);
@@ -256,8 +256,8 @@ export default function DocumentHub() {
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
       if (activeDoc?.id === id) setActiveDoc(null);
       showSuccess("Document Deleted", "Document removed.");
-    } catch (err: any) {
-      showError("Delete Failed", err.message || "Unable to delete document.");
+    } catch (err) {
+      showError("Delete Failed", err instanceof Error ? err.message : "Unable to delete document.");
     }
   };
 
