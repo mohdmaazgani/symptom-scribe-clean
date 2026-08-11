@@ -1,4 +1,3 @@
-import { Pill } from "lucide-react";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -60,7 +59,6 @@ const menuItems = [
   { titleKey: "sidebar.items.emergency", url: "/emergency", icon: Phone },
   { titleKey: "sidebar.items.brainGames", url: "/brain-games", icon: Brain },
   { titleKey: "sidebar.items.healthFacts", url: "/health-facts", icon: Sparkles },
-    { titleKey: "sidebar.items.medicationChecker", url: "/medication-checker", icon: Pill },
   { titleKey: "sidebar.items.settings", url: "/settings", icon: Settings },
 ];
 
