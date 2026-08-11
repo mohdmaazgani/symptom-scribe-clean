@@ -14,8 +14,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
-import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import { AuthProvider } from "./components/auth/AuthProvider";
+import { FamilyProvider } from "@/context/FamilyContext";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
@@ -130,8 +130,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <ScrollToTop />
-              <Suspense fallback={<LoadingScreen />}>
+              <FamilyProvider>
+                <ScrollToTop />
+                <Suspense fallback={<LoadingScreen />}>
                 <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -288,6 +289,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </FamilyProvider>
           </AuthProvider>
         </BrowserRouter>
         </TooltipProvider>
