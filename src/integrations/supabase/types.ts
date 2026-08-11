@@ -128,7 +128,6 @@ export type Database = {
       symptom_history: {
         Row: {
           ai_analysis: string
-          category?: string | null
           created_at: string | null
           follow_up_date: string | null
           id: string
@@ -143,7 +142,6 @@ export type Database = {
         }
         Insert: {
           ai_analysis: string
-          category?: string | null
           created_at?: string | null
           follow_up_date?: string | null
           id?: string
@@ -158,7 +156,6 @@ export type Database = {
         }
         Update: {
           ai_analysis?: string
-          category?: string | null
           created_at?: string | null
           follow_up_date?: string | null
           id?: string

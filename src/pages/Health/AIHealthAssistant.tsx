@@ -6,7 +6,6 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
-import { autoDetectCategory } from "@/lib/symptom-categories";
 import ReactMarkdown from "react-markdown";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
@@ -315,7 +314,6 @@ const AIHealthAssistant = () => {
               id: recordId,
               user_id: user.id,
               symptoms: userMessage,
-              category: autoDetectCategory(userMessage),
               ai_analysis: assistantContent,
               severity_level: severityLevel,
               possible_causes: possibleCauses.length > 0 ? possibleCauses : null,
