@@ -37,7 +37,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import EmergencyQuickAccess from "@/components/layout/EmergencyQuickAccess";
-import { ProfileSwitcher } from "@/components/family/ProfileSwitcher";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,7 +162,6 @@ export function AppSidebar() {
       </div>
 
       <SidebarContent>
-        {!isCollapsed && <ProfileSwitcher />}
         <SidebarGroup>
           {/* ✨ updated: letter-spacing + slightly smaller weight for section label */}
           <SidebarGroupLabel className="tracking-wide text-[11px] text-sidebar-foreground/50">
