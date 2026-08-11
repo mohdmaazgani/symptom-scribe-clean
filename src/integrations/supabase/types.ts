@@ -14,57 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      appointments: {
-        Row: {
-          id: string
-          user_id: string
-          doctor_name: string
-          specialty: string
-          appointment_date: string
-          location: string | null
-          notes: string | null
-          status: 'upcoming' | 'completed' | 'cancelled'
-          file_url: string | null
-          file_name: string | null
-          symptom_history_id: string | null
-          reminder_sent: boolean | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          doctor_name: string
-          specialty: string
-          appointment_date: string
-          location?: string | null
-          notes?: string | null
-          status?: 'upcoming' | 'completed' | 'cancelled'
-          file_url?: string | null
-          file_name?: string | null
-          symptom_history_id?: string | null
-          reminder_sent?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          doctor_name?: string
-          specialty?: string
-          appointment_date?: string
-          location?: string | null
-          notes?: string | null
-          status?: 'upcoming' | 'completed' | 'cancelled'
-          file_url?: string | null
-          file_name?: string | null
-          symptom_history_id?: string | null
-          reminder_sent?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       chat_sessions: {
         Row: {
           created_at: string | null
