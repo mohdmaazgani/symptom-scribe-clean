@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { SmartAlertsBanner } from "@/components/dashboard/SmartAlertsBanner";
 import CardSkeleton from "@/components/ui/CardSkeleton";
 import { WeeklyHealthScoreCard } from "@/components/dashboard/WeeklyHealthScoreCard";
+import { EnvironmentalInsights } from "@/components/dashboard/EnvironmentalInsights";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/common/EmptyState";
 
@@ -492,6 +493,8 @@ const Dashboard = () => {
       <SymptomPredictions userId={userId} symptoms={decryptedSymptomsList} />
 
       <WeeklyHealthScoreCard userId={userId} symptoms={symptoms} />
+
+      <EnvironmentalInsights symptomLogDates={recentHistory.map((item) => item.created_at)} />
 
       <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5">
         <CardHeader>
