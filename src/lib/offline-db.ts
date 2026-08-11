@@ -27,6 +27,7 @@ export interface OfflineSymptom {
   id: string;
   user_id: string;
   symptoms: string;
+  category?: string;
   severity_level: string;
   possible_causes: string[] | null;
   recommendations: string[] | null;
