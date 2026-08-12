@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff, Users } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
 import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
+import { CommunitySettings } from "@/components/settings/CommunitySettings";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
@@ -210,7 +211,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
             <span className="hidden sm:inline">{t("settings.tabs.password")}</span>
@@ -220,6 +221,11 @@ const Settings = () => {
             <ShieldCheck className="w-4 h-4" />
             <span className="hidden sm:inline">{t("settings.tabs.twoFactor")}</span>
             <span className="sm:hidden">{t("settings.tabs.twoFactorShort")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="community" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">{t("settings.tabs.community", "Community")}</span>
+            <span className="sm:hidden">{t("settings.tabs.communityShort", "Social")}</span>
           </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
@@ -237,6 +243,11 @@ const Settings = () => {
             <span className="sm:hidden">{t("settings.tabs.deleteShort")}</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* Community Privacy Tab */}
+        <TabsContent value="community">
+          <CommunitySettings />
+        </TabsContent>
 
         {/* Change Password Tab */}
         <TabsContent value="password">
