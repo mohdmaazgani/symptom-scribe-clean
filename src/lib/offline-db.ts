@@ -39,6 +39,7 @@ export interface OfflineSymptom {
   pending_delete: number;
   ai_analysis?: string;
   search_tokens?: string[] | null;
+  images?: string[] | null;
 }
 
 export interface MeshAlert {
@@ -460,7 +461,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
+      const { pending_sync, pending_delete, pending_update, images, ...supabaseData } = record;
       const { error } = await supabase
         .from("symptom_history")
         .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
