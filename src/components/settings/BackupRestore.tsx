@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DownloadCloud, UploadCloud, Lock } from "lucide-react";
-import { db } from "@/lib/offline-db";
+import { db, type OfflineMetric, type OfflineSymptom } from "@/lib/offline-db";
 
 const BackupRestore = () => {
   const [backupPassword, setBackupPassword] = useState("");
@@ -152,12 +152,12 @@ const BackupRestore = () => {
 
       if (payload.metrics && Array.isArray(payload.metrics)) {
         await db.healthMetrics.bulkPut(
-          payload.metrics.map((m: any) => ({ ...m, pending_sync: 1 }))
+          payload.metrics.map((m: OfflineMetric) => ({ ...m, pending_sync: 1 }))
         );
       }
       if (payload.symptoms && Array.isArray(payload.symptoms)) {
         await db.symptomHistory.bulkPut(
-          payload.symptoms.map((s: any) => ({ ...s, pending_sync: 1 }))
+          payload.symptoms.map((s: OfflineSymptom) => ({ ...s, pending_sync: 1 }))
         );
       }
 
