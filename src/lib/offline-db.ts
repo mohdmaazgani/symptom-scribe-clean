@@ -452,3 +452,91 @@ export const syncOfflineData = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const hydrateOfflineDatabase = async (userId: string): Promise<boolean> => {
+  if (!navigator.onLine || !userId) return false;
+
+  try {
+    const keys = await whenEncryptionReady();
+
+    // 1. Fetch server symptom history
+    const { data: serverSymptoms, error: symptomErr } = await supabase
+      .from("symptom_history")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (!symptomErr && serverSymptoms) {
+      const localEntries: OfflineSymptom[] = serverSymptoms.map((record) => ({
+        id: record.id,
+        user_id: record.user_id,
+        symptoms: record.symptoms || "",
+        severity_level: record.severity_level || "low",
+        possible_causes: record.possible_causes,
+        recommendations: record.recommendations,
+        risk_score: record.risk_score,
+        resolved: !!record.resolved,
+        created_at: record.created_at || new Date().toISOString(),
+        ai_analysis: record.ai_analysis,
+        search_tokens: record.search_tokens,
+        pending_sync: 0,
+        pending_update: 0,
+        pending_delete: 0,
+      }));
+
+      const encryptedEntries = await Promise.all(
+        localEntries.map((entry) => encryptSymptom(entry, keys.encryptionKey, keys.searchKey))
+      );
+
+      // Preserve any pending local unsynced rows
+      const existingPending = await db.symptomHistory
+        .where("user_id")
+        .equals(userId)
+        .filter((r) => r.pending_sync === 1 || r.pending_update === 1 || r.pending_delete === 1)
+        .toArray();
+
+      const pendingMap = new Map(existingPending.map((p) => [p.id, p]));
+      const finalEntries = encryptedEntries.map((e) => pendingMap.get(e.id) || e);
+
+      await db.symptomHistory.bulkPut(finalEntries);
+    }
+
+    // 2. Fetch server health metrics
+    const { data: serverMetrics, error: metricErr } = await supabase
+      .from("health_metrics")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (!metricErr && serverMetrics) {
+      const localMetrics: OfflineMetric[] = serverMetrics.map((record) => ({
+        id: record.id,
+        user_id: record.user_id,
+        metric_type: record.metric_type,
+        value: record.value,
+        notes: record.notes,
+        recorded_at: record.recorded_at,
+        pending_sync: 0,
+        pending_delete: 0,
+      }));
+
+      const encryptedMetrics = await Promise.all(
+        localMetrics.map((entry) => encryptMetric(entry, keys.encryptionKey, keys.searchKey))
+      );
+
+      const existingPendingMetrics = await db.healthMetrics
+        .where("user_id")
+        .equals(userId)
+        .filter((r) => r.pending_sync === 1 || r.pending_delete === 1)
+        .toArray();
+
+      const pendingMetricMap = new Map(existingPendingMetrics.map((p) => [p.id, p]));
+      const finalMetrics = encryptedMetrics.map((e) => pendingMetricMap.get(e.id) || e);
+
+      await db.healthMetrics.bulkPut(finalMetrics);
+    }
+
+    return true;
+  } catch (err) {
+    console.warn("Failed to hydrate offline database from server:", err);
+    return false;
+  }
+};

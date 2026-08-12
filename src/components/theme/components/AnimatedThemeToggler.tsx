@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Sparkles, Droplet, TreePine, Sunset, Flower } from "lucide-react";
 import "../styles/animated-theme-toggler.css";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -45,6 +46,23 @@ export function AnimatedThemeToggler({ className = "" }) {
   const isDark = ["dark", "cosmic", "deep-blue"].includes(currentTheme);
   const duration = 400;
 
+  const syncThemeToAccount = (newTheme: string) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user?.id) return;
+      supabase
+        .from("profiles")
+        .upsert(
+          {
+            user_id: session.user.id,
+            theme: newTheme,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        )
+        .catch((err) => console.warn("Failed to sync theme preference to profile:", err));
+    });
+  };
+
   const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const button = e.currentTarget;
     const nextTheme = isDark ? "light" : "dark";
@@ -53,6 +71,7 @@ export function AnimatedThemeToggler({ className = "" }) {
       // Delegate entirely to next-themes: it updates the `class`
       // attribute on <html> and writes to localStorage itself.
       setTheme(nextTheme);
+      syncThemeToAccount(nextTheme);
     };
 
     if (!button) {

@@ -12,7 +12,8 @@ import {
 } from "@/lib/encryption";
 
 import { supabase } from "@/integrations/supabase/client";
-import { syncOfflineData } from "@/lib/offline-db";
+import { syncOfflineData, hydrateOfflineDatabase } from "@/lib/offline-db";
+import { changeLanguage, type LanguageCode } from "@/lib/i18n";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import { AuthProvider } from "./components/auth/AuthProvider";
@@ -71,6 +72,32 @@ const App = () => {
             await syncOfflineData().catch((err) =>
               console.warn("Failed to sync offline data on session ready:", err)
             );
+
+            await hydrateOfflineDatabase(session.user.id).catch((err) =>
+              console.warn("Failed to hydrate offline database on session ready:", err)
+            );
+
+            // Fetch and apply account theme/language preferences
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("theme, language")
+              .eq("user_id", session.user.id)
+              .maybeSingle();
+
+            if (profile?.language) {
+              void changeLanguage(profile.language as LanguageCode);
+            }
+
+            if (profile?.theme) {
+              const root = document.documentElement;
+              root.classList.remove("light", "dark", "cosmic", "deep-blue", "forest", "orange", "pastel-pink");
+              root.classList.add(profile.theme);
+              try {
+                localStorage.setItem("theme", profile.theme);
+              } catch {
+                // ignore storage error
+              }
+            }
 
             // Handle pending profile details (from MultiStepSignUp)
             const pendingProfileStr = localStorage.getItem("symptom_scribe_pending_profile");

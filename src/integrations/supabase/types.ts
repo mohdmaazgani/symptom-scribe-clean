@@ -88,6 +88,9 @@ export type Database = {
           xp: number
           level: number
           encryption_salt: string | null
+          theme: string | null
+          language: string | null
+          accessibility_settings: Json | null
         }
         Insert: {
           allergies?: string[] | null
@@ -105,6 +108,9 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          theme?: string | null
+          language?: string | null
+          accessibility_settings?: Json | null
         }
         Update: {
           allergies?: string[] | null
@@ -122,6 +128,78 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          theme?: string | null
+          language?: string | null
+          accessibility_settings?: Json | null
+        }
+        Relationships: []
+      }
+      user_reminders: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          frequency: string
+          time: string
+          days: string[] | null
+          enabled: boolean
+          snooze_until: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label: string
+          frequency?: string
+          time: string
+          days?: string[] | null
+          enabled?: boolean
+          snooze_until?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          label?: string
+          frequency?: string
+          time?: string
+          days?: string[] | null
+          enabled?: boolean
+          snooze_until?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_reminder_history: {
+        Row: {
+          id: string
+          user_id: string
+          reminder_id: string | null
+          reminder_label: string
+          fired_at: string
+          action: string
+          snooze_minutes: number | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          reminder_id?: string | null
+          reminder_label: string
+          fired_at?: string
+          action: string
+          snooze_minutes?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          reminder_id?: string | null
+          reminder_label?: string
+          fired_at?: string
+          action?: string
+          snooze_minutes?: number | null
         }
         Relationships: []
       }

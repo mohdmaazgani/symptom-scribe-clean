@@ -3,12 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Languages } from "lucide-react";
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 const LanguageSwitcher = () => {
   const { i18n, t } = useTranslation();
 
   const handleChange = (code: LanguageCode) => {
     void changeLanguage(code);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user?.id) return;
+      supabase
+        .from("profiles")
+        .upsert(
+          {
+            user_id: session.user.id,
+            language: code,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        )
+        .catch((err) => console.warn("Failed to sync language preference to profile:", err));
+    });
   };
 
   return (
