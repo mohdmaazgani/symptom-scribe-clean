@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff, Download } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
 import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
+import { ExportDataModal } from "@/components/export/ExportDataModal";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
@@ -204,9 +205,20 @@ const Settings = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t("settings.title")}</h1>
-        <p className="text-gray-500">{t("settings.subtitle")}</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">{t("settings.title")}</h1>
+          <p className="text-gray-500">{t("settings.subtitle")}</p>
+        </div>
+
+        <ExportDataModal
+          trigger={
+            <Button variant="outline" className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
+              <Download className="w-4 h-4 mr-2" />
+              {t("exportData.button", "Export Data")}
+            </Button>
+          }
+        />
       </div>
 
       <Tabs defaultValue="password" className="w-full">

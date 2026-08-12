@@ -288,6 +288,39 @@
     "resetEmailSentTitle": "Reset Email Sent",
     "resetEmailSentDesc": "Please check your inbox for the password reset link"
   },
+  "exportData": {
+    "title": "Export Health Data",
+    "button": "Export Data",
+    "description": "Generate a downloadable PDF or CSV health report for data portability or sharing with your doctor.",
+    "formatLabel": "Export Format",
+    "pdfFormat": "PDF Summary Report",
+    "csvFormat": "Raw CSV Data",
+    "timeframeLabel": "Timeframe / Date Range",
+    "selectTimeframe": "Select timeframe",
+    "ranges": {
+      "7d": "Last 7 Days",
+      "30d": "Last 30 Days",
+      "90d": "Last 90 Days",
+      "all": "All Time (Complete History)"
+    },
+    "categoriesLabel": "Include Data Categories",
+    "categories": {
+      "symptoms": "Symptom Consultations & AI History",
+      "metrics": "Vitals & Health Metrics",
+      "profile": "Medical Profile (Allergies, Chronic Conditions)"
+    },
+    "privacyNotice": "Your data export is generated securely with client-side encryption support.",
+    "generating": "Generating Report...",
+    "downloadButton": "Download Report",
+    "successTitle": "Export Complete!",
+    "successDesc": "Your health data report has been generated.",
+    "errors": {
+      "noTypeSelectedTitle": "No Data Selected",
+      "noTypeSelectedDesc": "Please select at least one data category to export.",
+      "exportFailedTitle": "Export Failed",
+      "exportFailedDesc": "Could not generate export file."
+    }
+  },
   "settings": {
     "title": "Account Settings",
     "subtitle": "Manage your account security and preferences",

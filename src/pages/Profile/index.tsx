@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Loader2 } from "lucide-react";
+import { User, Loader2, Download } from "lucide-react";
+import { ExportDataModal } from "@/components/export/ExportDataModal";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
 import {
   whenEncryptionReady,
@@ -230,9 +231,20 @@ if (!profile.blood_type) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Health Profile</h1>
-        <p className="text-muted-foreground">Manage your personal health information</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Health Profile</h1>
+          <p className="text-muted-foreground">Manage your personal health information</p>
+        </div>
+
+        <ExportDataModal
+          trigger={
+            <Button variant="outline" className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
+              <Download className="w-4 h-4 mr-2" />
+              Export Health Data
+            </Button>
+          }
+        />
       </div>
 
       <Card>
