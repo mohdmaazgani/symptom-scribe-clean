@@ -193,7 +193,8 @@
       "emergency": "Emergency",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings"
+      "settings": "Settings",
+      "chronicManagement": "Chronic Management"
     },
     "themeOptions": {
       "light": "Light",
