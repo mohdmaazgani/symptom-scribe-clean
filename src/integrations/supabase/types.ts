@@ -109,6 +109,8 @@ export type Database = {
           xp: number
           level: number
           encryption_salt: string | null
+          community_opt_in?: boolean | null
+          community_visible?: boolean | null
         }
         Insert: {
           allergies?: string | null
@@ -126,6 +128,8 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          community_opt_in?: boolean | null
+          community_visible?: boolean | null
         }
         Update: {
           allergies?: string | null
@@ -143,6 +147,116 @@ export type Database = {
           xp?: number
           level?: number
           encryption_salt?: string | null
+          community_opt_in?: boolean | null
+          community_visible?: boolean | null
+        }
+        Relationships: []
+      }
+      groups: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          topic: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          topic: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          topic?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      group_members: {
+        Row: {
+          id: string
+          user_id: string
+          group_id: string
+          anonymous_alias: string
+          joined_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          group_id: string
+          anonymous_alias: string
+          joined_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          group_id?: string
+          anonymous_alias?: string
+          joined_at?: string | null
+        }
+        Relationships: []
+      }
+      group_posts: {
+        Row: {
+          id: string
+          user_id: string
+          group_id: string
+          content: string
+          post_type: 'achievement' | 'question'
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          group_id: string
+          content: string
+          post_type: 'achievement' | 'question'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          group_id?: string
+          content?: string
+          post_type?: 'achievement' | 'question'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reported_posts: {
+        Row: {
+          id: string
+          post_id: string
+          reporter_id: string
+          reason: string
+          status: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          reporter_id: string
+          reason: string
+          status?: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          reporter_id?: string
+          reason?: string
+          status?: string
+          created_at?: string | null
         }
         Relationships: []
       }
