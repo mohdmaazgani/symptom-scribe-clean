@@ -80,6 +80,7 @@ const App = () => {
                 const key = await whenEncryptionReady();
                 const encryptedFullName = await encryptProfileField(pendingProfile.full_name, key);
                 const encryptedDob = await encryptProfileField(pendingProfile.date_of_birth, key);
+                const encryptedBloodType = await encryptProfileField(pendingProfile.blood_type, key);
                 const encryptedEmergencyName = await encryptProfileField(pendingProfile.emergency_contact_name, key);
                 const encryptedEmergencyPhone = await encryptProfileField(pendingProfile.emergency_contact_phone, key);
                 const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
@@ -92,7 +93,7 @@ const App = () => {
                     full_name: encryptedFullName,
                     date_of_birth: encryptedDob,
                     gender: pendingProfile.gender || null,
-                    blood_type: pendingProfile.blood_type || null,
+                    blood_type: encryptedBloodType,
                     allergies: encryptedAllergies,
                     chronic_conditions: encryptedChronicConditions,
                     emergency_contact_name: encryptedEmergencyName,
