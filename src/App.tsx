@@ -25,6 +25,7 @@ const Auth = lazy(() => import("./pages/Auth/index.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Metrics = lazy(() => import("./pages/Metrics"));
+const HeartRate = lazy(() => import("./pages/HeartRate"));
 const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Emergency = lazy(() => import("./pages/Health/Emergency.tsx"));
@@ -162,6 +163,16 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <Metrics />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/heart-rate"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <HeartRate />
                     </Layout>
                   </ProtectedRoute>
                 }
