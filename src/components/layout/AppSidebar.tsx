@@ -14,7 +14,6 @@ import {
   Palette,
   PanelLeftClose,
   Check,
-  BarChart3,
 } from "lucide-react";
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -55,7 +54,6 @@ const menuItems = [
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
   { titleKey: "sidebar.items.healthMetrics", url: "/metrics", icon: Activity },
   { titleKey: "sidebar.items.history", url: "/history", icon: History },
-  { titleKey: "sidebar.items.healthStatistics", url: "/health-statistics", icon: BarChart3 },
   { titleKey: "sidebar.items.challenges", url: "/gamification", icon: Trophy },
   { titleKey: "sidebar.items.profile", url: "/profile", icon: User },
   { titleKey: "sidebar.items.emergency", url: "/emergency", icon: Phone },
@@ -64,7 +62,15 @@ const menuItems = [
   { titleKey: "sidebar.items.settings", url: "/settings", icon: Settings },
 ];
 
-const themeOptions = ["light", "dark", "cosmic", "deep-blue", "forest", "orange", "pastel-pink"];
+const themeOptions = [
+  "light",
+  "dark",
+  "cosmic",
+  "deep-blue",
+  "forest",
+  "orange",
+  "pastel-pink",
+];
 
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
@@ -178,7 +184,9 @@ export function AppSidebar() {
                     >
                       <NavLink to={item.url} end onClick={handleNavClick}>
                         <item.icon className="h-[17px] w-[17px]" />
-                        {!isCollapsed && <span className="text-[13.5px]">{t(item.titleKey)}</span>}
+                        {!isCollapsed && (
+                          <span className="text-[13.5px]">{t(item.titleKey)}</span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -206,7 +214,9 @@ export function AppSidebar() {
                   {/* ✨ updated: matching rounded-md + transition-colors for consistency with nav items */}
                   <SidebarMenuButton className="rounded-md transition-colors hover:bg-destructive/10 text-destructive py-2">
                     <LogOut className="h-[17px] w-[17px]" />{" "}
-                    {!isCollapsed && <span className="text-[13.5px]">{t("sidebar.signOut")}</span>}
+                    {!isCollapsed && (
+                      <span className="text-[13.5px]">{t("sidebar.signOut")}</span>
+                    )}
                   </SidebarMenuButton>
                 </AlertDialogTrigger>
 
