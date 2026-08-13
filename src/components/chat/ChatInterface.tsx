@@ -401,7 +401,7 @@ const ChatInterface = () => {
           );
 
           // Strip offline-only fields so we match the Supabase table schema
-          const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+          const { pending_sync, pending_update, pending_delete, images, ...supabaseRecord } =
             encryptedRecord;
 
           const { error: insertError } = await supabase
