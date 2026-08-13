@@ -11,6 +11,11 @@ import {
   generateSearchTokens,
 } from "./encryption";
 import { invalidateCache } from "@/lib/cached-queries";
+import {
+  isRetryableError,
+  calculateNextRetryDelayMs,
+  MAX_RETRY_ATTEMPTS,
+} from "./sync-retry";
 
 export interface OfflineMetric {
   id: string;
@@ -22,6 +27,11 @@ export interface OfflineMetric {
   pending_sync: number;
   pending_delete: number;
   search_tokens?: string[] | null;
+  // Retry metadata (local-only)
+  retry_attempts?: number;
+  last_attempt_at?: number | null;
+  next_retry_at?: number | null;
+  last_sync_error?: string | null;
 }
 
 export interface OfflineSymptom {
@@ -40,6 +50,11 @@ export interface OfflineSymptom {
   ai_analysis?: string;
   search_tokens?: string[] | null;
   images?: string[] | null;
+  // Retry metadata (local-only)
+  retry_attempts?: number;
+  last_attempt_at?: number | null;
+  next_retry_at?: number | null;
+  last_sync_error?: string | null;
 }
 
 export interface MeshAlert {
@@ -95,10 +110,28 @@ class OfflineDatabase extends Dexie {
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
       p2pKeys: "id",
     });
+    // Version 4: add retry metadata fields to records (fields are optional
+    // so existing records continue to work). Keep same indexes/stores.
+    this.version(4).stores({
+      healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+      p2pKeys: "id",
+    });
   }
 }
 
 export const db = new OfflineDatabase();
+
+let syncInFlight: Promise<boolean> | null = null;
+
+function stripLocalFields<T extends Record<string, unknown>>(record: T, fields: string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(record)) {
+    if (!fields.includes(k)) out[k] = v as unknown;
+  }
+  return out;
+}
 
 // Encryption and Decryption Mappers
 export async function encryptSymptom(
@@ -134,6 +167,12 @@ export async function encryptSymptom(
       `enc:json:${await encryptText(JSON.stringify(record.recommendations), key)}`,
     ];
   }
+  // Ensure retry metadata defaults for new records (local-only)
+  if (encrypted.retry_attempts === undefined) encrypted.retry_attempts = 0;
+  if (encrypted.last_attempt_at === undefined) encrypted.last_attempt_at = null;
+  if (encrypted.next_retry_at === undefined) encrypted.next_retry_at = null;
+  if (encrypted.last_sync_error === undefined) encrypted.last_sync_error = null;
+
   return encrypted;
 }
 
@@ -183,6 +222,12 @@ export async function encryptMetric(
       encrypted.search_tokens = await generateSearchTokens(record.notes, actualSearchKey);
     }
   }
+  // Ensure retry metadata defaults for new records (local-only)
+  if (encrypted.retry_attempts === undefined) encrypted.retry_attempts = 0;
+  if (encrypted.last_attempt_at === undefined) encrypted.last_attempt_at = null;
+  if (encrypted.next_retry_at === undefined) encrypted.next_retry_at = null;
+  if (encrypted.last_sync_error === undefined) encrypted.last_sync_error = null;
+
   return encrypted;
 }
 
@@ -393,113 +438,243 @@ registerP2PKeyStorage({
 export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+  if (syncInFlight) return syncInFlight;
 
-    const key = await whenEncryptionReady();
-    let syncedAny = false;
+  syncInFlight = (async () => {
+    try {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
 
-    // 1. Sync pending health metrics deletions
-    const pendingMetricsDeletes = await db.healthMetrics
-      .where("pending_delete")
-      .equals(1)
-      .toArray();
+        const key = await whenEncryptionReady();
+        let syncedAny = false;
 
-    for (const record of pendingMetricsDeletes) {
-      const { error } = await supabase
-        .from("health_metrics")
-        .delete()
-        .eq("id", record.id);
+        // Helper to extract safe error message
+        const safeMessage = (err: unknown) => {
+          try {
+            if (!err) return "";
+            if (err instanceof Error) return err.message;
+            const asObj = err as Record<string, unknown>;
+            const msg = asObj?.["message"];
+            if (typeof msg === "string") return msg;
+            return String(asObj);
+          } catch (e) {
+            return String(err);
+          }
+        };
 
-      if (!error || error.code === "PGRST116") {
-        await db.healthMetrics.delete(record.id);
-        syncedAny = true;
+        // 1. Sync pending health metrics deletions
+        const pendingMetricsDeletes = await db.healthMetrics
+          .where("pending_delete")
+          .equals(1)
+          .toArray();
+
+        for (const record of pendingMetricsDeletes) {
+          // Skip if waiting for next retry
+          if (record.next_retry_at && Date.now() < record.next_retry_at) continue;
+
+          // mark attempt
+          const attempts = (record.retry_attempts ?? 0) + 1;
+          const now = Date.now();
+          await db.healthMetrics.update(record.id, { retry_attempts: attempts, last_attempt_at: now });
+
+          const { error } = await supabase
+            .from("health_metrics")
+            .delete()
+            .eq("id", record.id);
+
+          if (!error || error.code === "PGRST116") {
+            await db.healthMetrics.delete(record.id);
+            syncedAny = true;
+          } else {
+            const msg = safeMessage(error);
+            if (isRetryableError(error) && attempts < MAX_RETRY_ATTEMPTS) {
+              const delay = calculateNextRetryDelayMs(attempts);
+              await db.healthMetrics.update(record.id, {
+                last_sync_error: msg,
+                next_retry_at: Date.now() + delay,
+              });
+            } else {
+              // Permanent failure: record error and stop retrying for now.
+              await db.healthMetrics.update(record.id, { last_sync_error: msg, next_retry_at: null });
+            }
+          }
+        }
+
+        // 2. Sync pending health metrics insertions
+        const pendingMetricsInserts = await db.healthMetrics
+          .where("pending_sync")
+          .equals(1)
+          .toArray();
+
+        for (const record of pendingMetricsInserts) {
+          if (record.next_retry_at && Date.now() < record.next_retry_at) continue;
+
+          const attempts = (record.retry_attempts ?? 0) + 1;
+          const now = Date.now();
+          await db.healthMetrics.update(record.id, { retry_attempts: attempts, last_attempt_at: now });
+
+          const supabaseData = stripLocalFields(record as Record<string, unknown>, [
+            "pending_sync",
+            "pending_delete",
+            "retry_attempts",
+            "last_attempt_at",
+            "next_retry_at",
+            "last_sync_error",
+          ]) as unknown as TablesInsert<"health_metrics">;
+          const { error } = await supabase.from("health_metrics").insert(supabaseData);
+
+          if (!error) {
+            await db.healthMetrics.update(record.id, {
+              pending_sync: 0,
+              retry_attempts: 0,
+              last_attempt_at: null,
+              next_retry_at: null,
+              last_sync_error: null,
+            });
+            syncedAny = true;
+          } else {
+            const msg = safeMessage(error);
+            if (isRetryableError(error) && attempts < MAX_RETRY_ATTEMPTS) {
+              const delay = calculateNextRetryDelayMs(attempts);
+              await db.healthMetrics.update(record.id, { last_sync_error: msg, next_retry_at: Date.now() + delay });
+            } else {
+              await db.healthMetrics.update(record.id, { last_sync_error: msg, next_retry_at: null });
+            }
+          }
+        }
+
+        // 3. Sync pending symptom history deletions
+        const pendingSymptomDeletes = await db.symptomHistory
+          .where("pending_delete")
+          .equals(1)
+          .toArray();
+
+        for (const record of pendingSymptomDeletes) {
+          if (record.next_retry_at && Date.now() < record.next_retry_at) continue;
+
+          const attempts = (record.retry_attempts ?? 0) + 1;
+          const now = Date.now();
+          await db.symptomHistory.update(record.id, { retry_attempts: attempts, last_attempt_at: now });
+
+          const { error } = await supabase
+            .from("symptom_history")
+            .delete()
+            .eq("id", record.id);
+
+          if (!error || error.code === "PGRST116") {
+            await db.symptomHistory.delete(record.id);
+            syncedAny = true;
+          } else {
+            const msg = safeMessage(error);
+            if (isRetryableError(error) && attempts < MAX_RETRY_ATTEMPTS) {
+              const delay = calculateNextRetryDelayMs(attempts);
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: Date.now() + delay });
+            } else {
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: null });
+            }
+          }
+        }
+
+        // 4. Sync pending symptom history insertions
+        const pendingSymptomInserts = await db.symptomHistory
+          .where("pending_sync")
+          .equals(1)
+          .toArray();
+
+        for (const record of pendingSymptomInserts) {
+          if (record.next_retry_at && Date.now() < record.next_retry_at) continue;
+
+          const attempts = (record.retry_attempts ?? 0) + 1;
+          const now = Date.now();
+          await db.symptomHistory.update(record.id, { retry_attempts: attempts, last_attempt_at: now });
+
+          const supabaseData = stripLocalFields(record as Record<string, unknown>, [
+            "pending_sync",
+            "pending_delete",
+            "pending_update",
+            "images",
+            "retry_attempts",
+            "last_attempt_at",
+            "next_retry_at",
+            "last_sync_error",
+          ]) as unknown as TablesInsert<"symptom_history">;
+          const { error } = await supabase.from("symptom_history").insert(supabaseData);
+
+          if (!error) {
+            await db.symptomHistory.update(record.id, {
+              pending_sync: 0,
+              retry_attempts: 0,
+              last_attempt_at: null,
+              next_retry_at: null,
+              last_sync_error: null,
+            });
+            syncedAny = true;
+          } else {
+            const msg = safeMessage(error);
+            if (isRetryableError(error) && attempts < MAX_RETRY_ATTEMPTS) {
+              const delay = calculateNextRetryDelayMs(attempts);
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: Date.now() + delay });
+            } else {
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: null });
+            }
+          }
+        }
+
+        // 5. Sync pending symptom history updates (resolve/reopen)
+        const pendingSymptomUpdates = await db.symptomHistory
+          .where("pending_update")
+          .equals(1)
+          .toArray();
+
+        for (const record of pendingSymptomUpdates) {
+          if (record.next_retry_at && Date.now() < record.next_retry_at) continue;
+
+          const attempts = (record.retry_attempts ?? 0) + 1;
+          const now = Date.now();
+          await db.symptomHistory.update(record.id, { retry_attempts: attempts, last_attempt_at: now });
+
+          const { error } = await supabase
+            .from("symptom_history")
+            .update({ resolved: record.resolved })
+            .eq("id", record.id);
+
+          if (!error) {
+            await db.symptomHistory.update(record.id, {
+              pending_update: 0,
+              retry_attempts: 0,
+              last_attempt_at: null,
+              next_retry_at: null,
+              last_sync_error: null,
+            });
+            syncedAny = true;
+          } else {
+            const msg = safeMessage(error);
+            if (isRetryableError(error) && attempts < MAX_RETRY_ATTEMPTS) {
+              const delay = calculateNextRetryDelayMs(attempts);
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: Date.now() + delay });
+            } else {
+              await db.symptomHistory.update(record.id, { last_sync_error: msg, next_retry_at: null });
+            }
+          }
+        }
+
+        if (syncedAny) {
+          await Promise.all([
+            invalidateCache("health_metrics").catch(() => {}),
+            invalidateCache("symptom_history").catch(() => {}),
+          ]);
+        }
+
+        return syncedAny;
+      } catch (error) {
+        console.error("Error during offline synchronization:", error);
+        return false;
       }
+    } finally {
+      syncInFlight = null;
     }
+  })();
 
-    // 2. Sync pending health metrics insertions
-    const pendingMetricsInserts = await db.healthMetrics
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
-
-    for (const record of pendingMetricsInserts) {
-      const { pending_sync, pending_delete, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("health_metrics")
-        .insert(supabaseData as unknown as TablesInsert<"health_metrics">);
-
-      if (!error) {
-        await db.healthMetrics.update(record.id, { pending_sync: 0 });
-        syncedAny = true;
-      }
-    }
-
-    // 3. Sync pending symptom history deletions
-    const pendingSymptomDeletes = await db.symptomHistory
-      .where("pending_delete")
-      .equals(1)
-      .toArray();
-
-    for (const record of pendingSymptomDeletes) {
-      const { error } = await supabase
-        .from("symptom_history")
-        .delete()
-        .eq("id", record.id);
-
-      if (!error || error.code === "PGRST116") {
-        await db.symptomHistory.delete(record.id);
-        syncedAny = true;
-      }
-    }
-
-    // 4. Sync pending symptom history insertions
-    const pendingSymptomInserts = await db.symptomHistory
-      .where("pending_sync")
-      .equals(1)
-      .toArray();
-
-    for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, images, ...supabaseData } = record;
-      const { error } = await supabase
-        .from("symptom_history")
-        .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
-
-      if (!error) {
-        await db.symptomHistory.update(record.id, { pending_sync: 0 });
-        syncedAny = true;
-      }
-    }
-
-    // 5. Sync pending symptom history updates (resolve/reopen)
-    const pendingSymptomUpdates = await db.symptomHistory
-      .where("pending_update")
-      .equals(1)
-      .toArray();
-
-    for (const record of pendingSymptomUpdates) {
-      const { error } = await supabase
-        .from("symptom_history")
-        .update({ resolved: record.resolved })
-        .eq("id", record.id);
-
-      if (!error) {
-        await db.symptomHistory.update(record.id, { pending_update: 0 });
-        syncedAny = true;
-      }
-    }
-
-    if (syncedAny) {
-      await Promise.all([
-        invalidateCache("health_metrics").catch(() => {}),
-        invalidateCache("symptom_history").catch(() => {}),
-      ]);
-    }
-
-    return syncedAny;
-  } catch (error) {
-    console.error("Error during offline synchronization:", error);
-    return false;
-  }
+  return syncInFlight;
 };
