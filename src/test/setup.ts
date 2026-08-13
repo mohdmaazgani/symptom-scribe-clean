@@ -10,6 +10,9 @@
  * without having to repeat the same setup.
  */
 import "@testing-library/jest-dom";
+// Initialise i18n so components rendered in tests resolve real translations
+// instead of falling back to raw translation keys.
+import "@/lib/i18n";
 
 // Mock ResizeObserver for Recharts / ResponsiveContainer in jsdom environment
 class ResizeObserverMock {

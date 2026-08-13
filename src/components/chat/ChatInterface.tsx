@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -12,12 +12,17 @@ import {
   Thermometer,
   Brain,
   HeartPulse,
+  Camera,
+  X,
+  MessageSquarePlus,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/lib/toast-helpers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/common/EmptyState";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
@@ -26,6 +31,7 @@ import {
   parseSymptomConsultation,
   shouldPersistConsultation,
 } from "@/lib/symptom-consultation";
+import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
@@ -71,9 +77,39 @@ const ChatInterface = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+
+  const previewUrls = useMemo(
+    () => selectedFiles.map((file) => URL.createObjectURL(file)),
+    [selectedFiles]
+  );
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const scrollToBottom = () => {
     if (typeof messagesEndRef.current?.scrollIntoView === "function") {
@@ -159,6 +195,10 @@ const ChatInterface = () => {
     setInput("");
     setIsLoading(true);
 
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+
     let assistantContent = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -232,6 +272,7 @@ const ChatInterface = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ messages: [...recentContext, userMessage] }),
+        signal: abortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -321,6 +362,22 @@ const ChatInterface = () => {
         );
 
         if (shouldPersistConsultation(assistantContent)) {
+          let uploadedImages: string[] | null = null;
+          if (selectedFiles.length > 0) {
+            try {
+              uploadedImages = [];
+              for (const file of selectedFiles) {
+                const compressed = await compressImage(file);
+                const url = await uploadSymptomImage(compressed, user.id);
+                uploadedImages.push(url);
+              }
+            } catch (err) {
+              console.error("Image upload failed:", err);
+              showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
+              uploadedImages = null;
+            }
+          }
+
           const recordId = crypto.randomUUID();
           const record = {
             id: recordId,
@@ -333,6 +390,7 @@ const ChatInterface = () => {
             risk_score: riskScore,
             resolved: false,
             created_at: new Date().toISOString(),
+            images: uploadedImages,
           };
 
           const keys = await whenKeysReady();
@@ -343,7 +401,7 @@ const ChatInterface = () => {
           );
 
           // Strip offline-only fields so we match the Supabase table schema
-          const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+          const { pending_sync, pending_update, pending_delete, images, ...supabaseRecord } =
             encryptedRecord;
 
           const { error: insertError } = await supabase
@@ -381,6 +439,10 @@ const ChatInterface = () => {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        dismissLoading();
+        return;
+      }
       console.error("Chat error:", error);
       dismissLoading();
       const errorMsg =
@@ -388,7 +450,12 @@ const ChatInterface = () => {
       showError("Analysis failed", errorMsg);
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setIsLoading(false);
+      setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -402,25 +469,41 @@ const ChatInterface = () => {
   const isWelcomeState = messages.length === 1 && messages[0] === INITIAL_GREETING;
 
   const renderHistoryList = () => {
-    if (sessionsLoading) {
-      return (
-        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          Loading history...
-        </div>
-      );
-    }
+  if (sessionsLoading) {
+    return (
+      <div className="space-y-2 p-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5"
+          >
+            <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+            <Skeleton className="h-4 flex-1 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-    if (sessions.length === 0) {
-      return (
-        <div className="text-center py-8 text-sm text-muted-foreground px-4">
-          No previous sessions found. Start a conversation to save one!
-        </div>
-      );
-    }
+  if (sessions.length === 0) {
+    return (
+      <EmptyState
+        icon={
+          <MessageSquarePlus
+            className="w-8 h-8 text-teal-600 dark:text-teal-400"
+            strokeWidth={1.5}
+          />
+        }
+        title="Start a new conversation"
+        description="Your saved chat sessions will appear here once you begin talking with the AI assistant."
+        ctaText="New Chat"
+        onCtaClick={handleNewChat}
+      />
+    );
+  }
 
     return (
-      <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar">
+       <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar animate-fade-in">
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
           return (
@@ -607,7 +690,46 @@ const ChatInterface = () => {
 
         {/* Input Panel — FIX: char counter + Enter hint */}
         <div className="border-t border-border/40 bg-card/40 backdrop-blur-md p-4 shrink-0">
+          {selectedFiles.length > 0 && (
+            <div className="flex gap-2 mb-3 overflow-x-auto p-2 border border-border/50 rounded-xl bg-background/50">
+              {selectedFiles.map((file, idx) => (
+                <div key={`${file.name}-${file.lastModified}-${idx}`} className="relative shrink-0">
+                  <img
+                    src={previewUrls[idx]}
+                    alt={`Preview ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-md border border-border"
+                  />
+                  <button
+                    onClick={() => removeFile(idx)}
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/90 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-3 items-start">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="h-[60px] w-[60px] flex-shrink-0 rounded-xl bg-background/60 border-border/50 hover:bg-muted/50"
+              aria-label="Attach images"
+            >
+              <Camera className="w-5 h-5 text-muted-foreground" />
+            </Button>
             <div className="flex-1 flex flex-col gap-1.5 chat-input-glow rounded-xl transition-all duration-200">
               <Textarea
                 value={input}

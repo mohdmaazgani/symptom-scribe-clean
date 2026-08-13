@@ -106,6 +106,7 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 | Deployment      | Netlify                   |
 | Version Control | Git & GitHub              |
 
+[![CI](https://github.com/mohdmaazgani/symptom-scribe-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/mohdmaazgani/symptom-scribe-clean/actions/workflows/ci.yml)
 ---
 
 # 📸 Screenshots
@@ -137,8 +138,16 @@ Example:
 git clone https://github.com/mohdmaazgani/symptom-scribe-clean.git
 cd symptom-scribe-clean
 ```
+## 2. Quick Setup
 
-## 2. Configure Environment Variables
+Run the setup script to install dependencies and create `.env.local` from `.env.example` if it doesn't already exist.
+
+```bash
+npm install
+npm run setup
+```
+
+## 3. Configure Environment Variables
 
 Copy the example env file and add your Supabase browser credentials (Dashboard → Project Settings → API):
 
@@ -154,7 +163,7 @@ Add the browser variables to `.env.local`:
 > [!NOTE]
 > `VITE_SUPABASE_ANON_KEY` is accepted only as a legacy fallback when `VITE_SUPABASE_PUBLISHABLE_KEY` is missing. Prefer `VITE_SUPABASE_PUBLISHABLE_KEY` for new and updated environments.
 
-## 3. Link Supabase & Apply Migrations
+## 4. Link Supabase & Apply Migrations
 
 To ensure your local database contains all the necessary schemas (like `profiles`, `symptom_history`, and custom functions/triggers) so that data can save correctly, link your project and push migrations:
 
@@ -169,13 +178,17 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-## 4. Install Dependencies
+## 5. Install Dependencies
+
+If you already ran `npm install
+npm install
+npm run setup`, dependencies are already installed. Otherwise run:
 
 ```bash
 npm install
 ```
 
-## 5. Start Development Server
+## 6. Start Development Server
 
 ```bash
 npm run dev
@@ -635,7 +648,7 @@ Play brain-training games.
 For detailed troubleshooting instructions, see:
 
 ```text
-TROUBLESHOOTING.md
+TROUBLESHOOT.md
 ```
 
 Common issues include:
@@ -744,4 +757,3 @@ the software under the terms of the MIT License.
 Developed by **@mohdmaazgani**
 
 ✨ Passionate about building intelligent, user-centric healthcare solutions.
-

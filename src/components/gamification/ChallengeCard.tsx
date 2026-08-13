@@ -1,14 +1,14 @@
-import { CheckCircle2, Clock, Zap } from "lucide-react";
+import { CheckCircle2, Clock, Zap, Check, Flame } from "lucide-react";
 
 interface Challenge {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   duration_days: number;
   target_value: number;
   unit: string;
-  icon?: string;
-  color?: string;
+  icon?: string | null;
+  color?: string | null;
 }
 
 interface UserChallenge {
@@ -16,7 +16,7 @@ interface UserChallenge {
   status: string;
   streak_count: number;
   best_streak: number;
-  last_checked_in?: string;
+  last_checked_in?: string | null;
 }
 
 interface Props {
@@ -93,19 +93,22 @@ export default function ChallengeCard({ challenge, userChallenge, onJoin, onChec
           Join Challenge
         </button>
       ) : isCompleted ? (
-        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-primary bg-primary/10 border border-primary/20">
-          ✅ Completed!
+        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-primary bg-primary/10 border border-primary/20 flex items-center justify-center gap-2">
+          <CheckCircle2 className="w-4 h-4" />
+          Completed!
         </div>
       ) : checkedInToday ? (
-        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-muted-foreground bg-muted/40 border border-border">
-          ✓ Checked in today
+        <div className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center text-muted-foreground bg-muted/40 border border-border flex items-center justify-center gap-2">
+          <Check className="w-4 h-4" />
+          Checked in today
         </div>
       ) : (
         <button
           onClick={onCheckIn}
-          className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
+          className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors flex items-center justify-center gap-2"
         >
-          Check In Today 🔥
+          <Flame className="w-4 h-4" />
+          Check In Today
         </button>
       )}
     </div>

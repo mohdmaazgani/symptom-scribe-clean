@@ -4,9 +4,22 @@ import type { Session } from "@supabase/supabase-js";
 let activeKey: CryptoKey | null = null;
 let activeSearchKey: CryptoKey | null = null;
 let lastToken: string | null = null;
+/** Last authenticated user id — needed on logout because getUser() is empty after sign-out. */
+let lastKnownUserId: string | null = null;
 
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
 let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null = null;
+
+/*
+ * Security Trade-off:
+ *
+ * Persisting key material improves user experience because encrypted
+ * data remains readable after page reloads.
+ *
+ * Stronger persistence mechanisms (such as non-extractable keys or
+ * encrypted local storage) may be considered in future revisions,
+ * but would require migration logic to preserve compatibility.
+ */
 
 function resetReadyPromise() {
   readyPromise = new Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }>((resolve) => {
@@ -72,6 +85,22 @@ function hexToUint8Array(hex: string): Uint8Array {
 // A random 16-byte salt is generated once per user and stored in localStorage
 // keyed by user ID. This prevents cross-user precomputation attacks that would
 // be possible with a hardcoded global salt.
+//
+// Persistence rationale:
+// - What is stored: a 16-byte random value, hex-encoded, under
+//   `SALT_KEY_PREFIX + userId` in localStorage.
+// - Why it is stored: PBKDF2 must be run with the *same* salt every time to
+//   re-derive the same AES/HMAC keys from the master seed. If the salt were
+//   regenerated on each session, previously encrypted/indexed data would
+//   become undecryptable and unsearchable.
+// - When it is restored: on every session change, before keys are derived
+//   (see `handleSessionChange`), and is also synced from the user's Supabase
+//   profile (`encryption_salt`) so the same salt is available across devices.
+// - Why changing it would break existing data: the salt is a direct input to
+//   key derivation. Rotating or discarding a user's salt without a
+//   re-encryption migration will silently produce a different key and make
+//   all previously encrypted fields and blind-index search tokens
+//   unreadable/unmatchable.
 
 const SALT_KEY_PREFIX = "symptom_scribe_pbkdf2_salt_";
 
@@ -113,10 +142,14 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-offline-salt");
 
+  // `salt` is always a Uint8Array at runtime (getUserSalt() or TextEncoder).
+  // The cast only reconciles TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion happens, and
+  // none is needed.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -146,10 +179,13 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-search-salt");
 
+  // Same as deriveKeyFromToken: `salt` is always a Uint8Array at runtime; the
+  // cast only satisfies the TS Uint8Array<ArrayBufferLike> vs BufferSource
+  // typing gap.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -225,13 +261,17 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
   const iv = hexToUint8Array(ivHex);
   const ciphertext = hexToUint8Array(ciphertextHex);
 
+  // `iv`/`ciphertext` are Uint8Arrays decoded from the hex `ivHex:cipherHex`
+  // format produced by encryptText(), so they are always byte arrays at
+  // runtime. The casts only reconcile TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion is needed.
   const decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
-      iv: iv,
+      iv: iv as BufferSource,
     },
     key,
-    ciphertext
+    ciphertext as BufferSource
   );
 
   const decoder = new TextDecoder();
@@ -260,6 +300,38 @@ export function registerEncryptionHooks(callbacks: {
   onLogoutCallback = callbacks.onLogout;
   onTokenRefreshCallback = callbacks.onTokenRefresh;
 }
+
+// ─── Persisted Master Seed ───────────────────────────────────────────────────
+// The master seed is a PBKDF2-derived value (password + email) that all
+// encryption/search keys are ultimately re-derived from. It is persisted in
+// localStorage, keyed by user ID, under `SEED_KEY_PREFIX`.
+//
+// Persistence rationale:
+// - What is stored: the hex-encoded output of `deriveSeedFromPassword`, i.e.
+//   a value derived from the user's password and email, not the raw
+//   password itself.
+// - Why it is stored: the Supabase session (access token) persists across
+//   reloads independently of this seed, but the encryption key is derived
+//   from the password-based seed, not the session token. Without persisting
+//   the seed locally, a page refresh or new tab would leave the app holding
+//   a valid session but no way to re-derive the encryption key without
+//   asking the user to re-enter their password.
+// - When it is restored: read in `handleSessionChange`, whenever the
+//   Supabase auth state fires (initial load, token refresh, tab focus,
+//   etc.), and used to re-derive the AES-GCM and HMAC keys.
+// - Why it is required: encrypted records and blind-index search tokens are
+//   only ever derived from this seed. There is no server-side copy — losing
+//   it (without the password) means existing encrypted data cannot be
+//   decrypted.
+// - Why changing this would break existing data: any change to how the seed
+//   is derived, stored, or looked up changes the key that
+//   `deriveKeyFromToken`/`deriveSearchKeyFromToken` produce. Since AES-GCM
+//   ciphertext and HMAC blind indexes are only valid under the exact key
+//   they were created with, existing rows would become undecryptable and
+//   unsearchable unless a re-encryption migration accompanies the change.
+//   This is intentionally left untouched here; see `handleSessionChange`
+//   below for a related fallback behavior worth reviewing before any future
+//   redesign.
 
 const SEED_KEY_PREFIX = "symptom_scribe_master_seed_";
 
@@ -291,6 +363,9 @@ export async function deriveSeedFromPassword(password: string, email: string): P
 // Function called during login/signup/password-change to store seed and active keys
 export async function setupKeysFromPassword(password: string, email: string, userId: string): Promise<void> {
   const seed = await deriveSeedFromPassword(password, email);
+  // Persisted so the seed survives reloads/new sessions without requiring
+  // the password again — see "Persisted Master Seed" note above for the
+  // full rationale and backward-compatibility considerations.
   localStorage.setItem(SEED_KEY_PREFIX + userId, seed);
 
   const newKey = await deriveKeyFromToken(seed, userId);
@@ -311,14 +386,72 @@ export async function triggerKeyRotation(
   }
 }
 
+/**
+ * Re-derives the user's encryption keys from a *new* password and re-encrypts
+ * all existing data (local IndexedDB + server-side Supabase rows) under the
+ * new key.
+ *
+ * Must be called after `supabase.auth.updateUser({ password })` succeeds
+ * (Settings "Change Password" and ResetPassword). Without it, records that
+ * were encrypted under the old password-derived seed become undecryptable the
+ * moment the new key is activated (issue #999).
+ *
+ * If no old key is available on this device (e.g. a forgotten-password reset
+ * opened on a fresh browser where the old seed was never persisted), rotation
+ * is skipped: the old key is unrecoverable by design, and decrypting old
+ * ciphertext with the fallback key would corrupt it.
+ *
+ * @returns `true` when existing data was re-encrypted under the new key, and
+ *          `false` when no old key was available so old records cannot be
+ *          recovered (callers should inform the user in that case).
+ */
+export async function rotateKeysToNewPassword(
+  newPassword: string,
+  email: string,
+  userId: string
+): Promise<boolean> {
+  const oldKey = getKey();
+  const oldSearchKey = getSearchKey();
+
+  // Persist the new seed and activate the new keys before rotating data.
+  await setupKeysFromPassword(newPassword, email, userId);
+
+  if (!oldKey || !oldSearchKey) {
+    console.warn(
+      "No active encryption key before password change — existing encrypted " +
+        "records on this device cannot be re-encrypted."
+    );
+    return false;
+  }
+
+  const newKey = getKey();
+  const newSearchKey = getSearchKey();
+
+  if (!newKey || !newSearchKey) {
+    console.warn("New encryption keys could not be derived; existing records were not rotated.");
+    return false;
+  }
+
+  await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
+  return true;
+}
+
 async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
 
+  lastKnownUserId = userId;
+
   const token = session.access_token;
   if (!token) return;
 
-  // Synchronize user salt across devices
+  // Synchronize user salt across devices.
+  //
+  // The salt is cached locally (see "Per-user PBKDF2 Salt" above) but is
+  // also written to the user's Supabase profile (`encryption_salt`) so a
+  // second device/browser can pick up the *same* salt instead of generating
+  // its own. If the local and remote values ever diverge, the remote
+  // (`dbSalt`) value wins here so all devices converge on one salt.
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -361,6 +494,21 @@ async function handleSessionChange(session: Session) {
   }
 
   // Derive persistent master key from stored seed (or stable userId fallback)
+  //
+  // `storedSeed` is the value persisted by `setupKeysFromPassword` (see the
+  // "Persisted Master Seed" note above) — reading it here is what lets the
+  // app re-derive the same encryption/search keys after a refresh without
+  // re-prompting for the password.
+  //
+  // Note on the fallback: if no seed has been persisted for this user yet
+  // (`storedSeed` is null/undefined), `masterSeed` falls back to the raw
+  // `userId`. This keeps the app functional (e.g. first load before
+  // `setupKeysFromPassword` has run, or for accounts created before this
+  // seed mechanism existed) but derives a *weaker*, non-secret-based key,
+  // since `userId` is not a secret. This fallback is intentionally left as
+  // -is in this PR — flagging it here for anyone evaluating persistence
+  // hardening, since removing or changing it changes what key existing
+  // encrypted data was written under.
   const storedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
   const masterSeed = storedSeed || userId;
 
@@ -389,14 +537,36 @@ async function handleSessionChange(session: Session) {
   }
 }
 
+function clearPersistedKeyMaterial(userId: string) {
+  clearUserSalt(userId);
+  localStorage.removeItem(SEED_KEY_PREFIX + userId);
+}
+
 async function handleSessionClear() {
-  // Clear user-specific data on logout
+  // Clear user-specific data on logout.
+  //
+  // Prefer lastKnownUserId: by the time onAuthStateChange fires with
+  // session === null, supabase.auth.getUser() no longer returns the user,
+  // so gating the wipe on getUser() left seed/salt in localStorage.
   const { data: { user } } = await supabase.auth.getUser();
-  if (user?.id) {
-    clearUserSalt(user.id);
-    localStorage.removeItem(SEED_KEY_PREFIX + user.id);
+  const userId = lastKnownUserId || user?.id || null;
+
+  if (userId) {
+    clearPersistedKeyMaterial(userId);
+  } else {
+    // Belt-and-suspenders: wipe any leftover seed/salt keys if we lost the id.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith(SEED_KEY_PREFIX) || key.startsWith(SALT_KEY_PREFIX))
+      ) {
+        localStorage.removeItem(key);
+      }
+    }
   }
 
+  lastKnownUserId = null;
   setKeys(null, null);
   lastToken = null;
   if (onLogoutCallback) {
@@ -457,7 +627,14 @@ export async function decryptProfileField(
   key: CryptoKey
 ): Promise<string> {
   if (!value) return "";
-  return await decryptText(value, key);
+  // Plaintext (e.g. legacy) values pass through untouched instead of throwing.
+  if (!looksEncrypted(value)) return value;
+  try {
+    return await decryptText(value, key);
+  } catch (err) {
+    console.warn("Failed to decrypt profile field; returning an empty value.", err);
+    return "";
+  }
 }
 
 export async function decryptProfileArray(
@@ -465,43 +642,84 @@ export async function decryptProfileArray(
   key: CryptoKey
 ): Promise<string[]> {
   if (!value) return [];
-  const jsonString = await decryptText(value, key);
-  return JSON.parse(jsonString);
+
+  let jsonString: string;
+  if (looksEncrypted(value)) {
+    try {
+      jsonString = await decryptText(value, key);
+    } catch (err) {
+      console.warn("Failed to decrypt profile array; returning an empty array.", err);
+      return [];
+    }
+  } else {
+    // Plaintext (legacy) JSON array stored directly.
+    jsonString = value;
+  }
+
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+  } catch (err) {
+    console.warn("Failed to parse profile array; returning an empty array.", err);
+    return [];
+  }
+}
+
+// A stored profile value is treated as encrypted only when it matches the
+// `ivHex:cipherHex` shape produced by `encryptText`. Anything else is legacy
+// plaintext and is passed through as-is.
+function looksEncrypted(value: string): boolean {
+  const parts = value.split(":");
+  return (
+    parts.length === 2 &&
+    /^[0-9a-f]+$/i.test(parts[0]) &&
+    /^[0-9a-f]+$/i.test(parts[1])
+  );
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
-export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
-  const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
-  const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
+//
+// The ECDSA P-256 private key used to sign emergency mesh alerts is generated
+// as *non-extractable* (`extractable: false`), so it can never be exported
+// (e.g. as a JWK) by a compromised script, extension, or injected library.
+// Persistence is delegated to IndexedDB via `registerP2PKeyStorage` (see
+// offline-db.ts): IndexedDB's structured-clone algorithm can store
+// non-extractable CryptoKey objects, so the key survives reloads without ever
+// existing as portable key material outside the browser. Only the public key
+// remains extractable, and only its JWK is ever shared (broadcast with
+// alerts so peers can verify the signature).
+//
+// This replaces the previous implementation (issue #1085) which stored the
+// private key as a plaintext, extractable JWK in localStorage under
+// `symptom_scribe_p2p_private_key` — any XSS/extension with localStorage
+// access could exfiltrate it and forge emergency alerts.
 
-  if (storedPrivate && storedPublic) {
-    try {
-      const privateJwk = JSON.parse(storedPrivate);
-      const publicJwk = JSON.parse(storedPublic);
+type P2PKeyPair = { privateKey: CryptoKey; publicKey: CryptoKey };
 
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        privateJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign"]
-      );
+type P2PKeyStorage = {
+  load: () => Promise<P2PKeyPair | null>;
+  save: (privateKey: CryptoKey, publicKey: CryptoKey) => Promise<void>;
+};
 
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        publicJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["verify"]
-      );
+let p2pKeyStorage: P2PKeyStorage | null = null;
+let cachedP2PKeys: P2PKeyPair | null = null;
 
-      return { privateKey, publicKey };
-    } catch (err) {
-      console.warn("Failed to load stored P2P keys, generating new ones:", err);
-    }
-  }
+/**
+ * Registers the IndexedDB-backed persistence for the P2P signing keypair.
+ * Called by offline-db.ts during module initialization; kept behind a
+ * registration hook so encryption.ts never imports the Dexie module directly
+ * (avoiding a circular dependency).
+ */
+export function registerP2PKeyStorage(storage: P2PKeyStorage): void {
+  p2pKeyStorage = storage;
+}
 
-  // Generate new ECDSA P-256 keypair
+// Generates an ECDSA P-256 keypair whose *private* half is non-extractable.
+// `crypto.subtle.generateKey` applies one extractability flag to the whole
+// pair, so the private JWK is exported in memory only and immediately
+// re-imported with `extractable: false`. The public half stays extractable so
+// its JWK can be attached to broadcast alerts for signature verification.
+async function generateNonExtractableP2PKeyPair(): Promise<P2PKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     {
       name: "ECDSA",
@@ -512,15 +730,54 @@ export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publ
   );
 
   const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  const privateKey = await crypto.subtle.importKey(
+    "jwk",
+    privateJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
 
-  localStorage.setItem("symptom_scribe_p2p_private_key", JSON.stringify(privateJwk));
-  localStorage.setItem("symptom_scribe_p2p_public_key", JSON.stringify(publicJwk));
+  return { privateKey, publicKey: keyPair.publicKey };
+}
 
-  return {
-    privateKey: keyPair.privateKey,
-    publicKey: keyPair.publicKey,
-  };
+export async function getP2PSigningKeys(): Promise<P2PKeyPair> {
+  // Remove any plaintext JWK copies left behind by the pre-#1085
+  // implementation. Nothing reads them anymore, and the private key must
+  // never live in localStorage.
+  localStorage.removeItem("symptom_scribe_p2p_private_key");
+  localStorage.removeItem("symptom_scribe_p2p_public_key");
+
+  // 1. Prefer the IndexedDB-persisted keypair (survives reloads; other tabs
+  //    of the same origin share it). If IndexedDB access fails (e.g. private
+  //    browsing / disabled storage), fall back to cache or a fresh pair so an
+  //    emergency alert can still be signed.
+  if (p2pKeyStorage) {
+    try {
+      const stored = await p2pKeyStorage.load();
+      if (stored) {
+        cachedP2PKeys = stored;
+        return stored;
+      }
+    } catch (err) {
+      console.warn("Failed to load P2P signing keys from IndexedDB; using in-memory keys:", err);
+    }
+  }
+
+  // 2. Fall back to the in-memory cache (used when no store is registered).
+  if (cachedP2PKeys) return cachedP2PKeys;
+
+  // 3. Generate a fresh non-extractable pair and persist it.
+  const keys = await generateNonExtractableP2PKeyPair();
+  cachedP2PKeys = keys;
+  if (p2pKeyStorage) {
+    try {
+      await p2pKeyStorage.save(keys.privateKey, keys.publicKey);
+    } catch (err) {
+      console.warn("Failed to persist P2P signing keys to IndexedDB:", err);
+    }
+  }
+  return keys;
 }
 
 export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {
@@ -555,13 +812,15 @@ export async function verifyPayload(
     const data = encoder.encode(payload);
     const signatureBytes = hexToUint8Array(signatureHex);
 
+    // `signatureBytes` is a Uint8Array decoded from the hex signature string
+    // produced by signPayload(); the cast only reconciles the TS typing.
     return await crypto.subtle.verify(
       {
         name: "ECDSA",
         hash: { name: "SHA-256" },
       },
       publicKey,
-      signatureBytes,
+      signatureBytes as BufferSource,
       data
     );
   } catch (err) {

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const BackToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const scrollerRef = useRef<HTMLElement | Window | null>(null);
 
   // The app shell scrolls inside <main id="main-scroll">, falling back to the
   // window for any context where that container isn't present.
@@ -20,14 +21,23 @@ export const BackToTop = () => {
     getScroller().scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const scroller = getScroller();
-    const toggleVisibility = () => setIsVisible(getScrollTop(scroller) > 300);
+ useEffect(() => {
+  scrollerRef.current = getScroller();
 
-    toggleVisibility();
-    scroller.addEventListener("scroll", toggleVisibility);
-    return () => scroller.removeEventListener("scroll", toggleVisibility);
-  }, [getScroller, getScrollTop]);
+  const toggleVisibility = () => {
+    if (scrollerRef.current) {
+      setIsVisible(getScrollTop(scrollerRef.current) > 300);
+    }
+  };
+
+  toggleVisibility();
+
+  scrollerRef.current?.addEventListener("scroll", toggleVisibility);
+
+  return () => {
+    scrollerRef.current?.removeEventListener("scroll", toggleVisibility);
+  };
+}, [getScroller, getScrollTop]);
 
   return (
     <div className={cn(

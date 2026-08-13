@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,24 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility } from "lucide-react";
+import { Lock, Trash2, Loader2, AlertTriangle, Languages, ShieldCheck, Accessibility, Eye, EyeOff, Database } from "lucide-react";
 import LanguageSwitcher from "@/components/settings/LanguageSwitcher";
 import AccessibilitySettings from "@/components/settings/AccessibilitySettings";
+import BackupRestore from "@/components/settings/BackupRestore";
 import { PasswordStrengthMeter } from "@/components/registration/shared/PasswordStrengthMeter";
 import { DEFAULT_PASSWORD_POLICY, evaluatePasswordStrength } from "@/lib/password-strength";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { clearSafeStorage } from "@/lib/storage";
-import {
-  getKey,
-  getSearchKey,
-  setupKeysFromPassword,
-  triggerKeyRotation,
-} from "@/lib/encryption";
+import { rotateKeysToNewPassword } from "@/lib/encryption";
 import TwoFactorAuth from "@/components/settings/TwoFactorAuth";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Change Password State
   const [currentPassword, setCurrentPassword] = useState("");
@@ -37,6 +35,7 @@ const Settings = () => {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Handle Change Password
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -45,8 +44,8 @@ const Settings = () => {
     // Validation
     if (!currentPassword) {
       toast({
-        title: "Validation Error",
-        description: "Please enter your current password",
+        title: t("settings.toasts.validationErrorTitle"),
+        description: t("settings.toasts.enterCurrentPassword"),
         variant: "destructive",
       });
       return;
@@ -54,8 +53,8 @@ const Settings = () => {
 
     if (!newPassword) {
       toast({
-        title: "Validation Error",
-        description: "Please enter a new password",
+        title: t("settings.toasts.validationErrorTitle"),
+        description: t("settings.toasts.enterNewPassword"),
         variant: "destructive",
       });
       return;
@@ -63,8 +62,8 @@ const Settings = () => {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Validation Error",
-        description: "New passwords do not match",
+        title: t("settings.toasts.validationErrorTitle"),
+        description: t("settings.toasts.passwordsDoNotMatch"),
         variant: "destructive",
       });
       return;
@@ -73,8 +72,8 @@ const Settings = () => {
     const strength = evaluatePasswordStrength(newPassword, DEFAULT_PASSWORD_POLICY);
     if (!strength.isStrong) {
       toast({
-        title: "Weak Password",
-        description: "Password does not meet strength requirements",
+        title: t("settings.toasts.weakPasswordTitle"),
+        description: t("settings.toasts.weakPasswordDesc"),
         variant: "destructive",
       });
       return;
@@ -90,7 +89,10 @@ const Settings = () => {
       });
 
       if (signInError) {
-        showError("Invalid Password", "Current password is incorrect");
+        showError(
+          t("settings.toasts.invalidPasswordTitle"),
+          t("settings.toasts.currentPasswordIncorrect")
+        );
         setChangePasswordLoading(false);
         return;
       }
@@ -101,35 +103,31 @@ const Settings = () => {
       });
 
       if (error) {
-        showError("Update Failed", error.message);
+        showError(t("settings.toasts.updateFailedTitle"), error.message);
       } else {
         try {
           const userRes = await supabase.auth.getUser();
           const user = userRes.data.user;
-          if (user && user.email) {
-            const oldKey = getKey();
-            const oldSearchKey = getSearchKey();
-
-            await setupKeysFromPassword(newPassword, user.email, user.id);
-
-            const newKey = getKey();
-            const newSearchKey = getSearchKey();
-
-            if (oldKey && newKey && oldSearchKey && newSearchKey) {
-              await triggerKeyRotation(oldKey, newKey, oldSearchKey, newSearchKey);
-            }
+          if (user?.email) {
+            await rotateKeysToNewPassword(newPassword, user.email, user.id);
           }
         } catch (rotateErr) {
           console.error("Failed to rotate keys after password update:", rotateErr);
         }
 
-        showSuccess("Password Updated!", "Your password has been changed successfully");
+        showSuccess(
+          t("settings.toasts.passwordUpdatedTitle"),
+          t("settings.toasts.passwordUpdatedDesc")
+        );
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       }
     } catch (error) {
-      showError("Error", "An unexpected error occurred");
+      showError(
+        t("settings.toasts.unexpectedErrorTitle"),
+        t("settings.toasts.unexpectedErrorDesc")
+      );
     } finally {
       setChangePasswordLoading(false);
     }
@@ -142,8 +140,8 @@ const Settings = () => {
     try {
       if (!deletePassword) {
         toast({
-          title: "Validation Error",
-          description: "Please enter your password to confirm",
+          title: t("settings.toasts.validationErrorTitle"),
+          description: t("settings.toasts.enterPasswordToConfirm"),
           variant: "destructive",
         });
         setDeleteLoading(false);
@@ -158,7 +156,10 @@ const Settings = () => {
       });
 
       if (signInError) {
-        showError("Invalid Password", "Password is incorrect");
+        showError(
+          t("settings.toasts.invalidPasswordTitle"),
+          t("settings.toasts.passwordIncorrect")
+        );
         setDeleteLoading(false);
         return;
       }
@@ -167,11 +168,14 @@ const Settings = () => {
       const { error: deleteFuncError } = await supabase.functions.invoke("delete-user-account");
 
       if (deleteFuncError) {
-        showError("Deletion Failed", deleteFuncError.message);
+        showError(t("settings.toasts.deletionFailedTitle"), deleteFuncError.message);
       } else {
         // Log out locally (clear session)
         await supabase.auth.signOut();
-        showSuccess("Account Deleted", "Your account has been deleted successfully");
+        showSuccess(
+          t("settings.toasts.accountDeletedTitle"),
+          t("settings.toasts.accountDeletedDesc")
+        );
         
         // Clear storage and redirect
         clearSafeStorage();
@@ -182,24 +186,15 @@ const Settings = () => {
       console.error("[DELETE_ACCOUNT_ERROR]", err);
 
       if (err?.message?.includes("Unauthorized")) {
-    showError(
-      "Unauthorized",
-      "You are not authorized to delete this account"
-    );
+    showError(t("settings.toasts.unauthorizedTitle"), t("settings.toasts.unauthorizedDesc"));
   } else if (err?.message?.includes("User not found")) {
-    showError(
-      "User Not Found",
-      "The account could not be found"
-    );
+    showError(t("settings.toasts.userNotFoundTitle"), t("settings.toasts.userNotFoundDesc"));
   } else if (err?.message?.includes("network")) {
-    showError(
-      "Network Error",
-      "Please check your internet connection and try again"
-    );
+    showError(t("settings.toasts.networkErrorTitle"), t("settings.toasts.networkErrorDesc"));
   } else {
     showError(
-      "Deletion Failed",
-      "An unexpected error occurred while deleting your account"
+      t("settings.toasts.deletionFailedTitle"),
+      t("settings.toasts.deletionUnexpectedDesc")
     );
   }
 } finally {
@@ -211,36 +206,41 @@ const Settings = () => {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Account Settings</h1>
-        <p className="text-gray-500">Manage your account security and preferences</p>
+        <h1 className="text-3xl font-bold mb-2">{t("settings.title")}</h1>
+        <p className="text-gray-500">{t("settings.subtitle")}</p>
       </div>
 
       <Tabs defaultValue="password" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6 overflow-x-auto">
           <TabsTrigger value="password" className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
-            <span className="hidden sm:inline">Change Password</span>
-            <span className="sm:hidden">Password</span>
+            <span className="hidden sm:inline">{t("settings.tabs.password")}</span>
+            <span className="sm:hidden">{t("settings.tabs.passwordShort")}</span>
           </TabsTrigger>
           <TabsTrigger value="2fa" className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Two-Factor Auth</span>
-            <span className="sm:hidden">2FA</span>
+            <span className="hidden sm:inline">{t("settings.tabs.twoFactor")}</span>
+            <span className="sm:hidden">{t("settings.tabs.twoFactorShort")}</span>
           </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <Languages className="w-4 h-4" />
-            <span className="hidden sm:inline">Language</span>
-            <span className="sm:hidden">Lang</span>
+            <span className="hidden sm:inline">{t("settings.tabs.language")}</span>
+            <span className="sm:hidden">{t("settings.tabs.languageShort")}</span>
           </TabsTrigger>
           <TabsTrigger value="accessibility" className="flex items-center gap-2">
             <Accessibility className="w-4 h-4" />
-            <span className="hidden sm:inline">Accessibility</span>
-            <span className="sm:hidden">A11y</span>
+            <span className="hidden sm:inline">{t("settings.tabs.accessibility")}</span>
+            <span className="sm:hidden">{t("settings.tabs.accessibilityShort")}</span>
           </TabsTrigger>
           <TabsTrigger value="delete" className="flex items-center gap-2">
             <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Delete Account</span>
-            <span className="sm:hidden">Delete</span>
+            <span className="hidden sm:inline">{t("settings.tabs.delete")}</span>
+            <span className="sm:hidden">{t("settings.tabs.deleteShort")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            <span className="hidden sm:inline">Backup & Restore</span>
+            <span className="sm:hidden">Backup</span>
           </TabsTrigger>
         </TabsList>
 
@@ -248,20 +248,18 @@ const Settings = () => {
         <TabsContent value="password">
           <Card>
             <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
+              <CardTitle>{t("settings.password.title")}</CardTitle>
+              <CardDescription>{t("settings.password.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 {/* Current Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
+                  <Label htmlFor="current-password">{t("settings.password.current")}</Label>
                   <Input
                     id="current-password"
                     type="password"
-                    placeholder="Enter your current password"
+                    placeholder={t("settings.password.currentPlaceholder")}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
@@ -273,8 +271,8 @@ const Settings = () => {
                 <PasswordStrengthMeter
                   value={newPassword}
                   onChange={setNewPassword}
-                  label="New Password"
-                  placeholder="Create a strong password"
+                  label={t("settings.password.new")}
+                  placeholder={t("settings.password.newPlaceholder")}
                   policy={DEFAULT_PASSWORD_POLICY}
                   showGenerator={true}
                   id="new-password"
@@ -282,21 +280,21 @@ const Settings = () => {
 
                 {/* Confirm Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Label htmlFor="confirm-password">{t("settings.password.confirm")}</Label>
                   <Input
                     id="confirm-password"
                     type="password"
-                    placeholder="Re-enter your new password"
+                    placeholder={t("settings.password.confirmPlaceholder")}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     autoComplete="new-password"
                   />
                   {confirmPassword && newPassword !== confirmPassword && (
-                    <p className="text-xs text-red-600">Passwords do not match</p>
+                    <p className="text-xs text-red-600">{t("settings.password.mismatch")}</p>
                   )}
                   {confirmPassword && newPassword === confirmPassword && (
-                    <p className="text-xs text-green-600">Passwords match</p>
+                    <p className="text-xs text-green-600">{t("settings.password.match")}</p>
                   )}
                 </div>
 
@@ -308,10 +306,10 @@ const Settings = () => {
                   {changePasswordLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
+                      {t("settings.password.updating")}
                     </>
                   ) : (
-                    "Update Password"
+                    t("settings.password.update")
                   )}
                 </Button>
               </form>
@@ -336,41 +334,56 @@ const Settings = () => {
 
         {/* Delete Account Tab */}
         <TabsContent value="delete">
-          <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-900">
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <CardTitle className="text-red-600 dark:text-red-400">Delete Account</CardTitle>
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                <CardTitle className="text-destructive">
+                  {t("settings.delete.title")}
+                </CardTitle>
               </div>
-              <CardDescription className="text-red-700 dark:text-red-300">
-                This action cannot be undone
+              <CardDescription>
+                {t("settings.delete.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Warning Box */}
-              <div className="bg-white dark:bg-slate-900 border border-red-300 dark:border-red-800 rounded-lg p-4">
-                <h4 className="font-semibold text-red-700 dark:text-red-400 mb-2">
-                  Warning: Permanent Deletion
+              <div className="bg-destructive/5 dark:bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <h4 className="font-semibold text-destructive mb-2">
+                  {t("settings.delete.warningTitle")}
                 </h4>
-                <ul className="text-sm text-red-600 dark:text-red-300 space-y-1 list-disc list-inside">
-                  <li>Your account will be permanently deleted</li>
-                  <li>All your health data and history will be removed</li>
-                  <li>This action cannot be reversed</li>
-                  <li>You will need to create a new account to use the service again</li>
+                <ul className="text-sm text-destructive/80 space-y-1 list-disc list-inside">
+                  <li>{t("settings.delete.warning1")}</li>
+                  <li>{t("settings.delete.warning2")}</li>
+                  <li>{t("settings.delete.warning3")}</li>
+                  <li>{t("settings.delete.warning4")}</li>
                 </ul>
               </div>
 
               {/* Password Confirmation */}
               <div className="space-y-2">
-                <Label htmlFor="delete-password">Confirm with your password</Label>
-                <Input
-                  id="delete-password"
-                  type="password"
-                  placeholder="Enter your password to confirm"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  autoComplete="current-password"
-                />
+                <Label htmlFor="delete-password">
+                  {t("settings.delete.confirmLabel")}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="delete-password"
+                    type={showDeletePassword ? "text" : "password"}
+                    placeholder={t("settings.delete.confirmPlaceholder")}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none"
+                    aria-label={showDeletePassword ? "Hide password" : "Show password"}
+                  >
+                    {showDeletePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {/* Delete Button */}
@@ -381,10 +394,15 @@ const Settings = () => {
                 disabled={!deletePassword}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete My Account
+                {t("settings.delete.button")}
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Backup & Restore Tab */}
+        <TabsContent value="backup">
+          <BackupRestore />
         </TabsContent>
       </Tabs>
 
@@ -392,19 +410,19 @@ const Settings = () => {
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600">Delete Account?</AlertDialogTitle>
+            <AlertDialogTitle className="text-red-600">
+              {t("settings.delete.dialogTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>Are you absolutely sure you want to delete your account?</p>
-              <p className="font-semibold">
-                This will permanently remove all your data and cannot be undone.
-              </p>
+              <p>{t("settings.delete.dialogQuestion")}</p>
+              <p className="font-semibold">{t("settings.delete.dialogWarning")}</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded p-3 text-sm text-red-700 dark:text-red-300">
-            You will be logged out and redirected to the login page.
+          <div className="bg-destructive/10 border border-destructive/20 rounded p-3 text-sm text-destructive">
+            {t("settings.delete.dialogNote")}
           </div>
           <div className="flex gap-3">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
               disabled={deleteLoading}
@@ -413,10 +431,10 @@ const Settings = () => {
               {deleteLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  {t("settings.delete.deleting")}
                 </>
               ) : (
-                "Delete Account"
+                t("settings.delete.confirmButton")
               )}
             </AlertDialogAction>
           </div>
