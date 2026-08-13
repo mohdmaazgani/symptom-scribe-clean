@@ -107,6 +107,10 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
 
         setPredictions(preds);
       } catch (err) {
+
+        console.warn("Error fetching AI predictions:", err);
+        setError(err instanceof Error ? err.message : "Failed to load predictions");
+
         console.error("Error fetching AI predictions:", err);
 
         // Handle specific error types for better error messages
@@ -117,6 +121,7 @@ export default function SymptomPredictions({ userId, symptoms }: SymptomPredicti
         } else {
           setError("Failed to load predictions");
         }
+
       } finally {
         setLoading(false);
       }
