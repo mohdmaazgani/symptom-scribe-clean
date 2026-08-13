@@ -308,7 +308,7 @@ symptom-scribe-clean/
 │   │   │   └── Index.tsx                             # Authentication page
 │   │   ├── Blog/
 │   │   │   ├── BlogPostPage.tsx                      # Blog details
-│   │   │   └── Index.tsx                             # Blog listin
+│   │   │   └── Index.tsx                             # Blog listing
 │   │   ├── Chat/
 │   │   │   └── Index.tsx                             # Chat page
 │   │   ├── Contact/
