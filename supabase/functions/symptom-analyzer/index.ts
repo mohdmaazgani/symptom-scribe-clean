@@ -5,6 +5,7 @@ import { RequestSchema } from "./validation.ts";
 import { detectEmergencySymptoms } from "./medicalSafety.ts";
 import { rateLimit } from "../_shared/rateLimit.ts";
 import { jsonResponse } from "./utils.ts";
+import { AppError, ErrorCodes, handleError } from "../_shared/error-handler.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -29,7 +30,7 @@ serve(async (req: Request): Promise<Response> => {
 
   // 1. Origin allowlist check
   if (origin && !isAllowedOrigin(origin)) {
-    return jsonResponse({ error: "Origin not allowed" }, 403, getCorsHeaders(origin));
+    return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Origin not allowed", 403), getCorsHeaders(origin));
   }
 
   // 2. CORS preflight — must come before any auth logic
@@ -42,7 +43,7 @@ serve(async (req: Request): Promise<Response> => {
   // 3. Enforce JWT for all non-OPTIONS requests
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return jsonResponse({ error: "Missing authorization header" }, 401, getCorsHeaders(origin));
+    return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Missing authorization header", 401), getCorsHeaders(origin));
   }
 
   const token = authHeader.replace("Bearer ", "");
@@ -57,11 +58,7 @@ serve(async (req: Request): Promise<Response> => {
   } = await supabaseClient.auth.getUser(token);
 
   if (userError || !user) {
-    return jsonResponse(
-      { error: "Unauthorized access: Invalid or expired token" },
-      401,
-      getCorsHeaders(origin)
-    );
+    return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Unauthorized access: Invalid or expired token", 401), getCorsHeaders(origin));
   }
 
   try {
@@ -71,13 +68,7 @@ serve(async (req: Request): Promise<Response> => {
     const rateLimitResult = await rateLimit(ip);
 
     if (!rateLimitResult.success) {
-      return jsonResponse(
-        {
-          error: "Rate limit exceeded. Please try again later.",
-        },
-        429,
-        getCorsHeaders(origin)
-      );
+      return handleError(new AppError(ErrorCodes.RATE_LIMIT_EXCEEDED, "Rate limit exceeded. Please try again later.", 429), getCorsHeaders(origin));
     }
 
     let body: unknown;
@@ -85,24 +76,14 @@ serve(async (req: Request): Promise<Response> => {
     try {
       body = await req.json();
     } catch {
-      return jsonResponse(
-        {
-          error: "Invalid JSON body",
-        },
-        400,
-        getCorsHeaders(origin)
-      );
+      return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Invalid JSON body", 400), getCorsHeaders(origin));
     }
 
     const parsed = RequestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return jsonResponse(
-        {
-          error: "Invalid request payload",
-          details: parsed.error.flatten(),
-        },
-        400,
+      return handleError(
+        new AppError(ErrorCodes.VALIDATION_ERROR, "Invalid request payload", 400, parsed.error.flatten()),
         getCorsHeaders(origin)
       );
     }
@@ -111,13 +92,7 @@ serve(async (req: Request): Promise<Response> => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     if (!GEMINI_API_KEY) {
-      return jsonResponse(
-        {
-          error: "GEMINI_API_KEY is not configured",
-        },
-        500,
-        getCorsHeaders(origin)
-      );
+      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "GEMINI_API_KEY is not configured", 500), getCorsHeaders(origin));
     }
 
     if ("mode" in requestData && requestData.mode === "predict") {
@@ -184,11 +159,7 @@ ${symptoms.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}
       if (!geminiResponse.ok) {
         const errorText = await geminiResponse.text().catch(() => "");
         console.error("Gemini prediction API error:", geminiResponse.status, errorText);
-        return jsonResponse(
-          { error: "Failed to generate risk predictions from Gemini API" },
-          geminiResponse.status,
-          getCorsHeaders(origin)
-        );
+        return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "Failed to generate risk predictions from Gemini API", geminiResponse.status, errorText), getCorsHeaders(origin));
       }
 
       const resJson = await geminiResponse.json();
@@ -285,14 +256,7 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
 
       console.error("Gemini API error:", geminiResponse.status, errorText);
 
-      return jsonResponse(
-        {
-          error: "Gemini API error",
-          status: geminiResponse.status,
-        },
-        geminiResponse.status,
-        getCorsHeaders(origin)
-      );
+      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "Gemini API error", geminiResponse.status, errorText), getCorsHeaders(origin));
     }
 
     const encoder = new TextEncoder();
@@ -388,12 +352,6 @@ You MUST set the Severity Level to High, and strongly advise immediate professio
   } catch (error) {
     console.error("Error in symptom-analyzer:", error);
 
-    return jsonResponse(
-      {
-        error: error instanceof Error ? error.message : "Unknown server error",
-      },
-      500,
-      getCorsHeaders(origin)
-    );
+    return handleError(error, getCorsHeaders(origin));
   }
 });
