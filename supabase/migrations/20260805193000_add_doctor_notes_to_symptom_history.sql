@@ -1,0 +1,4 @@
+ALTER TABLE public.symptom_history
+ADD COLUMN IF NOT EXISTS doctor_notes TEXT,
+ADD COLUMN IF NOT EXISTS doctor_name TEXT,
+ADD COLUMN IF NOT EXISTS visit_date DATE;

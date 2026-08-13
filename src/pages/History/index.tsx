@@ -4,6 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+<<<<<<< HEAD
+
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+import { CheckCircle, X, Trash2, Search, ClipboardList, FileDown } from "lucide-react";
+=======
 import {
   CheckCircle,
   X,
@@ -15,6 +22,7 @@ import {
   List,
 } from "lucide-react";
 import SymptomCalendarView from "@/components/history/SymptomCalendarView";
+>>>>>>> upstream/main
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
@@ -46,6 +54,10 @@ interface SymptomEntry {
   risk_score: number;
   resolved: boolean;
   created_at: string;
+
+  doctor_notes?: string | null;
+  doctor_name?: string | null;
+  visit_date?: string | null;
 }
 
 const HistorySkeleton = () => (
@@ -92,7 +104,16 @@ const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+<<<<<<< HEAD
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [doctorName, setDoctorName] = useState("");
+  const [doctorNotes, setDoctorNotes] = useState("");
+  const [visitDate, setVisitDate] = useState("");
+
+=======
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+>>>>>>> upstream/main
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(
@@ -159,6 +180,11 @@ const History = () => {
               user_id: record.user_id,
               symptoms: record.symptoms || "",
               severity_level: record.severity_level || "low",
+
+              doctor_notes: record.doctor_notes,
+              doctor_name: record.doctor_name,
+              visit_date: record.visit_date,
+
               possible_causes: record.possible_causes,
               recommendations: record.recommendations,
               risk_score: record.risk_score,
@@ -301,7 +327,45 @@ const History = () => {
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     }
   };
+  const saveDoctorNotes = async (entryId: string) => {
+  try {
+    const updates = {
+      doctor_name: doctorName || null,
+      doctor_notes: doctorNotes || null,
+      visit_date: visitDate || null,
+    };
 
+    const { error } = await supabase
+      .from("symptom_history")
+      .update(updates)
+      .eq("id", entryId);
+
+    if (error) throw error;
+
+    await db.symptomHistory.update(entryId, {
+      ...updates,
+      pending_update: 0,
+    });
+
+    setHistory((prev) =>
+      prev.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              ...updates,
+            }
+          : entry
+      )
+    );
+
+    setEditingId(null);
+
+    showSuccess("Saved", "Doctor notes updated successfully.");
+  } catch (err) {
+    console.error(err);
+    showError("Save failed", "Unable to save doctor notes.");
+  }
+};
   const deleteEntry = async (id: string) => {
     try {
       if (navigator.onLine) {
@@ -618,11 +682,85 @@ const History = () => {
                     strokeWidth={1.5}
                   />
                 </div>
+<<<<<<< HEAD
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {entry.possible_causes && entry.possible_causes.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold mb-1">Possible Causes:</p>
+                      <ul className="text-sm text-muted-foreground list-disc list-inside">
+                        {entry.possible_causes.map((cause, idx) => (
+                          <li key={idx}>{cause}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {entry.recommendations && entry.recommendations.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-semibold mb-1">Recommendations:</p>
+                      <ul className="text-sm text-muted-foreground list-disc list-inside">
+                        {entry.recommendations.map((rec, idx) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {entry.risk_score !== null && (
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">Risk Score:</p>
+                      <Badge variant="outline">{entry.risk_score}/100</Badge>
+                    </div>
+                  )}
+                  <div className="border rounded-lg p-4 space-y-3">
+  <h4 className="font-semibold">Doctor Notes</h4>
+
+  <Input
+    placeholder="Doctor Name"
+    value={editingId === entry.id ? doctorName : entry.doctor_name || ""}
+    onChange={(e) => setDoctorName(e.target.value)}
+    disabled={editingId !== entry.id}
+  />
+
+  <Input
+    type="date"
+    value={editingId === entry.id ? visitDate : entry.visit_date || ""}
+    onChange={(e) => setVisitDate(e.target.value)}
+    disabled={editingId !== entry.id}
+  />
+
+  <Textarea
+    placeholder="Doctor Notes"
+    value={editingId === entry.id ? doctorNotes : entry.doctor_notes || ""}
+    onChange={(e) => setDoctorNotes(e.target.value)}
+    disabled={editingId !== entry.id}
+  />
+
+  {editingId === entry.id ? (
+    <Button onClick={() => saveDoctorNotes(entry.id)}>
+      Save
+    </Button>
+  ) : (
+    <Button
+      variant="outline"
+      onClick={() => {
+        setEditingId(entry.id);
+        setDoctorName(entry.doctor_name || "");
+        setDoctorNotes(entry.doctor_notes || "");
+        setVisitDate(entry.visit_date || "");
+      }}
+    >
+      Edit Doctor Notes
+    </Button>
+  )}
+</div>
+=======
                 <div className="space-y-1">
                   <h3 className="text-base font-semibold text-foreground">No consultations yet</h3>
                   <p className="text-sm text-muted-foreground max-w-xs">
                     Your symptom history will appear here after your first AI consultation.
                   </p>
+>>>>>>> upstream/main
                 </div>
                 <Button
                   onClick={() => navigate("/ai-health-assistant")}
