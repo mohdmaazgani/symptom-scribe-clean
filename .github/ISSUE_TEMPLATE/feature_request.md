@@ -2,7 +2,7 @@
 name: ✨ Feature Request
 about: Suggest a new feature or improvement for the website
 title: "[Feature] <Brief description>"
-labels: enhancement, feature request
+labels: good first issue, feature, GSSoC
 ---
 
 ## ✨ Feature Overview  

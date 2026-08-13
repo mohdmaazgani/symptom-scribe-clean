@@ -1,12 +1,28 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Plus, History, Trash2, Menu } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  Plus,
+  History,
+  Trash2,
+  Menu,
+  Bot,
+  Thermometer,
+  Brain,
+  HeartPulse,
+  Camera,
+  X,
+  MessageSquarePlus,
+} from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { browserEnv } from "@/lib/env";
 import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/lib/toast-helpers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/common/EmptyState";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
@@ -15,6 +31,7 @@ import {
   parseSymptomConsultation,
   shouldPersistConsultation,
 } from "@/lib/symptom-consultation";
+import { compressImage, uploadSymptomImage } from "@/lib/image-utils";
 import ChatLoading from "./ChatLoading";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { type Json } from "@/integrations/supabase/types";
@@ -60,9 +77,39 @@ const ChatInterface = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+
+  const previewUrls = useMemo(
+    () => selectedFiles.map((file) => URL.createObjectURL(file)),
+    [selectedFiles]
+  );
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const scrollToBottom = () => {
     if (typeof messagesEndRef.current?.scrollIntoView === "function") {
@@ -148,6 +195,10 @@ const ChatInterface = () => {
     setInput("");
     setIsLoading(true);
 
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+
     let assistantContent = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -221,6 +272,7 @@ const ChatInterface = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ messages: [...recentContext, userMessage] }),
+        signal: abortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -310,6 +362,22 @@ const ChatInterface = () => {
         );
 
         if (shouldPersistConsultation(assistantContent)) {
+          let uploadedImages: string[] | null = null;
+          if (selectedFiles.length > 0) {
+            try {
+              uploadedImages = [];
+              for (const file of selectedFiles) {
+                const compressed = await compressImage(file);
+                const url = await uploadSymptomImage(compressed, user.id);
+                uploadedImages.push(url);
+              }
+            } catch (err) {
+              console.error("Image upload failed:", err);
+              showWarning("Upload Failed", "Failed to upload attached images, saving without them.");
+              uploadedImages = null;
+            }
+          }
+
           const recordId = crypto.randomUUID();
           const record = {
             id: recordId,
@@ -322,6 +390,7 @@ const ChatInterface = () => {
             risk_score: riskScore,
             resolved: false,
             created_at: new Date().toISOString(),
+            images: uploadedImages,
           };
 
           const keys = await whenKeysReady();
@@ -332,7 +401,7 @@ const ChatInterface = () => {
           );
 
           // Strip offline-only fields so we match the Supabase table schema
-          const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+          const { pending_sync, pending_update, pending_delete, images, ...supabaseRecord } =
             encryptedRecord;
 
           const { error: insertError } = await supabase
@@ -341,7 +410,7 @@ const ChatInterface = () => {
 
           if (insertError) {
             console.warn("Supabase save failed, falling back to local saving:", insertError);
-            
+
             // Save locally to Dexie immediately with pending_sync: 1
             await db.symptomHistory.put({
               ...encryptedRecord,
@@ -370,6 +439,10 @@ const ChatInterface = () => {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        dismissLoading();
+        return;
+      }
       console.error("Chat error:", error);
       dismissLoading();
       const errorMsg =
@@ -377,7 +450,12 @@ const ChatInterface = () => {
       showError("Analysis failed", errorMsg);
       setMessages((prev) => prev.filter((m) => m !== userMessage));
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setIsLoading(false);
+      setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -388,35 +466,53 @@ const ChatInterface = () => {
     }
   };
 
-  const renderHistoryList = () => {
-    if (sessionsLoading) {
-      return (
-        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          Loading history...
-        </div>
-      );
-    }
+  const isWelcomeState = messages.length === 1 && messages[0] === INITIAL_GREETING;
 
-    if (sessions.length === 0) {
-      return (
-        <div className="text-center py-8 text-sm text-muted-foreground px-4">
-          No previous sessions found. Start a conversation to save one!
-        </div>
-      );
-    }
+  const renderHistoryList = () => {
+  if (sessionsLoading) {
+    return (
+      <div className="space-y-2 p-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5"
+          >
+            <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+            <Skeleton className="h-4 flex-1 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <EmptyState
+        icon={
+          <MessageSquarePlus
+            className="w-8 h-8 text-teal-600 dark:text-teal-400"
+            strokeWidth={1.5}
+          />
+        }
+        title="Start a new conversation"
+        description="Your saved chat sessions will appear here once you begin talking with the AI assistant."
+        ctaText="New Chat"
+        onCtaClick={handleNewChat}
+      />
+    );
+  }
 
     return (
-      <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none">
+       <div className="space-y-1 p-2 overflow-y-auto flex-1 select-none chat-scrollbar animate-fade-in">
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
           return (
             <div
               key={session.id}
-              className={`group flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
+              className={`group flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
                 isActive
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground font-medium shadow-md"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
               }`}
             >
               <button
@@ -472,19 +568,19 @@ const ChatInterface = () => {
   return (
     <div className="flex h-full w-full min-h-0 bg-background/55 text-foreground overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-[260px] border-r border-border bg-slate-950/20 shrink-0">
-        <div className="p-4 border-b border-border flex flex-col gap-2">
+      <aside className="hidden md:flex flex-col w-[260px] border-r border-border/40 bg-card/30 backdrop-blur-md shrink-0">
+        <div className="p-4 border-b border-border/40 flex flex-col gap-2">
           <Button
             onClick={handleNewChat}
             aria-label="Create new consultation"
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold shadow-md hover:shadow-glow transition-shadow duration-200"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             New Chat
           </Button>
         </div>
         <div className="flex-1 flex flex-col min-h-0 py-2">
-          <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="px-4 py-1.5 text-[0.65rem] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
             Conversations
           </div>
           {renderHistoryList()}
@@ -494,11 +590,16 @@ const ChatInterface = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         {/* Mobile Header */}
-        <header className="flex items-center justify-between p-3 border-b border-border bg-card/50 md:hidden shrink-0">
+        <header className="flex items-center justify-between p-3 border-b border-border/40 bg-card/40 backdrop-blur-md md:hidden shrink-0">
           <div className="flex items-center gap-2">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open chat history menu">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Open chat history menu"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
@@ -513,7 +614,7 @@ const ChatInterface = () => {
                   <Button
                     onClick={handleNewChat}
                     aria-label="Create new consultation"
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-glow font-semibold shadow-md"
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
                     New Chat
@@ -544,11 +645,41 @@ const ChatInterface = () => {
 
         {/* Message Panel */}
         <div
-          className="flex-1 min-h-0 overflow-y-auto space-y-4 p-4"
+          className="flex-1 min-h-0 overflow-y-auto space-y-4 p-4 md:p-6 chat-scrollbar chat-bg-gradient"
           role="log"
           aria-live="polite"
           aria-label="Chat conversation with AI health assistant"
         >
+          {/* Welcome State */}
+          {isWelcomeState && (
+            <div className="flex flex-col items-center justify-center py-8 md:py-16 gap-5 animate-fade-in">
+              <div className="chat-welcome-pulse w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-glow">
+                <Bot className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div className="text-center space-y-1.5">
+                <h2 className="text-lg font-semibold text-foreground">AI Health Assistant</h2>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Describe your symptoms and get instant analysis with possible causes and self-care
+                  recommendations.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 mt-2 max-w-md">
+                <div className="chat-suggestion-card">
+                  <Thermometer className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                  Describe a headache
+                </div>
+                <div className="chat-suggestion-card">
+                  <HeartPulse className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                  Check cold symptoms
+                </div>
+                <div className="chat-suggestion-card">
+                  <Brain className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                  Ask about fatigue
+                </div>
+              </div>
+            </div>
+          )}
+
           {messages.map((message, index) => (
             <ChatMessage key={index} role={message.role} content={message.content} />
           ))}
@@ -558,9 +689,48 @@ const ChatInterface = () => {
         </div>
 
         {/* Input Panel — FIX: char counter + Enter hint */}
-        <div className="border-t border-border bg-card/65 p-4 shrink-0">
-          <div className="flex gap-2 items-start">
-            <div className="flex-1 flex flex-col gap-1.5">
+        <div className="border-t border-border/40 bg-card/40 backdrop-blur-md p-4 shrink-0">
+          {selectedFiles.length > 0 && (
+            <div className="flex gap-2 mb-3 overflow-x-auto p-2 border border-border/50 rounded-xl bg-background/50">
+              {selectedFiles.map((file, idx) => (
+                <div key={`${file.name}-${file.lastModified}-${idx}`} className="relative shrink-0">
+                  <img
+                    src={previewUrls[idx]}
+                    alt={`Preview ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-md border border-border"
+                  />
+                  <button
+                    onClick={() => removeFile(idx)}
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/90 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-3 items-start">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="h-[60px] w-[60px] flex-shrink-0 rounded-xl bg-background/60 border-border/50 hover:bg-muted/50"
+              aria-label="Attach images"
+            >
+              <Camera className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            <div className="flex-1 flex flex-col gap-1.5 chat-input-glow rounded-xl transition-all duration-200">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
@@ -568,20 +738,20 @@ const ChatInterface = () => {
                 placeholder="Describe your symptoms... (e.g., 'I have a sore throat and headache')"
                 aria-label="Describe your symptoms to the AI health assistant"
                 aria-keyshortcuts="Control+Enter"
-                className="min-h-[60px] max-h-[120px] resize-none rounded-xl"
+                className="min-h-[60px] max-h-[120px] resize-none rounded-xl border-border/50 bg-background/60 focus-visible:ring-0 focus-visible:ring-offset-0"
                 disabled={isLoading}
               />
               <div className="flex items-center justify-between px-1">
                 <p className="text-xs text-muted-foreground select-none">
-                  <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
+                  <kbd className="rounded-md border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px]">
                     Enter
                   </kbd>{" "}
                   or{" "}
-                  <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
+                  <kbd className="rounded-md border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px]">
                     Ctrl+Enter
                   </kbd>{" "}
                   to send{" · "}
-                  <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">
+                  <kbd className="rounded-md border border-border/60 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px]">
                     Shift+Enter
                   </kbd>{" "}
                   for new line
@@ -603,7 +773,7 @@ const ChatInterface = () => {
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-[60px] w-[60px] flex-shrink-0 rounded-xl"
+              className="h-[60px] w-[60px] flex-shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary-glow chat-send-glow"
               aria-label={isLoading ? "Sending message" : "Send message"}
             >
               {isLoading ? (

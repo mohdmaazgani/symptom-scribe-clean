@@ -6,6 +6,7 @@ import { browserEnv } from "@/lib/env";
 import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
+import ReactMarkdown from "react-markdown";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
 import {
@@ -21,7 +22,7 @@ import {
   Brain,
   Utensils,
   BatteryLow,
-  HeartPulse
+  HeartPulse,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -79,17 +80,19 @@ const AIHealthAssistant = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Cleanup recognition and speech synthesis on unmount
+  // Cleanup recognition, speech synthesis, and in-flight chat stream on unmount
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
       window.speechSynthesis?.cancel();
+      streamAbortRef.current?.abort();
     };
   }, []);
 
@@ -189,6 +192,10 @@ const AIHealthAssistant = () => {
     setMessages((prev) => [...prev, { role: "user", text: userMessage, time }]);
     setLoading(true);
 
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+
     let assistantContent = "";
 
     const upsertAssistant = (chunk: string) => {
@@ -227,6 +234,7 @@ const AIHealthAssistant = () => {
         body: JSON.stringify({
           messages: [...recentContext, { role: "user", content: userMessage }],
         }),
+        signal: abortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -290,12 +298,15 @@ const AIHealthAssistant = () => {
             showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
           }
 
+          const rngScore = (range: number, offset: number) =>
+            offset +
+            Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1)) * range);
           const riskScore =
             severityLevel === "high"
-              ? Math.floor(Math.random() * 20) + 70
+              ? rngScore(20, 70)
               : severityLevel === "moderate"
-                ? Math.floor(Math.random() * 30) + 40
-                : Math.floor(Math.random() * 30) + 10;
+                ? rngScore(30, 40)
+                : rngScore(30, 10);
 
           if (shouldPersistConsultation(assistantContent)) {
             const recordId = crypto.randomUUID();
@@ -320,12 +331,8 @@ const AIHealthAssistant = () => {
             );
 
             // Strip offline-only fields so we match the Supabase table schema
-            const {
-              pending_sync,
-              pending_update,
-              pending_delete,
-              ...supabaseRecord
-            } = encryptedRecord;
+            const { pending_sync, pending_update, pending_delete, ...supabaseRecord } =
+              encryptedRecord;
 
             const { error: insertError } = await supabase
               .from("symptom_history")
@@ -333,7 +340,7 @@ const AIHealthAssistant = () => {
 
             if (insertError) {
               console.warn("Supabase save failed, falling back to local saving:", insertError);
-              
+
               // Save locally to Dexie immediately with pending_sync: 1
               await db.symptomHistory.put({
                 ...encryptedRecord,
@@ -366,6 +373,10 @@ const AIHealthAssistant = () => {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        dismissLoading();
+        return;
+      }
       console.error("Chat error:", error);
       dismissLoading();
 
@@ -384,6 +395,9 @@ const AIHealthAssistant = () => {
       showError("Analysis failed", errorMessage);
       setMessages((prev) => prev.filter((m) => !(m.role === "user" && m.text === userMessage)));
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setLoading(false);
     }
   };
@@ -514,38 +528,45 @@ const AIHealthAssistant = () => {
                       </button>
                     )}
                     <div className={msg.role === "assistant" ? "pr-6" : ""}>
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: (() => {
-                            const lines = msg.text.split("\n");
-                            let html = "";
-                            let inList = false;
-                            for (const line of lines) {
-                              const listMatch = line.trim().match(/^[-*•]\s+(.+)/);
-                              if (listMatch) {
-                                if (!inList) {
-                                  html +=
-                                    "<ul style='padding-left:16px;margin:6px 0;list-style:disc;overflow-wrap:anywhere'>";
-                                  inList = true;
-                                }
-                                html += `<li style='margin:2px 0;overflow-wrap:anywhere'>${listMatch[1].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</li>`;
-                              } else {
-                                if (inList) {
-                                  html += "</ul>";
-                                  inList = false;
-                                }
-                                if (line.trim() === "") {
-                                  html += "<br>";
-                                } else {
-                                  html += `<p style='margin:2px 0;overflow-wrap:anywhere'>${line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`;
-                                }
-                              }
-                            }
-                            if (inList) html += "</ul>";
-                            return html;
-                          })(),
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-xl font-bold mt-4 mb-2 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-lg font-semibold mt-3.5 mb-1.5 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-base font-semibold mt-3 mb-1 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </h3>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-5 my-2 space-y-1 break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </ul>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground my-0.5 break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </li>
+                          ),
+                          p: ({ children }) => (
+                            <p className="my-1.5 last:mb-0 text-foreground break-words [overflow-wrap:anywhere]">
+                              {children}
+                            </p>
+                          ),
                         }}
-                      />
+                      >
+                        {msg.text.replace(/•/g, "-")}
+                      </ReactMarkdown>
                     </div>
                   </div>
                   <span
@@ -625,7 +646,7 @@ const AIHealthAssistant = () => {
               onKeyDown={handleKeyDown}
               placeholder={isListening ? "Listening…" : "Describe your symptoms…"}
               rows={1}
-              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none max-h-28 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden leading-relaxed self-center"
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:shadow-none focus-visible:shadow-none max-h-28 overflow-y-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden leading-relaxed self-center"
             />
 
             <button

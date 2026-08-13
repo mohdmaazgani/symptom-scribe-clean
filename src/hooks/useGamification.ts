@@ -37,27 +37,32 @@ export type MoodType = "great" | "good" | "neutral" | "bad" | "terrible";
 export interface Challenge {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   duration_days: number;
+  target_value: number;
+  unit: string;
   category: string;
-  icon: string;
+  icon: string | null;
+  color: string | null;
 }
 
 export interface UserChallenge {
   id: string;
   challenge_id: string;
-  started_at: string;
-  current_streak: number;
-  completed: boolean;
-  last_check_in: string | null;
-  challenges: Challenge;
+  status: string;
+  streak_count: number;
+  best_streak: number;
+  started_at: string | null;
+  last_checked_in: string | null;
+  completed_at: string | null;
+  challenges: Challenge | null;
 }
 
 export interface Badge {
   id: string;
   name: string;
-  description: string;
-  icon: string;
+  description: string | null;
+  icon: string | null;
   condition_type: string;
   condition_value: number;
 }
@@ -66,12 +71,15 @@ export interface UserBadge {
   id: string;
   badge_id: string;
   earned_at: string;
-  badges: Badge;
+  badges: Badge | null;
 }
 
+// `mood` is typed as `string` (matching the generated Supabase type) because
+// the DB column is text and may legitimately contain values beyond the current
+// MoodType union. New input stays constrained to MoodType via useLogMood().
 export interface MoodLog {
   id: string;
-  mood: MoodType;
+  mood: string;
   note: string | null;
   logged_at: string;
 }
@@ -142,12 +150,12 @@ export function useCheckInChallenge() {
       const todayDateStr = now.toISOString().split("T")[0]; 
       const todayStartISO = `${todayDateStr}T00:00:00.000Z`;
 
-      const lastCheckIn = current.last_check_in ? new Date(current.last_check_in) : null;
+      const lastCheckIn = current.last_checked_in ? new Date(current.last_checked_in) : null;
       const alreadyCheckedInToday =
         lastCheckIn !== null && lastCheckIn.toISOString() >= todayStartISO;
 
       if (alreadyCheckedInToday) {
-        return { streak: current.current_streak, alreadyCheckedInToday: true };
+        return { streak: current.streak_count, alreadyCheckedInToday: true };
       }
 
       const lastCheckInDateStr = lastCheckIn ? lastCheckIn.toISOString().split("T")[0] : null;
@@ -160,24 +168,24 @@ export function useCheckInChallenge() {
         : null;
 
       const isConsecutive = daysSinceLastCheckIn === 1;
-      const newStreak = isConsecutive ? current.current_streak + 1 : 1;
+      const newStreak = isConsecutive ? current.streak_count + 1 : 1;
 
       const { data: updated, error } = await supabase
         .from("user_challenges")
         .update({
-          current_streak: newStreak,
-          last_check_in: now.toISOString(),
+          streak_count: newStreak,
+          last_checked_in: now.toISOString(),
         })
         .eq("id", userChallengeId)
         // Conditional write: only apply if no check-in has happened yet today.
-        .or(`last_check_in.is.null,last_check_in.lt.${todayStartISO}`)
+        .or(`last_checked_in.is.null,last_checked_in.lt.${todayStartISO}`)
         .select()
         .maybeSingle();
 
       if (error) throw error;
 
       if (!updated) {
-        return { streak: current.current_streak, alreadyCheckedInToday: true };
+        return { streak: current.streak_count, alreadyCheckedInToday: true };
       }
 
       return { streak: newStreak, alreadyCheckedInToday: false };

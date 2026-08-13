@@ -55,6 +55,26 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy/rarely-used vendor libraries into dedicated chunks so the
+        // main entry bundle stays small and browsers can cache them independently.
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-i18n": ["i18next", "react-i18next"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-dexie": ["dexie"],
+          "vendor-recharts": ["recharts"],
+          "vendor-pdf": ["jspdf", "jspdf-autotable"],
+          "vendor-image": ["html-to-image"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-markdown": ["react-markdown"],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -13,7 +13,9 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
+import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
+import { AuthProvider } from "./components/auth/AuthProvider";
 import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
@@ -41,6 +43,7 @@ const Contact = lazy(() => import("./pages/Contact/index.tsx"));
 const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
+const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -66,7 +69,7 @@ const App = () => {
         if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
           if (navigator.onLine) {
             await syncOfflineData().catch((err) =>
-              console.error("Failed to sync offline data on session ready:", err)
+              console.warn("Failed to sync offline data on session ready:", err)
             );
 
             // Handle pending profile details (from MultiStepSignUp)
@@ -98,13 +101,13 @@ const App = () => {
                   }, { onConflict: "user_id" });
 
                 if (error) {
-                  console.error("Failed to sync pending profile details:", error);
+                  console.warn("Failed to sync pending profile details:", error);
                 } else {
                   localStorage.removeItem("symptom_scribe_pending_profile");
                   console.log("Successfully encrypted and synced pending profile details");
                 }
               } catch (err) {
-                console.error("Failed parsing or encrypting pending profile:", err);
+                console.warn("Failed parsing or encrypting pending profile:", err);
               }
             }
           }
@@ -120,14 +123,16 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <ScrollToTop />
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
+    <AccessibilityProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <ScrollToTop />
+              <Suspense fallback={<LoadingScreen />}>
+                <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -241,6 +246,16 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/reminders"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reminders />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/privacy"
@@ -273,9 +288,11 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </AuthProvider>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AccessibilityProvider>
   );
 };
 

@@ -75,10 +75,22 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
 
   // Determine if there is any data to show in the chart
   const hasData = useMemo(() => {
-    return chartData.some(
-      (d) => d["Heart Rate"] !== null || d["Sleep Duration"] !== null || d["Daily Steps"] !== null
-    );
-  }, [chartData]);
+    if (activeFilter === "all") {
+      return chartData.some(
+        (d) => d["Heart Rate"] !== null || d["Sleep Duration"] !== null || d["Daily Steps"] !== null
+      );
+    }
+    if (activeFilter === "heart_rate") {
+      return chartData.some((d) => d["Heart Rate"] !== null);
+    }
+    if (activeFilter === "sleep") {
+      return chartData.some((d) => d["Sleep Duration"] !== null);
+    }
+    if (activeFilter === "steps") {
+      return chartData.some((d) => d["Daily Steps"] !== null);
+    }
+    return false;
+  }, [chartData, activeFilter]);
 
   // Compute accessible screen reader summary text
   const summaryText = useMemo(() => {
@@ -219,7 +231,7 @@ export default function HealthTrendsChart({ userId }: HealthTrendsChartProps) {
                   />
                 )}
 
-                {/* Secondary Right Y-Axis for daily steps */}
+                {/* Secondary Right Y-Axis for daily steps — shown only for steps filter or all metrics */}
                 {(activeFilter === "all" || activeFilter === "steps") && (
                   <YAxis
                     yAxisId="right"
