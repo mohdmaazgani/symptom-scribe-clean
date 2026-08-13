@@ -6,6 +6,7 @@ import {
   decryptText,
   whenEncryptionReady,
   registerEncryptionHooks,
+  registerP2PKeyStorage,
   getSearchKey,
   generateSearchTokens,
 } from "./encryption";
@@ -38,6 +39,7 @@ export interface OfflineSymptom {
   pending_delete: number;
   ai_analysis?: string;
   search_tokens?: string[] | null;
+  images?: string[] | null;
 }
 
 export interface MeshAlert {
@@ -54,10 +56,27 @@ export interface MeshAlert {
   pending_sync: number;
 }
 
+/**
+ * Persisted P2P emergency-signing keypair (issue #1085).
+ *
+ * The private key is generated as *non-extractable*, so it can never be
+ * exported (e.g. as a JWK) and exfiltrated by a script with localStorage
+ * access. IndexedDB's structured-clone algorithm can still persist such
+ * CryptoKey objects, which is how the key survives reloads without ever
+ * leaving the browser as key material.
+ */
+export interface P2PKeyRecord {
+  id: string;
+  privateKey: CryptoKey;
+  publicKey: CryptoKey;
+  createdAt: string;
+}
+
 class OfflineDatabase extends Dexie {
   healthMetrics!: Table<OfflineMetric>;
   symptomHistory!: Table<OfflineSymptom>;
   pendingEmergencyMesh!: Table<MeshAlert>;
+  p2pKeys!: Table<P2PKeyRecord>;
 
   constructor() {
     super("SymptomScribeOfflineDB");
@@ -69,6 +88,12 @@ class OfflineDatabase extends Dexie {
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
       symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+    });
+    this.version(3).stores({
+      healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+      p2pKeys: "id",
     });
   }
 }
@@ -339,6 +364,32 @@ registerEncryptionHooks({
   },
 });
 
+// ─── P2P signing-key persistence (issue #1085) ───────────────────────────────
+// The P2P emergency-signing keypair is generated as non-extractable (the
+// private half can never be exported) and persisted in IndexedDB via
+// structured clone — mirroring how the rest of the app treats key material.
+// A compromised script with localStorage access can no longer read the
+// signing key as a plaintext JWK.
+const P2P_KEY_STORE_ID = "p2p-signing-key";
+
+registerP2PKeyStorage({
+  load: async () => {
+    const record = await db.p2pKeys.get(P2P_KEY_STORE_ID);
+    if (record?.privateKey && record?.publicKey) {
+      return { privateKey: record.privateKey, publicKey: record.publicKey };
+    }
+    return null;
+  },
+  save: async (privateKey, publicKey) => {
+    await db.p2pKeys.put({
+      id: P2P_KEY_STORE_ID,
+      privateKey,
+      publicKey,
+      createdAt: new Date().toISOString(),
+    });
+  },
+});
+
 export const syncOfflineData = async (): Promise<boolean> => {
   if (!navigator.onLine) return false;
 
@@ -410,7 +461,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
+      const { pending_sync, pending_delete, pending_update, images, ...supabaseData } = record;
       const { error } = await supabase
         .from("symptom_history")
         .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
