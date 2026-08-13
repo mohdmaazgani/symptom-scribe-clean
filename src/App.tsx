@@ -44,6 +44,7 @@ const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
 const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
+const HealthStatistics = lazy(() => import("./pages/HealthStatistics/index.tsx"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -63,58 +64,66 @@ const App = () => {
   useEffect(() => {
     const cleanup = initializeEncryption();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+        if (navigator.onLine) {
+          await syncOfflineData().catch((err) =>
+            console.warn("Failed to sync offline data on session ready:", err)
+          );
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
-          if (navigator.onLine) {
-            await syncOfflineData().catch((err) =>
-              console.warn("Failed to sync offline data on session ready:", err)
-            );
+          // Handle pending profile details (from MultiStepSignUp)
+          const pendingProfileStr = localStorage.getItem("symptom_scribe_pending_profile");
+          if (pendingProfileStr) {
+            try {
+              const pendingProfile = JSON.parse(pendingProfileStr);
+              const key = await whenEncryptionReady();
+              const encryptedFullName = await encryptProfileField(pendingProfile.full_name, key);
+              const encryptedDob = await encryptProfileField(pendingProfile.date_of_birth, key);
+              const encryptedEmergencyName = await encryptProfileField(
+                pendingProfile.emergency_contact_name,
+                key
+              );
+              const encryptedEmergencyPhone = await encryptProfileField(
+                pendingProfile.emergency_contact_phone,
+                key
+              );
+              const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
+              const encryptedChronicConditions = await encryptProfileArray(
+                pendingProfile.chronic_conditions,
+                key
+              );
 
-            // Handle pending profile details (from MultiStepSignUp)
-            const pendingProfileStr = localStorage.getItem("symptom_scribe_pending_profile");
-            if (pendingProfileStr) {
-              try {
-                const pendingProfile = JSON.parse(pendingProfileStr);
-                const key = await whenEncryptionReady();
-                const encryptedFullName = await encryptProfileField(pendingProfile.full_name, key);
-                const encryptedDob = await encryptProfileField(pendingProfile.date_of_birth, key);
-                const encryptedEmergencyName = await encryptProfileField(pendingProfile.emergency_contact_name, key);
-                const encryptedEmergencyPhone = await encryptProfileField(pendingProfile.emergency_contact_phone, key);
-                const encryptedAllergies = await encryptProfileArray(pendingProfile.allergies, key);
-                const encryptedChronicConditions = await encryptProfileArray(pendingProfile.chronic_conditions, key);
+              const { error } = await supabase.from("profiles").upsert(
+                {
+                  user_id: session.user.id,
+                  full_name: encryptedFullName,
+                  date_of_birth: encryptedDob,
+                  gender: pendingProfile.gender || null,
+                  blood_type: pendingProfile.blood_type || null,
+                  allergies: encryptedAllergies,
+                  chronic_conditions: encryptedChronicConditions,
+                  emergency_contact_name: encryptedEmergencyName,
+                  emergency_contact_phone: encryptedEmergencyPhone,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "user_id" }
+              );
 
-                const { error } = await supabase
-                  .from("profiles")
-                  .upsert({
-                    user_id: session.user.id,
-                    full_name: encryptedFullName,
-                    date_of_birth: encryptedDob,
-                    gender: pendingProfile.gender || null,
-                    blood_type: pendingProfile.blood_type || null,
-                    allergies: encryptedAllergies,
-                    chronic_conditions: encryptedChronicConditions,
-                    emergency_contact_name: encryptedEmergencyName,
-                    emergency_contact_phone: encryptedEmergencyPhone,
-                    updated_at: new Date().toISOString(),
-                  }, { onConflict: "user_id" });
-
-                if (error) {
-                  console.warn("Failed to sync pending profile details:", error);
-                } else {
-                  localStorage.removeItem("symptom_scribe_pending_profile");
-                  console.log("Successfully encrypted and synced pending profile details");
-                }
-              } catch (err) {
-                console.warn("Failed parsing or encrypting pending profile:", err);
+              if (error) {
+                console.warn("Failed to sync pending profile details:", error);
+              } else {
+                localStorage.removeItem("symptom_scribe_pending_profile");
+                console.log("Successfully encrypted and synced pending profile details");
               }
+            } catch (err) {
+              console.warn("Failed parsing or encrypting pending profile:", err);
             }
           }
         }
       }
-    );
-
+    });
 
     return () => {
       cleanup?.();
@@ -133,163 +142,153 @@ const App = () => {
               <ScrollToTop />
               <Suspense fallback={<LoadingScreen />}>
                 <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Chat />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/metrics"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Metrics />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/history"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <History />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/emergency"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Emergency />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/brain-games"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BrainGames />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/health-facts"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <HealthFacts />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Settings />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/ai-health-assistant"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AIHealthAssistant />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/gamification"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <GamificationPage />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reminders"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Reminders />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/chat"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Chat />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/metrics"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Metrics />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/history"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <History />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/health-statistics"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <HealthStatistics />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Profile />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/emergency"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Emergency />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/brain-games"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <BrainGames />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/health-facts"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <HealthFacts />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Settings />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/ai-health-assistant"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <AIHealthAssistant />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/gamification"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <GamificationPage />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reminders"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Reminders />
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-              <Route
-                path="/privacy"
-                element={
-                  <Privacy />
-                }
-              />
-              <Route
-                path="/terms"
-                element={
-                  <Terms />
-                }
-              />
-              <Route
-                path="/disclaimer"
-                element={
-                  <Disclaimer />
-                }
-              />
-              <Route
-                path="/accessibility"
-                element={
-                  <Accessibility />
-                }
-              />
-              <Route path="/health-library" element={<HealthLibrary />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPostPage />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-          </AuthProvider>
-        </BrowserRouter>
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/disclaimer" element={<Disclaimer />} />
+                  <Route path="/accessibility" element={<Accessibility />} />
+                  <Route path="/health-library" element={<HealthLibrary />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AuthProvider>
+          </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
     </AccessibilityProvider>
