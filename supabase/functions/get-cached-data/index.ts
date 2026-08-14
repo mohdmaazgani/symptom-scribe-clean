@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { redis } from "../_shared/redis.ts";
-import { rateLimit, getClientIp } from "../_shared/rateLimit.ts";
+import { rateLimit } from "../_shared/rateLimit.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -41,7 +41,10 @@ serve(async (req) => {
 
   try {
     // Rate limit check
-    const ip = getClientIp(req);
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
