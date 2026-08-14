@@ -7,6 +7,7 @@ import { invalidateCache } from "@/lib/cached-queries";
 import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import ReactMarkdown from "react-markdown";
+import { useTypewriter } from "@/hooks/use-typewriter";
 
 import { parseSymptomConsultation, shouldPersistConsultation } from "@/lib/symptom-consultation";
 import {
@@ -67,12 +68,99 @@ declare global {
   }
 }
 
+interface AssistantMessageContentProps {
+  text: string;
+  animate?: boolean;
+  onAnimationComplete?: () => void;
+}
+
+const AssistantMessageContent = ({ text, animate = false, onAnimationComplete }: AssistantMessageContentProps) => {
+  const messageRef = useRef<HTMLDivElement>(null);
+  const { displayedText, isFinished, skip } = useTypewriter(text, 25, animate);
+
+  useEffect(() => {
+    if (isFinished && onAnimationComplete) {
+      onAnimationComplete();
+    }
+  }, [isFinished, onAnimationComplete]);
+
+  useEffect(() => {
+    if (animate && !isFinished && messageRef.current) {
+      const container = messageRef.current.closest(".overflow-y-auto");
+      if (container) {
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+        if (isNearBottom) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    }
+  }, [displayedText, animate, isFinished]);
+
+  return (
+    <div
+      ref={messageRef}
+      onClick={!isFinished ? skip : undefined}
+      className={!isFinished ? "cursor-pointer select-none" : ""}
+      title={!isFinished ? "Click to reveal full text" : undefined}
+    >
+      <ReactMarkdown
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-xl font-bold mt-4 mb-2 text-foreground break-words [overflow-wrap:anywhere]">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-lg font-semibold mt-3.5 mb-1.5 text-foreground break-words [overflow-wrap:anywhere]">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-base font-semibold mt-3 mb-1 text-foreground break-words [overflow-wrap:anywhere]">
+              {children}
+            </h3>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-foreground">{children}</strong>
+          ),
+          ul: ({ children }) => (
+            <ul className="list-disc pl-5 my-2 space-y-1 break-words [overflow-wrap:anywhere]">
+              {children}
+            </ul>
+          ),
+          li: ({ children }) => (
+            <li className="text-foreground my-0.5 break-words [overflow-wrap:anywhere]">
+              {children}
+            </li>
+          ),
+          p: ({ children }) => (
+            <p className="my-1.5 last:mb-0 text-foreground break-words [overflow-wrap:anywhere]">
+              {children}
+            </p>
+          ),
+        }}
+      >
+        {displayedText.replace(/•/g, "-")}
+      </ReactMarkdown>
+      {!isFinished && (
+        <span className="inline-block w-1.5 h-3 ml-1 bg-teal-500/70 animate-pulse align-middle" aria-hidden="true" />
+      )}
+    </div>
+  );
+};
+
 const AIHealthAssistant = () => {
   const [symptoms, setSymptoms] = useState("");
   const [charCount, setCharCount] = useState(0);
   const MAX_CHARS = 500;
   const [messages, setMessages] = useState<
-    { role: "user" | "assistant"; text: string; time: string }[]
+    {
+      role: "user" | "assistant";
+      text: string;
+      time: string;
+      animate?: boolean;
+      pendingToasts?: { type: "info" | "success" | "warning"; title: string; description: string }[];
+    }[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -205,7 +293,7 @@ const AIHealthAssistant = () => {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, text: assistantContent } : m));
         }
-        return [...prev, { role: "assistant", text: assistantContent, time: getTime() }];
+        return [...prev, { role: "assistant", text: assistantContent, time: getTime(), animate: true }];
       });
     };
 
@@ -215,6 +303,10 @@ const AIHealthAssistant = () => {
     );
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const recentContext = messages.slice(-6).map((m) => ({
         role: m.role,
         content: m.text,
@@ -285,17 +377,21 @@ const AIHealthAssistant = () => {
 
       if (assistantContent) {
         dismissLoading();
-        showSuccess("Analysis complete!", "Your symptoms have been analyzed");
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const pendingToasts: { type: "info" | "success" | "warning"; title: string; description: string }[] = [
+          { type: "success", title: "Analysis complete!", description: "Your symptoms have been analyzed" }
+        ];
+
         if (user) {
           const { possibleCauses, recommendations, severityLevel } =
             parseSymptomConsultation(assistantContent);
 
           if (assistantContent.match(/severity(\s+level)?/i)) {
-            showInfo("Severity Assessment", `AI rates this as ${severityLevel} severity`);
+            pendingToasts.push({
+              type: "info",
+              title: "Severity Assessment",
+              description: `AI rates this as ${severityLevel} severity`,
+            });
           }
 
           const rngScore = (range: number, offset: number) =>
@@ -349,10 +445,11 @@ const AIHealthAssistant = () => {
                 pending_delete: 0,
               });
 
-              showWarning(
-                "Saved Offline",
-                "Could not connect to server. Saved locally and will sync once connection is restored."
-              );
+              pendingToasts.push({
+                type: "warning",
+                title: "Saved Offline",
+                description: "Could not connect to server. Saved locally and will sync once connection is restored.",
+              });
             } else {
               await invalidateCache("symptom_history");
 
@@ -364,13 +461,23 @@ const AIHealthAssistant = () => {
                 pending_delete: 0,
               });
 
-              showSuccess(
-                "Saved to history",
-                "This analysis has been added to your health records"
-              );
+              pendingToasts.push({
+                type: "success",
+                title: "Saved to history",
+                description: "This analysis has been added to your health records",
+              });
             }
           }
         }
+
+        // Update the last message to have pendingToasts
+        setMessages((prev) =>
+          prev.map((m, i) =>
+            i === prev.length - 1
+              ? { ...m, text: assistantContent, animate: true, pendingToasts }
+              : m
+          )
+        );
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -528,45 +635,26 @@ const AIHealthAssistant = () => {
                       </button>
                     )}
                     <div className={msg.role === "assistant" ? "pr-6" : ""}>
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ children }) => (
-                            <h1 className="text-xl font-bold mt-4 mb-2 text-foreground break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </h1>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="text-lg font-semibold mt-3.5 mb-1.5 text-foreground break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="text-base font-semibold mt-3 mb-1 text-foreground break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </h3>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-foreground">{children}</strong>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="list-disc pl-5 my-2 space-y-1 break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </ul>
-                          ),
-                          li: ({ children }) => (
-                            <li className="text-foreground my-0.5 break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </li>
-                          ),
-                          p: ({ children }) => (
-                            <p className="my-1.5 last:mb-0 text-foreground break-words [overflow-wrap:anywhere]">
-                              {children}
-                            </p>
-                          ),
-                        }}
-                      >
-                        {msg.text.replace(/•/g, "-")}
-                      </ReactMarkdown>
+                      {msg.role === "assistant" ? (
+                        <AssistantMessageContent
+                          text={msg.text}
+                          animate={msg.animate}
+                          onAnimationComplete={() => {
+                            if (msg.pendingToasts && msg.pendingToasts.length > 0) {
+                              msg.pendingToasts.forEach((t) => {
+                                if (t.type === "success") showSuccess(t.title, t.description);
+                                else if (t.type === "info") showInfo(t.title, t.description);
+                                else if (t.type === "warning") showWarning(t.title, t.description);
+                              });
+                            }
+                            setMessages((prev) =>
+                              prev.map((m, idx) => (idx === i ? { ...m, animate: false, pendingToasts: [] } : m))
+                            );
+                          }}
+                        />
+                      ) : (
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      )}
                     </div>
                   </div>
                   <span
