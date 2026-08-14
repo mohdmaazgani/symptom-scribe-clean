@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { rateLimit } from "../_shared/rateLimit.ts";
-import { AppError, ErrorCodes, handleError } from "../_shared/error-handler.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -32,7 +31,13 @@ serve(async (req) => {
   const origin = req.headers.get("origin");
 
   if (origin && !isAllowedOrigin(origin)) {
-    return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Origin not allowed", 403), getCorsHeaders(origin));
+    return new Response(
+      JSON.stringify({ error: "Origin not allowed" }),
+      {
+        status: 403,
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+      }
+    );
   }
 
   if (req.method === "OPTIONS") {
@@ -48,12 +53,24 @@ serve(async (req) => {
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
-      return handleError(new AppError(ErrorCodes.RATE_LIMIT_EXCEEDED, "Rate limit exceeded. Please try again later.", 429), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "No authorization header provided", 401), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "No authorization header provided" }),
+        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     // Initialize Supabase Client with User's JWT
@@ -75,7 +92,10 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Invalid authorization token", 401), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Invalid authorization token" }),
+        { status: 401, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     // Get the request body
@@ -167,11 +187,17 @@ serve(async (req) => {
       );
 
       if (!isValid) {
-        return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Cryptographic signature verification failed: unauthorized alert packet", 400), getCorsHeaders(origin));
+        return new Response(
+          JSON.stringify({ error: "Cryptographic signature verification failed: unauthorized alert packet" }),
+          { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+        );
       }
     } catch (verifyErr) {
       console.error("Signature verification error:", verifyErr);
-      return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Cryptographic signature verification failed with error", 400, verifyErr), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Cryptographic signature verification failed with error" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     // FIX: use the values already destructured from the request body instead of
@@ -181,7 +207,10 @@ serve(async (req) => {
     const rawSenderName = sender_name || "A user";
 
     if (!rawContactPhone) {
-      return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "No emergency contact phone configured or provided", 400), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "No emergency contact phone configured or provided" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     // Validate phone number format (E.164 compliance)
@@ -189,13 +218,14 @@ serve(async (req) => {
     if (!PHONE_REGEX.test(rawContactPhone)) {
       console.error(`Invalid phone number: ${rawContactPhone}`);
       const isEncrypted = rawContactPhone.startsWith("enc:str:");
-      return handleError(new AppError(
-        ErrorCodes.VALIDATION_ERROR,
-        isEncrypted
-          ? "The emergency contact phone number is encrypted client-side and cannot be read by the server. Please ensure it is decrypted before triggering."
-          : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890).",
-        400
-      ), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({
+          error: isEncrypted
+            ? "The emergency contact phone number is encrypted client-side and cannot be read by the server. Please ensure it is decrypted before triggering."
+            : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890)."
+        }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     const contactPhone = rawContactPhone;
@@ -209,7 +239,10 @@ serve(async (req) => {
 
     if (!accountSid || !authToken || !twilioPhone) {
       console.error("Missing Twilio credentials configuration");
-      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "Twilio credentials are not configured on the server", 500), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Twilio credentials are not configured on the server" }),
+        { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     // Construct the SMS content
@@ -245,7 +278,10 @@ serve(async (req) => {
 
     if (!twilioResponse.ok) {
       console.error("Twilio SMS failed:", twilioResult);
-      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, `Twilio failed to send message: ${twilioResult.message || "Unknown error"}`, 502, twilioResult), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: `Twilio failed to send message: ${twilioResult.message || "Unknown error"}` }),
+        { status: 502, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
     }
 
     console.log("Emergency SMS sent successfully via Twilio!");
@@ -260,6 +296,11 @@ serve(async (req) => {
 
   } catch (err) {
     console.error("Broadcast emergency error:", err);
-    return handleError(err, getCorsHeaders(origin));
+    return new Response(
+      JSON.stringify({
+        error: err instanceof Error ? err.message : "Internal server error",
+      }),
+      { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+    );
   }
 });

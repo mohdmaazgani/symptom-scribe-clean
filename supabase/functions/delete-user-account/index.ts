@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { rateLimit } from "../_shared/rateLimit.ts";
-import { AppError, ErrorCodes, handleError } from "../_shared/error-handler.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -27,7 +26,16 @@ serve(async (req) => {
   const origin = req.headers.get("origin");
 
   if (origin && !isAllowedOrigin(origin)) {
-    return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Origin not allowed", 403), getCorsHeaders(origin));
+    return new Response(
+      JSON.stringify({ error: "Origin not allowed" }),
+      {
+        status: 403,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 
   if (req.method === "OPTIONS") {
@@ -42,12 +50,30 @@ serve(async (req) => {
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
-      return handleError(new AppError(ErrorCodes.RATE_LIMIT_EXCEEDED, "Rate limit exceeded. Please try again later.", 429), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "No authorization header", 401), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "No authorization header" }),
+        {
+          status: 401,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     // 1. Get user details from the client-provided token to identify who is making the request
@@ -73,7 +99,16 @@ serve(async (req) => {
     } = await client.auth.getUser(token);
 
     if (userError || !user) {
-      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Invalid authorization token", 401), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Invalid authorization token" }),
+        {
+          status: 401,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     // 2. Initialize the admin client with the service role key to delete the user
@@ -88,7 +123,16 @@ serve(async (req) => {
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError);
-      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "Failed to delete user account", 500, deleteError), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: "Failed to delete user account" }),
+        {
+          status: 500,
+          headers: {
+            ...getCorsHeaders(origin),
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     return new Response(
@@ -103,6 +147,17 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("Delete user error:", err);
-    return handleError(err, getCorsHeaders(origin));
+    return new Response(
+      JSON.stringify({
+        error: err instanceof Error ? err.message : "Internal server error",
+      }),
+      {
+        status: 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 });
