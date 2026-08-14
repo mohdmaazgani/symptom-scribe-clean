@@ -12,6 +12,32 @@ const WINDOW_SIZE_MS = 60 * 1000;
 const MAX_REQUESTS = 10;
 let warnedAboutFallback = false;
 
+/**
+ * Resolve a rate-limit identity from request headers.
+ * Prefer platform-trusted IPs; never trust the leftmost X-Forwarded-For hop
+ * (client-controlled). When XFF is the only signal, use the rightmost entry.
+ */
+export function getClientIp(req: Request): string {
+  const cfConnecting = req.headers.get("cf-connecting-ip")?.trim();
+  if (cfConnecting) return cfConnecting;
+
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const hops = forwarded
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean);
+    if (hops.length > 0) {
+      return hops[hops.length - 1];
+    }
+  }
+
+  return "unknown";
+}
+
 // Fallback 1: Database-backed global rate limiter (handles multi-isolate environments)
 async function databaseRateLimit(ip: string): Promise<{ success: boolean }> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
