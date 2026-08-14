@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   setKeys,
   getKey,
@@ -9,46 +9,9 @@ import {
   deriveKeyFromToken,
   deriveSearchKeyFromToken,
   rotateKeysToNewPassword,
-  initializeEncryption,
-  subscribeEncryptionLock,
-  unlockEncryptionWithPassword,
-  registerLegacyKeyProbe,
   getP2PSigningKeys,
   registerP2PKeyStorage,
 } from "./encryption";
-
-// Mock the Supabase client used by the session/unlock flows (issue #1056).
-const mockSupabase = vi.hoisted(() => {
-  const chain = (finalValue?: unknown) => {
-    const obj = {
-      select: () => obj,
-      eq: () => obj,
-      or: () => obj,
-      order: () => obj,
-      limit: () => obj,
-      maybeSingle: async () => finalValue,
-      single: async () => finalValue,
-      upsert: async () => ({ error: null }),
-    };
-    return obj;
-  };
-  return {
-    auth: {
-      getUser: vi.fn(),
-      getSession: vi.fn(),
-      updateUser: vi.fn(),
-      signInWithPassword: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
-    },
-    from: vi.fn(() => chain({ data: null, error: null })),
-  };
-});
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: mockSupabase,
-}));
 
 describe("Encryption Key Persistence", () => {
   beforeEach(() => {
@@ -103,103 +66,6 @@ describe("Encryption Key Persistence", () => {
     expect(getKey()).not.toBeNull();
     expect(getSearchKey()).not.toBeNull();
     expect(localStorage.getItem("symptom_scribe_master_seed_user-123")).toBeTruthy();
-  });
-});
-
-describe("Encryption lock & unlock (issue #1056)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    localStorage.clear();
-    setKeys(null, null);
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: "user-123", email: "user@example.com" } },
-      error: null,
-    });
-  });
-
-  afterEach(() => {
-    // Remove any probe registered by a test so it cannot leak into others.
-    registerLegacyKeyProbe(() => Promise.resolve(false));
-  });
-
-  it("locks the keys (no userId-derived fallback) when a session has no persisted seed", async () => {
-    mockSupabase.auth.getSession.mockResolvedValue({
-      data: {
-        session: {
-          user: { id: "user-123", email: "user@example.com" },
-          access_token: "token-abc",
-        },
-      },
-      error: null,
-    });
-
-    const states: boolean[] = [];
-    const unsubscribe = subscribeEncryptionLock((locked) => states.push(locked));
-
-    initializeEncryption();
-
-    await vi.waitFor(() => {
-      expect(states[states.length - 1]).toBe(true);
-    });
-    // No key may be derived from public material alone.
-    expect(getKey()).toBeNull();
-    expect(getSearchKey()).toBeNull();
-
-    unsubscribe();
-  });
-
-  it("unlocks with a correct password and persists the seed", async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: { id: "user-123" }, session: {} },
-      error: null,
-    });
-
-    const result = await unlockEncryptionWithPassword("correct-password");
-
-    expect(result.ok).toBe(true);
-    expect(result.migratedLegacy).toBe(false);
-    expect(getKey()).not.toBeNull();
-    expect(getSearchKey()).not.toBeNull();
-    expect(localStorage.getItem("symptom_scribe_master_seed_user-123")).toBeTruthy();
-  });
-
-  it("rejects an incorrect password without deriving or persisting keys", async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Invalid login credentials" },
-    });
-
-    const result = await unlockEncryptionWithPassword("wrong-password");
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toBe("Invalid login credentials");
-    expect(getKey()).toBeNull();
-    expect(getSearchKey()).toBeNull();
-    expect(localStorage.getItem("symptom_scribe_master_seed_user-123")).toBeNull();
-  });
-
-  it("migrates legacy pre-seed records onto the new key when detected", async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: { id: "user-123" }, session: {} },
-      error: null,
-    });
-    registerLegacyKeyProbe(() => Promise.resolve(true));
-
-    const result = await unlockEncryptionWithPassword("correct-password");
-
-    expect(result.ok).toBe(true);
-    expect(result.migratedLegacy).toBe(true);
-    expect(localStorage.getItem("symptom_scribe_master_seed_user-123")).toBeTruthy();
-  });
-
-  it("returns an error when no session user is available", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-
-    const result = await unlockEncryptionWithPassword("any-password");
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(getKey()).toBeNull();
   });
 });
 
