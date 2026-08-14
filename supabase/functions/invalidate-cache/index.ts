@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { redis } from "../_shared/redis.ts";
 import { rateLimit } from "../_shared/rateLimit.ts";
-import { AppError, ErrorCodes, handleError } from "../_shared/error-handler.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -28,7 +27,10 @@ serve(async (req) => {
   const origin = req.headers.get("origin");
 
   if (origin && !isAllowedOrigin(origin)) {
-    return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Origin not allowed", 403), getCorsHeaders(origin));
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+    });
   }
 
   if (req.method === "OPTIONS") {
@@ -46,9 +48,12 @@ serve(async (req) => {
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
-      return handleError(
-        new AppError(ErrorCodes.RATE_LIMIT_EXCEEDED, "Rate limit exceeded. Please try again later.", 429),
-        getCorsHeaders(origin)
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -68,13 +73,25 @@ serve(async (req) => {
       userId = record?.user_id;
 
       if (!userId || !table) {
-        return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Invalid webhook payload structure", 400), getCorsHeaders(origin));
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook payload structure" }),
+          {
+            status: 400,
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+          }
+        );
       }
     } else {
       // Fallback: Authenticate via client session token
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) {
-        return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Missing authorization header", 401), getCorsHeaders(origin));
+        return new Response(
+          JSON.stringify({ error: "Missing authorization header" }),
+          {
+            status: 401,
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+          }
+        );
       }
 
       const token = authHeader.replace("Bearer ", "");
@@ -90,7 +107,13 @@ serve(async (req) => {
 
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
       if (userError || !user) {
-        return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Unauthorized", 401), getCorsHeaders(origin));
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          {
+            status: 401,
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+          }
+        );
       }
 
       userId = user.id;
@@ -100,7 +123,13 @@ serve(async (req) => {
 
     const allowedTables = ["profiles", "symptom_history", "health_metrics", "chat_sessions"];
     if (!table || !allowedTables.includes(table)) {
-      return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, `Invalid table name: ${table}`, 400), getCorsHeaders(origin));
+      return new Response(
+        JSON.stringify({ error: `Invalid table name: ${table}` }),
+        {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
     }
 
     const cacheKey = `cache:${userId}:${table}`;
@@ -124,6 +153,17 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error(`Error in invalidate-cache Edge Function:`, error);
-    return handleError(error, getCorsHeaders(origin));
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Internal server error",
+      }),
+      {
+        status: 500,
+        headers: {
+          ...getCorsHeaders(origin),
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 });
