@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,21 +56,6 @@ const Auth = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  // While a password sign-in / MFA flow is finishing its encryption key
-  // setup, the auth-state listener defers navigation. The handler navigates
-  // itself only after the keys are persisted, so the dashboard mounts with a
-  // usable encryption context instead of hanging in its loading state or
-  // briefly flashing the "unlock your data" dialog (issue #1192).
-  const pendingSignInRef = useRef(false);
-  // Ensures a session triggers exactly one dashboard navigation.
-  const redirectHandledRef = useRef(false);
-
-  const goToDashboard = () => {
-    if (redirectHandledRef.current) return;
-    redirectHandledRef.current = true;
-    navigate("/dashboard", { replace: true });
-  };
-
   const fieldIconClass =
     "pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-200/70 transition-colors duration-200";
   const fieldClass =
@@ -89,13 +74,13 @@ const Auth = () => {
       return;
       }
 
-      if (session && !pendingSignInRef.current) {
+      if (session) {
         const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
         if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel !== aalData.nextLevel) {
           // 2FA verification still pending — don't navigate yet
           return;
         }
-        goToDashboard();
+        navigate("/dashboard");
       }
    });
 
@@ -130,9 +115,6 @@ const Auth = () => {
     if (!validateSignIn()) return;
 
     setLoading(true);
-    // Defer the auth-event redirect: the handler navigates only after the
-    // encryption keys have been derived and persisted for this session.
-    pendingSignInRef.current = true;
 
     const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: signInEmail,
@@ -141,7 +123,6 @@ const Auth = () => {
 
     if (error) {
       showError(t("auth.signInFailedTitle"), error.message);
-      pendingSignInRef.current = false;
       setLoading(false);
     } else {
       const { data: aalData } = (await supabase.auth.mfa?.getAuthenticatorAssuranceLevel()) ?? { data: null };
@@ -153,7 +134,6 @@ const Auth = () => {
           setMfaFactorId(totpFactor.id);
           setMfaRequired(true);
         }
-        pendingSignInRef.current = false;
         setLoading(false);
         return;
       }
@@ -167,8 +147,6 @@ const Auth = () => {
       }
       setLoading(false);
       setRedirecting(true);
-      pendingSignInRef.current = false;
-      goToDashboard();
     }
   };
 
@@ -178,8 +156,6 @@ const Auth = () => {
       return;
     }
     setMfaSubmitting(true);
-    // Defer the auth-event redirect until the keys are derived below.
-    pendingSignInRef.current = true;
 
     const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
       factorId: mfaFactorId,
@@ -187,7 +163,6 @@ const Auth = () => {
 
     if (challengeError) {
       showError(t("auth.verificationFailedTitle"), challengeError.message);
-      pendingSignInRef.current = false;
       setMfaSubmitting(false);
       return;
     }
@@ -200,7 +175,6 @@ const Auth = () => {
 
     if (verifyError) {
       showError(t("auth.incorrectCodeTitle"), t("auth.incorrectCodeDesc"));
-      pendingSignInRef.current = false;
       setMfaSubmitting(false);
       return;
     }
@@ -216,8 +190,6 @@ const Auth = () => {
 
     setMfaSubmitting(false);
     setRedirecting(true);
-    pendingSignInRef.current = false;
-    goToDashboard();
   };
 
 const handleForgotPassword= async () => {

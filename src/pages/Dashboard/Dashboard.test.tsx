@@ -23,8 +23,6 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { render } from "@/test/utils";
 import Dashboard from "@/pages/Dashboard/";
-import { AuthContext } from "@/components/auth/AuthProvider";
-import type { Session, User } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
 // Mock the Supabase client
@@ -112,46 +110,18 @@ import { getCachedData } from "@/lib/cached-queries";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const mockUser: User = {
-  id: "test-user-id",
-  email: "test@example.com",
-  app_metadata: {},
-  user_metadata: {},
-  aud: "authenticated",
-  created_at: new Date().toISOString(),
-};
-const mockSession: Session = {
-  access_token: "mock-token",
-  refresh_token: "mock-refresh",
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  expires_in: 3600,
-  token_type: "bearer",
-  user: mockUser,
-};
-
-/**
- * Renders the Dashboard with a fake AuthContext session. The Dashboard reads
- * the user id from the auth context (it is guaranteed by ProtectedRoute in
- * production), so tests must provide it here.
- */
-function renderDashboard(session: Session | null = mockSession) {
-  return render(
-    <AuthContext.Provider
-      value={{
-        session,
-        user: session?.user ?? null,
-        loading: false,
-        initialized: true,
-      }}
-    >
-      <Dashboard />
-    </AuthContext.Provider>
-  );
-}
+const mockUser = { id: "test-user-id", email: "test@example.com" };
 
 /** Returns a fully resolved cached query stub. */
 function mockCachedSymptoms(data: unknown[] | null, error: unknown = null) {
   (getCachedData as Mock).mockResolvedValue({ data, error });
+}
+
+function mockAuthUser(user: typeof mockUser | null = mockUser) {
+  (supabase.auth.getUser as Mock).mockResolvedValue({ data: { user } });
+  (supabase.auth.getSession as Mock).mockResolvedValue({
+    data: { session: user ? { access_token: "mock-token" } : null },
+  });
 }
 (supabase.from as Mock).mockReturnValue({
     select: () => ({
@@ -208,18 +178,21 @@ describe("Dashboard", () => {
 
   // 1. Loading state
   it("shows a loading state before data resolves", () => {
+    mockAuthUser();
     // Never resolve the query during this test
     (getCachedData as Mock).mockReturnValue(new Promise(() => {}));
 
-    renderDashboard();
+    render(<Dashboard />);
     // The loading skeleton should be present while awaiting the query
     expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   // 2. Empty state
   it("renders the empty-state prompt when the user has no history", async () => {
+    mockAuthUser();
     mockCachedSymptoms([]);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(
@@ -230,8 +203,10 @@ describe("Dashboard", () => {
 
   // 3. Stat cards render correct labels
   it("renders all four stat card labels", async () => {
+    mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /Total Consultations/i })).toBeInTheDocument();
@@ -243,8 +218,10 @@ describe("Dashboard", () => {
 
   // 4. Stat values are calculated correctly
   it("calculates and displays the correct stat values from symptom data", async () => {
+    mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       // Check that "2" appears somewhere near "Lifetime symptom checks"
@@ -258,8 +235,10 @@ describe("Dashboard", () => {
 
   // 5. Recent history items are rendered
   it("renders recent symptom history items", async () => {
+    mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       // Use a function matcher to find text across elements
@@ -275,8 +254,10 @@ describe("Dashboard", () => {
 
   // 6. Severity colour logic – "high" severity items use the destructive class
   it("applies the correct severity colour for high-severity items", async () => {
+    mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       // Find the element containing "high" and check its class
@@ -288,8 +269,10 @@ describe("Dashboard", () => {
 
   // 7. Supabase error is handled gracefully
   it("handles Supabase fetch errors without crashing", async () => {
+    mockAuthUser();
     mockCachedSymptoms(null, { message: "Network error" });
-    renderDashboard();
+
+    render(<Dashboard />);
 
     // The component should still load (not throw)
     await waitFor(() => {
@@ -299,7 +282,9 @@ describe("Dashboard", () => {
 
   // 8. Unauthenticated user – no crash, no data fetch
   it("renders without crashing when no user session exists", async () => {
-    renderDashboard(null);
+    mockAuthUser(null);
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByText("Health Dashboard")).toBeInTheDocument();
@@ -308,8 +293,10 @@ describe("Dashboard", () => {
 
   // 9. AI Health Predictions rendering
   it("renders the AI Health Predictions card on the dashboard", async () => {
+    mockAuthUser();
     mockCachedSymptoms([]);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByText("AI Health Predictions")).toBeInTheDocument();
@@ -320,8 +307,10 @@ describe("Dashboard", () => {
 
   // 10. Weekly Health Score card rendering
   it("renders weekly health score card and streak badge", async () => {
+    mockAuthUser();
     mockCachedSymptoms([]);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByText("Weekly Health Score")).toBeInTheDocument();
@@ -332,8 +321,10 @@ describe("Dashboard", () => {
 
   // 11. Accessibility: Radial gauge role="img" and Health Trends screen reader summary
   it("renders accessible ARIA attributes on radial gauge and health trends chart", async () => {
+    mockAuthUser();
     mockCachedSymptoms(sampleSymptoms);
-    renderDashboard();
+
+    render(<Dashboard />);
 
     await waitFor(() => {
       expect(screen.getByRole("img", { name: /Wellness Score:/i })).toBeInTheDocument();
