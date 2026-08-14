@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rateLimit } from "../_shared/rateLimit.ts";
+import { AppError, ErrorCodes, handleError } from "../_shared/error-handler.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -26,13 +27,7 @@ serve(async (req) => {
   const origin = req.headers.get("origin");
   
   if (origin && !isAllowedOrigin(origin)) {
-    return new Response(
-      JSON.stringify({ error: "Origin not allowed" }),
-      {
-        status: 403,
-        headers: getCorsHeaders(origin),
-      }
-    );
+    return handleError(new AppError(ErrorCodes.VALIDATION_ERROR, "Origin not allowed", 403), getCorsHeaders(origin));
   }
 
   if (req.method === "OPTIONS") {
@@ -49,30 +44,12 @@ serve(async (req) => {
 
     const rateLimitResult = await rateLimit(ip);
     if (!rateLimitResult.success) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-        {
-          status: 429,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return handleError(new AppError(ErrorCodes.RATE_LIMIT_EXCEEDED, "Rate limit exceeded. Please try again later.", 429), getCorsHeaders(origin));
     }
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Missing authorization header", 401), getCorsHeaders(origin));
     }
 
     const supabase = createClient(
@@ -88,16 +65,7 @@ serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return handleError(new AppError(ErrorCodes.AUTH_REQUIRED, "Unauthorized", 401), getCorsHeaders(origin));
     }
 
     const { error } = await supabase.auth.admin.deleteUser(
@@ -105,18 +73,7 @@ serve(async (req) => {
     );
 
     if (error) {
-      return new Response(
-        JSON.stringify({
-          error: error.message,
-        }),
-        {
-          status: 500,
-          headers: {
-            ...getCorsHeaders(origin),
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return handleError(new AppError(ErrorCodes.INTERNAL_ERROR, "Failed to delete user account", 500, error), getCorsHeaders(origin));
     }
 
     return new Response(
@@ -133,20 +90,6 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: {
-          ...getCorsHeaders(origin),
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return handleError(error, getCorsHeaders(origin));
   }
 });
