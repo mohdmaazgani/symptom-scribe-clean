@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { RequestSchema } from "./validation.ts";
 import { detectEmergencySymptoms } from "./medicalSafety.ts";
-import { rateLimit, getClientIp } from "../_shared/rateLimit.ts";
+import { rateLimit } from "../_shared/rateLimit.ts";
 import { jsonResponse } from "./utils.ts";
 
 const ALLOWED_ORIGINS = [
@@ -65,7 +65,8 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const ip = getClientIp(req);
+    const ip =
+      req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
 
     const rateLimitResult = await rateLimit(ip);
 
