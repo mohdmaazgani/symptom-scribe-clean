@@ -194,7 +194,8 @@
       "reminders": "Reminders",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings"
+      "settings": "Settings",
+      "sleepQuality": "Sleep Quality Log"
     },
     "themeOptions": {
       "light": "Light",

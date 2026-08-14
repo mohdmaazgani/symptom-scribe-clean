@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const menuItems = [
+  { title: "sidebar.items.sleepQuality", url: "/sleep-quality", icon: History },
   { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
   { titleKey: "sidebar.items.healthMetrics", url: "/metrics", icon: Activity },
