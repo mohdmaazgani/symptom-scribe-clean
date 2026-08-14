@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { syncOfflineData } from "@/lib/offline-db";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
+import EncryptionUnlockDialog from "@/components/auth/EncryptionUnlockDialog";
 import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import Layout from "./components/layout/Layout.tsx";
@@ -128,6 +129,9 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          {/* Shown whenever a session exists but the encryption seed is missing
+              (issue #1056) — the user must re-enter their password to unlock. */}
+          <EncryptionUnlockDialog />
           <BrowserRouter>
             <AuthProvider>
               <ScrollToTop />

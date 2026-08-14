@@ -68,7 +68,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         ROUND(AVG((value->>'value')::numeric), 2) AS avg_value,
         MIN((value->>'value')::numeric) AS min_value,
         MAX((value->>'value')::numeric) AS max_value,

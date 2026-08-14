@@ -69,6 +69,29 @@ export async function whenSearchReady(): Promise<CryptoKey> {
   return keys.searchKey;
 }
 
+// ─── Encryption lock state (issue #1056) ─────────────────────────────────────
+// When a session exists but no persisted master seed is available, keys must
+// NOT be derived from public material (the old `userId` fallback). Instead the
+// keys stay "locked" until the user re-enters their password. The app-level
+// unlock dialog subscribes via `subscribeEncryptionLock`.
+let encryptionLocked = false;
+let unlockInProgress = false;
+const encryptionLockListeners = new Set<(locked: boolean) => void>();
+
+export function subscribeEncryptionLock(listener: (locked: boolean) => void): () => void {
+  encryptionLockListeners.add(listener);
+  listener(encryptionLocked);
+  return () => {
+    encryptionLockListeners.delete(listener);
+  };
+}
+
+function setEncryptionLocked(locked: boolean) {
+  if (encryptionLocked === locked) return;
+  encryptionLocked = locked;
+  encryptionLockListeners.forEach((listener) => listener(locked));
+}
+
 // Helper functions for Hex conversion
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
@@ -372,6 +395,8 @@ export async function setupKeysFromPassword(password: string, email: string, use
   const newSearchKey = await deriveSearchKeyFromToken(seed, userId);
   setKeys(newKey, newSearchKey);
   lastToken = seed;
+  // Keys are now available — dismiss any "enter password to unlock" state.
+  setEncryptionLocked(false);
 }
 
 // Helper to trigger Key Rotation for components (like Settings page password change)
@@ -436,9 +461,149 @@ export async function rotateKeysToNewPassword(
   return true;
 }
 
+// ─── Legacy (pre-seed) data migration (issue #1056) ──────────────────────────
+// Accounts created before the master-seed mechanism wrote encrypted records
+// under a key derived from the (public) user id. Once the `userId` fallback is
+// removed, those records can only be recovered when the user proves their
+// password: we re-derive the legacy key, detect records still encrypted under
+// it, and rotate them onto the new seed-derived key via the existing
+// onTokenRefresh re-encryption machinery.
+
+type LegacyKeyProbe = (
+  legacyKey: CryptoKey,
+  legacySearchKey: CryptoKey
+) => Promise<boolean>;
+
+let legacyKeyProbeCallback: LegacyKeyProbe | null = null;
+
+/**
+ * Registers a callback (implemented in offline-db.ts, which owns the Dexie
+ * instance and the Supabase table access) that reports whether any encrypted
+ * records are still keyed by the pre-seed userId-derived key. Kept behind a
+ * registration hook so encryption.ts never imports the Dexie module directly
+ * (avoids a circular dependency).
+ */
+export function registerLegacyKeyProbe(probe: LegacyKeyProbe): void {
+  legacyKeyProbeCallback = probe;
+}
+
+export interface KeyUnlockResult {
+  ok: boolean;
+  migratedLegacy: boolean;
+  error?: string;
+}
+
+/**
+ * Unlocks the encryption keys for the current session using the user's
+ * password (issue #1056).
+ *
+ * Called by the app-level unlock dialog whenever a session exists but no
+ * master seed is persisted (see `handleSessionChange`). Steps:
+ * 1. Validates the password via Supabase re-auth — a wrong password must never
+ *    silently derive a wrong seed, which would strand the user's data.
+ * 2. Re-derives the pre-seed legacy keypair from the (public) user id and
+ *    probes for records still encrypted under it.
+ * 3. Persists the seed and activates the new seed-derived keys.
+ * 4. If legacy records exist, rotates them onto the new key (decrypt with the
+ *    legacy key, re-encrypt with the new key — local IndexedDB + server rows).
+ *
+ * @returns `{ ok, migratedLegacy }` — when `ok` is false, `error` holds a
+ *          user-facing message.
+ */
+export async function unlockEncryptionWithPassword(
+  password: string,
+  email?: string
+): Promise<KeyUnlockResult> {
+  if (unlockInProgress) {
+    return { ok: false, migratedLegacy: false, error: "An unlock is already in progress." };
+  }
+  // Set synchronously so the auth events fired by the re-auth call below (and
+  // any concurrent call) cannot re-enter or clobber this flow.
+  unlockInProgress = true;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id;
+    const userEmail = (email || user?.email || "").toLowerCase().trim();
+
+    if (!userId || !userEmail) {
+      return {
+        ok: false,
+        migratedLegacy: false,
+        error: "No active session with a recoverable email was found.",
+      };
+    }
+
+    // Keys already available (seed present + active keys) — nothing to unlock.
+    if (localStorage.getItem(SEED_KEY_PREFIX + userId) && getKey() && getSearchKey()) {
+      return { ok: true, migratedLegacy: false };
+    }
+
+    // 1. Validate the password. Same re-auth pattern as the Settings page.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: userEmail,
+      password,
+    });
+    if (signInError) {
+      // Accounts with two-factor authentication cannot complete the extra
+      // challenge from this dialog; point them to the normal sign-in flow.
+      if (signInError.code === "mfa_required" || /mfa|two.factor/i.test(signInError.message ?? "")) {
+        return {
+          ok: false,
+          migratedLegacy: false,
+          error:
+            "Two-factor authentication is enabled on this account. Sign out and sign in again to unlock your data.",
+        };
+      }
+      return { ok: false, migratedLegacy: false, error: signInError.message };
+    }
+
+    // 2. Legacy (pre-seed) keypair — deterministic from the user id + salt.
+    const legacyKey = await deriveKeyFromToken(userId, userId);
+    const legacySearchKey = await deriveSearchKeyFromToken(userId, userId);
+    const hasLegacyData = legacyKeyProbeCallback
+      ? await legacyKeyProbeCallback(legacyKey, legacySearchKey)
+      : false;
+
+    // 3. Persist the seed and activate the new seed-derived keys.
+    await setupKeysFromPassword(password, userEmail, userId);
+
+    // 4. Migrate any pre-seed records onto the new seed-derived key.
+    if (hasLegacyData) {
+      const newKey = getKey();
+      const newSearchKey = getSearchKey();
+      if (newKey && newSearchKey) {
+        await triggerKeyRotation(legacyKey, newKey, legacySearchKey, newSearchKey);
+        return { ok: true, migratedLegacy: true };
+      }
+    }
+
+    return { ok: true, migratedLegacy: false };
+  } catch (err) {
+    console.error("Failed to unlock encryption keys:", err);
+    return {
+      ok: false,
+      migratedLegacy: false,
+      error: "Failed to unlock your data. Please try again.",
+    };
+  } finally {
+    unlockInProgress = false;
+  }
+}
+
 async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
+
+  // A different user took over the session (e.g. account switch without a full
+  // sign-out): the active keys belong to the previous user and must not be
+  // reused for this one.
+  if (lastKnownUserId && lastKnownUserId !== userId) {
+    clearPersistedKeyMaterial(lastKnownUserId);
+    setKeys(null, null);
+    lastToken = null;
+  }
 
   lastKnownUserId = userId;
 
@@ -493,24 +658,40 @@ async function handleSessionChange(session: Session) {
     console.error("Failed to sync encryption salt from profiles:", saltErr);
   }
 
-  // Derive persistent master key from stored seed (or stable userId fallback)
+  // Derive the persistent master key from the stored seed.
   //
   // `storedSeed` is the value persisted by `setupKeysFromPassword` (see the
   // "Persisted Master Seed" note above) — reading it here is what lets the
   // app re-derive the same encryption/search keys after a refresh without
   // re-prompting for the password.
   //
-  // Note on the fallback: if no seed has been persisted for this user yet
-  // (`storedSeed` is null/undefined), `masterSeed` falls back to the raw
-  // `userId`. This keeps the app functional (e.g. first load before
-  // `setupKeysFromPassword` has run, or for accounts created before this
-  // seed mechanism existed) but derives a *weaker*, non-secret-based key,
-  // since `userId` is not a secret. This fallback is intentionally left as
-  // -is in this PR — flagging it here for anyone evaluating persistence
-  // hardening, since removing or changing it changes what key existing
-  // encrypted data was written under.
+  // Issue #1056: when no seed is persisted the app must NOT fall back to
+  // deriving keys from the public `userId` (the old behavior). Anyone who
+  // knows the user id plus the per-user salt (both public — the salt is
+  // synced to the profile and auth metadata) could re-derive the key and
+  // decrypt records written under it. Instead the keys stay locked until the
+  // user re-enters their password (see `unlockEncryptionWithPassword`), which
+  // re-derives and persists the seed. Pre-seed records encrypted under the
+  // legacy userId-derived key are migrated onto the new key during unlock.
   const storedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
-  const masterSeed = storedSeed || userId;
+
+  if (!storedSeed) {
+    // While `unlockEncryptionWithPassword` runs, the re-auth call it makes
+    // fires auth events that reach this handler — do not clobber the keys
+    // that flow is about to set.
+    if (unlockInProgress) return;
+    // Normal sign-in derives and persists the seed immediately after signing
+    // in, so this handler may resume after the keys are already active;
+    // leave them in place.
+    if (getKey() && getSearchKey()) return;
+
+    setKeys(null, null);
+    lastToken = null;
+    setEncryptionLocked(true);
+    return;
+  }
+
+  const masterSeed = storedSeed;
 
   if (masterSeed === lastToken && getKey()) return;
 
@@ -569,6 +750,8 @@ async function handleSessionClear() {
   lastKnownUserId = null;
   setKeys(null, null);
   lastToken = null;
+  // No session → no lock prompt needed.
+  setEncryptionLocked(false);
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
