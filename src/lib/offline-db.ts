@@ -6,7 +6,6 @@ import {
   decryptText,
   whenEncryptionReady,
   registerEncryptionHooks,
-  registerLegacyKeyProbe,
   registerP2PKeyStorage,
   getSearchKey,
   generateSearchTokens,
@@ -331,50 +330,28 @@ registerEncryptionHooks({
     }
   },
   onTokenRefresh: async (oldKey, newKey, oldSearchKey, newSearchKey) => {
-    // Local IndexedDB records. Each record is decrypted with the old key and
-    // re-encrypted with the new key. Records that do not decrypt with the old
-    // key (e.g. written under a key this device never had) are skipped with a
-    // warning instead of failing the whole migration — a rotation must never
-    // destroy local data.
-    let reEncrypted = 0;
-    let skipped = 0;
-
-    const metrics = await db.healthMetrics.toArray();
-    for (const record of metrics) {
-      try {
+    try {
+      const metrics = await db.healthMetrics.toArray();
+      for (const record of metrics) {
         const decrypted = await decryptMetric(record, oldKey);
         const encrypted = await encryptMetric(decrypted, newKey, newSearchKey);
         await db.healthMetrics.put(encrypted);
-        reEncrypted++;
-      } catch (err) {
-        skipped++;
-        console.warn(
-          `Skipping health_metrics record ${record.id} (cannot decrypt with old key):`,
-          err
-        );
       }
-    }
 
-    const symptoms = await db.symptomHistory.toArray();
-    for (const record of symptoms) {
-      try {
+      const symptoms = await db.symptomHistory.toArray();
+      for (const record of symptoms) {
         const decrypted = await decryptSymptom(record, oldKey);
         const encrypted = await encryptSymptom(decrypted, newKey, newSearchKey);
         await db.symptomHistory.put(encrypted);
-        reEncrypted++;
-      } catch (err) {
-        skipped++;
-        console.warn(
-          `Skipping symptom_history record ${record.id} (cannot decrypt with old key):`,
-          err
-        );
       }
-    }
-
-    if (skipped > 0) {
-      console.warn(
-        `Local re-encryption finished: ${reEncrypted} re-encrypted, ${skipped} skipped.`
-      );
+    } catch (err) {
+      console.error("Error migrating offline database on token rotation, clearing tables:", err);
+      try {
+        await db.healthMetrics.clear();
+        await db.symptomHistory.clear();
+      } catch (clearErr) {
+        console.error("Failed to clear database after migration failure:", clearErr);
+      }
     }
 
     // Also re-encrypt server-side rows so the Supabase copies stay decryptable
@@ -385,106 +362,6 @@ registerEncryptionHooks({
       console.error("Failed to re-encrypt server-side data after key rotation:", err);
     }
   },
-});
-
-// ─── Legacy (pre-seed) key probe (issue #1056) ───────────────────────────────
-// During an unlock (see encryption.ts `unlockEncryptionWithPassword`) the app
-// re-derives the pre-seed userId-based key and asks whether any records are
-// still encrypted under it. If so, they are migrated onto the new seed-derived
-// key so accounts created before the seed mechanism do not lose access.
-registerLegacyKeyProbe(async (legacyKey) => {
-  // Only records carrying an `enc:` payload can attest to a key. Plaintext
-  // records (pre-encryption era) decrypt "successfully" under any key, which
-  // would false-positive the probe and trigger a pointless rotation.
-  const hasEncryptedContent = (record: OfflineMetric | OfflineSymptom): boolean => {
-    if ("value" in record) {
-      return (
-        (typeof record.value === "string" && record.value.startsWith("enc:json:")) ||
-        (record.notes ?? "").startsWith("enc:str:")
-      );
-    }
-    return (
-      (record.symptoms ?? "").startsWith("enc:str:") ||
-      (record.ai_analysis ?? "").startsWith("enc:str:") ||
-      (record.possible_causes?.[0] ?? "").startsWith("enc:json:") ||
-      (record.recommendations?.[0] ?? "").startsWith("enc:json:")
-    );
-  };
-
-  // Returns true as soon as any encrypted record decrypts with the legacy key;
-  // records that fail AES-GCM authentication (written under a different key)
-  // are skipped silently.
-  const decryptsWithLegacyKey = async <T extends OfflineMetric | OfflineSymptom>(
-    records: T[],
-    decrypt: (record: T) => Promise<unknown>
-  ): Promise<boolean> => {
-    for (const record of records) {
-      if (!hasEncryptedContent(record)) continue;
-      try {
-        await decrypt(record);
-        return true;
-      } catch {
-        // Wrong key (or unreadable) — try the next record.
-      }
-    }
-    return false;
-  };
-
-  // 1. Local IndexedDB records.
-  try {
-    const metrics = await db.healthMetrics.toArray();
-    if (await decryptsWithLegacyKey(metrics, (r) => decryptMetric(r, legacyKey))) {
-      return true;
-    }
-  } catch (err) {
-    console.warn("Failed to probe local health metrics for legacy key:", err);
-  }
-  try {
-    const symptoms = await db.symptomHistory.toArray();
-    if (await decryptsWithLegacyKey(symptoms, (r) => decryptSymptom(r, legacyKey))) {
-      return true;
-    }
-  } catch (err) {
-    console.warn("Failed to probe local symptom history for legacy key:", err);
-  }
-
-  // 2. Server-side rows.
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: metricRows } = await supabase
-        .from("health_metrics")
-        .select("value, notes")
-        .eq("user_id", user.id);
-      if (
-        metricRows &&
-        (await decryptsWithLegacyKey(metricRows as OfflineMetric[], (r) =>
-          decryptMetric(r, legacyKey)
-        ))
-      ) {
-        return true;
-      }
-
-      const { data: symptomRows } = await supabase
-        .from("symptom_history")
-        .select("symptoms, ai_analysis, possible_causes, recommendations")
-        .eq("user_id", user.id);
-      if (
-        symptomRows &&
-        (await decryptsWithLegacyKey(symptomRows as OfflineSymptom[], (r) =>
-          decryptSymptom(r, legacyKey)
-        ))
-      ) {
-        return true;
-      }
-    }
-  } catch (err) {
-    console.warn("Failed to probe server records for legacy key:", err);
-  }
-
-  return false;
 });
 
 // ─── P2P signing-key persistence (issue #1085) ───────────────────────────────
