@@ -20,6 +20,7 @@ import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
 // Lazy-loaded pages
+const HearingHealth = lazy(() => import("@/pages/HearingHealth"));
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
 const Auth = lazy(() => import("./pages/Auth/index.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));

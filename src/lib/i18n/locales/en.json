@@ -194,7 +194,8 @@
       "reminders": "Reminders",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings"
+      "settings": "Settings",
+      "hearingHealth": "Hearing Health Monitor"
     },
     "themeOptions": {
       "light": "Light",
