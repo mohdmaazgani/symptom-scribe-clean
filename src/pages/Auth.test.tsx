@@ -319,7 +319,59 @@ describe("Auth", () => {
     authStateChangeHolder.current?.("SIGNED_IN", { user: { id: "user-1" } });
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
+    });
+  });
+
+  // 14. Successful sign-in navigates directly — key setup (seed persisted)
+  //     completes before the redirect, so the dashboard never mounts with
+  //     pending encryption state (issue #1192).
+  it("navigates directly to /dashboard after a successful sign-in", async () => {
+    const user = userEvent.setup();
+    (supabase.auth.signInWithPassword as Mock).mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
+
+    render(<Auth />);
+
+    await user.type(screen.getByLabelText("Email"), "user@example.com");
+    await user.type(screen.getByLabelText("Password"), "correct-password");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
+    });
+  });
+
+  // 15. The auth-event listener defers its navigation while a password
+  //     sign-in is in flight, so it cannot double-navigate.
+  it("does not navigate from the auth event while a sign-in is in progress", async () => {
+    const user = userEvent.setup();
+    let resolveSignIn: (value: unknown) => void = () => {};
+    (supabase.auth.signInWithPassword as Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSignIn = resolve;
+      })
+    );
+
+    render(<Auth />);
+
+    await user.type(screen.getByLabelText("Email"), "user@example.com");
+    await user.type(screen.getByLabelText("Password"), "correct-password");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    // Simulate the SIGNED_IN event arriving while the flow is in progress.
+    authStateChangeHolder.current?.("SIGNED_IN", { user: { id: "user-1" } });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    // Complete the sign-in; the handler performs exactly one navigation.
+    resolveSignIn({ data: { user: { id: "user-1" } }, error: null });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
     });
   });
 

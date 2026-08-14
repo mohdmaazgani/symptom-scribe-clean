@@ -18,6 +18,7 @@ import CardSkeleton from "@/components/ui/CardSkeleton";
 import { WeeklyHealthScoreCard } from "@/components/dashboard/WeeklyHealthScoreCard";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/common/EmptyState";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface Stats {
   totalSymptoms: number;
@@ -159,6 +160,7 @@ const RadialWellnessGauge = ({ score }: { score: number }) => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const { t } = useTranslation();
   const [stats, setStats] = useState<Stats>({
     totalSymptoms: 0,
@@ -169,7 +171,10 @@ const Dashboard = () => {
   const [recentHistory, setRecentHistory] = useState<SymptomHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("User");
-  const [userId, setUserId] = useState<string | null>(null);
+  // The session is guaranteed by ProtectedRoute, so the user id is available
+  // synchronously — no extra auth round trip (and no empty-dashboard flash
+  // while a second getUser() call resolves) is needed.
+  const [userId, setUserId] = useState<string | null>(session?.user?.id ?? null);
   const [symptoms, setSymptoms] = useState<OfflineSymptom[]>([]);
   const [decryptedSymptomsList, setDecryptedSymptomsList] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -180,18 +185,16 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+      // ProtectedRoute redirects unauthenticated users to /auth; this is a
+      // defensive no-op so the dashboard never renders an empty shell.
+      if (!userId) {
         setLoading(false);
         return;
       }
-      setUserId(user.id);
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (profile?.full_name) {
@@ -211,7 +214,7 @@ const Dashboard = () => {
 
 
 
-      const { data: rawSymptoms, source } = await fetchSymptomHistory(user.id);
+      const { data: rawSymptoms, source } = await fetchSymptomHistory(userId);
 
       if (rawSymptoms && rawSymptoms.length > 0) {
         const key = await whenEncryptionReady();
