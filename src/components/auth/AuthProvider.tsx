@@ -32,26 +32,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     let isMounted = true;
 
-    const initializeAuth = async () => {
-      // Get initial session
-      const { data, error } = await supabase.auth.getSession();
-
-      if (!isMounted) return;
-
-      if (error) {
-        console.warn("Failed to get initial session:", error);
-      } else {
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-      }
-
-      setLoading(false);
-      setInitialized(true);
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
+    // Subscribe to auth events BEFORE resolving the initial session so no
+    // event (INITIAL_SESSION / SIGNED_IN / ...) can be missed while the
+    // snapshot is being loaded. The listener is the single source of truth
+    // for the session state; relying on a getSession() snapshot alone can
+    // leave the provider with a stale (null) session right after sign-in,
+    // which bounces ProtectedRoute back to /auth (issue #1192).
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -60,6 +46,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+      setInitialized(true);
+    });
+
+    // Fallback for the edge case where the initial event has not been
+    // delivered yet (e.g. a session restored from storage). Publishes the
+    // persisted session so `loading` resolves promptly, and never writes a
+    // stale `null` over state the listener has already published.
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted || !data.session) return;
+
+      setSession(data.session);
+      setUser(data.session.user ?? null);
+      setLoading(false);
+      setInitialized(true);
     });
 
     return () => {
