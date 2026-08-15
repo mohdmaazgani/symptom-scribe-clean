@@ -15,7 +15,7 @@ import {
   PanelLeftClose,
   Check,
   Bell,
-} from "lucide-react";
+, HeartPulse } from "lucide-react";
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const menuItems = [
+  { title: "sidebar.items.heartRateMonitor", url: "/heart-rate-monitor", icon: HeartPulse },
   { title: "sidebar.items.digestiveTracker", url: "/digestive-tracker", icon: Activity },
   { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },

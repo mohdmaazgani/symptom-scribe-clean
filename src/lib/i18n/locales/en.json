@@ -195,7 +195,8 @@
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
       "settings": "Settings",
-      "digestiveTracker": "Digestive Tracker"
+      "digestiveTracker": "Digestive Tracker",
+      "heartRateMonitor": "Heart Rate Monitor"
     },
     "themeOptions": {
       "light": "Light",
