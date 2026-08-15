@@ -195,7 +195,8 @@
       "brainGames": "బ్రెయిన్ గేమ్స్",
       "healthFacts": "ఆరోగ్య వాస్తవాలు",
       "settings": "సెట్టింగ్‌లు",
-      "digestiveTracker": "జీర్ణక్రియ ట్రాకర్"
+      "digestiveTracker": "జీర్ణక్రియ ట్రాకర్",
+      "oxygenSaturation": "SpO2 మానిటర్"
     },
     "themeOptions": {
       "light": "లైట్",
