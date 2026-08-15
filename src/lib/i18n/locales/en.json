@@ -195,7 +195,8 @@
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
       "settings": "Settings",
-      "digestiveTracker": "Digestive Tracker"
+      "digestiveTracker": "Digestive Tracker",
+      "periodTracker": "Cycle Tracker"
     },
     "themeOptions": {
       "light": "Light",
