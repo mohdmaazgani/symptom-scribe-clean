@@ -15,6 +15,7 @@ import {
   PanelLeftClose,
   Check,
   Bell,
+  Droplet,
 } from "lucide-react";
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -54,6 +55,7 @@ const menuItems = [
   { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
   { titleKey: "sidebar.items.healthMetrics", url: "/metrics", icon: Activity },
+  { titleKey: "sidebar.items.hydrationTracker", url: "/hydration", icon: Droplet },
   { titleKey: "sidebar.items.history", url: "/history", icon: History },
   { titleKey: "sidebar.items.challenges", url: "/gamification", icon: Trophy },
   { titleKey: "sidebar.items.profile", url: "/profile", icon: User },
