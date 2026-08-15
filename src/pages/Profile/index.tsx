@@ -63,13 +63,12 @@ const Profile = () => {
         const decryptedEmergencyPhone = await decryptProfileField(data.emergency_contact_phone, key);
         const decryptedAllergies = await decryptProfileArray(data.allergies, key);
         const decryptedChronicConditions = await decryptProfileArray(data.chronic_conditions, key);
-        const decryptedBloodType = await decryptProfileField(data.blood_type, key);
 
         setProfile({
           full_name: decryptedFullName,
           date_of_birth: decryptedDob,
           gender: data.gender || "",
-          blood_type: decryptedBloodType || "",
+          blood_type: data.blood_type || "",
           allergies: decryptedAllergies,
           chronic_conditions: decryptedChronicConditions,
           emergency_contact_name: decryptedEmergencyName,
@@ -168,14 +167,13 @@ if (!profile.blood_type) {
       const encryptedEmergencyPhone = await encryptProfileField(profile.emergency_contact_phone, key);
       const encryptedAllergies = await encryptProfileArray(allergiesArray, key);
       const encryptedChronicConditions = await encryptProfileArray(conditionsArray, key);
-      const encryptedBloodType = await encryptProfileField(profile.blood_type, key);
 
       const profileData = {
         user_id: user.id,
         full_name: encryptedFullName,
         date_of_birth: encryptedDob,
         gender: profile.gender || null,
-        blood_type: encryptedBloodType,
+        blood_type: profile.blood_type || null,
         allergies: encryptedAllergies,
         chronic_conditions: encryptedChronicConditions,
         emergency_contact_name: encryptedEmergencyName,
