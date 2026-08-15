@@ -14,6 +14,7 @@ import {
   Palette,
   PanelLeftClose,
   Check,
+  Bell,
 } from "lucide-react";
 
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -50,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const menuItems = [
+  { title: "sidebar.items.digestiveTracker", url: "/digestive-tracker", icon: Activity },
   { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
   { titleKey: "sidebar.items.healthMetrics", url: "/metrics", icon: Activity },
@@ -57,6 +59,7 @@ const menuItems = [
   { titleKey: "sidebar.items.challenges", url: "/gamification", icon: Trophy },
   { titleKey: "sidebar.items.profile", url: "/profile", icon: User },
   { titleKey: "sidebar.items.emergency", url: "/emergency", icon: Phone },
+  { titleKey: "sidebar.items.reminders", url: "/reminders", icon: Bell },
   { titleKey: "sidebar.items.brainGames", url: "/brain-games", icon: Brain },
   { titleKey: "sidebar.items.healthFacts", url: "/health-facts", icon: Sparkles },
   { titleKey: "sidebar.items.settings", url: "/settings", icon: Settings },

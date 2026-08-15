@@ -191,9 +191,11 @@
       "challenges": "సవాళ్లు",
       "profile": "ప్రొఫైల్",
       "emergency": "అత్యవసరం",
+      "reminders": "రిమైండర్‌లు",
       "brainGames": "బ్రెయిన్ గేమ్స్",
       "healthFacts": "ఆరోగ్య వాస్తవాలు",
-      "settings": "సెట్టింగ్‌లు"
+      "settings": "సెట్టింగ్‌లు",
+      "digestiveTracker": "జీర్ణక్రియ ట్రాకర్"
     },
     "themeOptions": {
       "light": "లైట్",

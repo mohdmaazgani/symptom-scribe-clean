@@ -223,12 +223,12 @@ class MeshNetworkManager {
       return; // Already processed, avoid infinite loop
     }
 
-    // Save to local IndexedDB
+    // Save to local IndexedDB — always queue until relay succeeds
     const localAlert: MeshAlert = {
       ...alert,
       publicKeyJwk,
       signature,
-      pending_sync: this.isOnline() ? 0 : 1, // Need to sync if currently offline
+      pending_sync: 1,
     };
 
     await db.pendingEmergencyMesh.put(localAlert);
@@ -243,7 +243,7 @@ class MeshNetworkManager {
 
     // If we are online, act as a gateway and immediately relay it!
     if (this.isOnline()) {
-      this.relayAlert(localAlert);
+      await this.relayAlert(localAlert);
     }
   }
 
@@ -299,7 +299,8 @@ class MeshNetworkManager {
     const fullAlert: MeshAlert = {
       ...alert,
       signature,
-      pending_sync: this.isOnline() ? 0 : 1,
+      // Stay queued until relayAlert confirms success
+      pending_sync: 1,
     };
 
     // Store in our own local Dexie table
@@ -327,7 +328,7 @@ class MeshNetworkManager {
 
     // If online, send directly to Edge Function
     if (this.isOnline()) {
-      this.relayAlert(fullAlert);
+      await this.relayAlert(fullAlert);
     }
 
     return fullAlert;
@@ -369,6 +370,8 @@ class MeshNetworkManager {
       window.dispatchEvent(event);
     } catch (err) {
       console.error(`Mesh Gateway: Failed to relay alert ${alert.id}:`, err);
+      // Keep pending_sync === 1 so syncMeshAlerts can retry
+      await db.pendingEmergencyMesh.update(alert.id, { pending_sync: 1 });
     }
   }
 

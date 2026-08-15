@@ -106,6 +106,7 @@ The goal is to make healthcare monitoring more accessible, engaging, and persona
 | Deployment      | Netlify                   |
 | Version Control | Git & GitHub              |
 
+[![CI](https://github.com/mohdmaazgani/symptom-scribe-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/mohdmaazgani/symptom-scribe-clean/actions/workflows/ci.yml)
 ---
 
 # 📸 Screenshots
@@ -307,7 +308,7 @@ symptom-scribe-clean/
 │   │   │   └── Index.tsx                             # Authentication page
 │   │   ├── Blog/
 │   │   │   ├── BlogPostPage.tsx                      # Blog details
-│   │   │   └── Index.tsx                             # Blog listin
+│   │   │   └── Index.tsx                             # Blog listing
 │   │   ├── Chat/
 │   │   │   └── Index.tsx                             # Chat page
 │   │   ├── Contact/
@@ -647,7 +648,7 @@ Play brain-training games.
 For detailed troubleshooting instructions, see:
 
 ```text
-TROUBLESHOOTING.md
+TROUBLESHOOT.md
 ```
 
 Common issues include:

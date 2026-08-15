@@ -2,6 +2,10 @@ import { useUserBadges } from "@/hooks/useGamification";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award } from "lucide-react";
 
+// BadgeDisplay intentionally takes no props: it fetches the current user's
+// badges itself via useUserBadges(), so it can be rendered standalone (e.g.
+// the Gamification page's "badges" tab) without the parent managing badge
+// state.
 export default function BadgeDisplay() {
   const { data: userBadges, isLoading } = useUserBadges();
 

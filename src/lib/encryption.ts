@@ -4,6 +4,8 @@ import type { Session } from "@supabase/supabase-js";
 let activeKey: CryptoKey | null = null;
 let activeSearchKey: CryptoKey | null = null;
 let lastToken: string | null = null;
+/** Last authenticated user id — needed on logout because getUser() is empty after sign-out. */
+let lastKnownUserId: string | null = null;
 
 let readyPromise: Promise<{ encryptionKey: CryptoKey; searchKey: CryptoKey }> | null = null;
 let readyResolver: ((keys: { encryptionKey: CryptoKey; searchKey: CryptoKey }) => void) | null =
@@ -88,6 +90,29 @@ export async function whenSearchReady(): Promise<CryptoKey> {
   return keys.searchKey;
 }
 
+// ─── Encryption lock state (issue #1056) ─────────────────────────────────────
+// When a session exists but no persisted master seed is available, keys must
+// NOT be derived from public material (the old `userId` fallback). Instead the
+// keys stay "locked" until the user re-enters their password. The app-level
+// unlock dialog subscribes via `subscribeEncryptionLock`.
+let encryptionLocked = false;
+let unlockInProgress = false;
+const encryptionLockListeners = new Set<(locked: boolean) => void>();
+
+export function subscribeEncryptionLock(listener: (locked: boolean) => void): () => void {
+  encryptionLockListeners.add(listener);
+  listener(encryptionLocked);
+  return () => {
+    encryptionLockListeners.delete(listener);
+  };
+}
+
+function setEncryptionLocked(locked: boolean) {
+  if (encryptionLocked === locked) return;
+  encryptionLocked = locked;
+  encryptionLockListeners.forEach((listener) => listener(locked));
+}
+
 // Helper functions for Hex conversion
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
@@ -161,10 +186,14 @@ export async function deriveKeyFromToken(token: string, userId?: string): Promis
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-offline-salt");
 
+  // `salt` is always a Uint8Array at runtime (getUserSalt() or TextEncoder).
+  // The cast only reconciles TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion happens, and
+  // none is needed.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -194,10 +223,13 @@ export async function deriveSearchKeyFromToken(token: string, userId?: string): 
     ? getUserSalt(userId)
     : encoder.encode("symptom-scribe-search-salt");
 
+  // Same as deriveKeyFromToken: `salt` is always a Uint8Array at runtime; the
+  // cast only satisfies the TS Uint8Array<ArrayBufferLike> vs BufferSource
+  // typing gap.
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -273,13 +305,17 @@ export async function decryptText(encryptedText: string, key: CryptoKey): Promis
   const iv = hexToUint8Array(ivHex);
   const ciphertext = hexToUint8Array(ciphertextHex);
 
+  // `iv`/`ciphertext` are Uint8Arrays decoded from the hex `ivHex:cipherHex`
+  // format produced by encryptText(), so they are always byte arrays at
+  // runtime. The casts only reconcile TS 5.7's generic Uint8Array<ArrayBufferLike>
+  // typing with WebCrypto's BufferSource — no runtime conversion is needed.
   const decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
-      iv: iv,
+      iv: iv as BufferSource,
     },
     key,
-    ciphertext
+    ciphertext as BufferSource
   );
 
   const decoder = new TextDecoder();
@@ -380,6 +416,8 @@ export async function setupKeysFromPassword(password: string, email: string, use
   const newSearchKey = await deriveSearchKeyFromToken(seed, userId);
   setKeys(newKey, newSearchKey);
   lastToken = seed;
+  // Keys are now available — dismiss any "enter password to unlock" state.
+  setEncryptionLocked(false);
 }
 
 // Helper to trigger Key Rotation for components (like Settings page password change)
@@ -444,9 +482,151 @@ export async function rotateKeysToNewPassword(
   return true;
 }
 
+// ─── Legacy (pre-seed) data migration (issue #1056) ──────────────────────────
+// Accounts created before the master-seed mechanism wrote encrypted records
+// under a key derived from the (public) user id. Once the `userId` fallback is
+// removed, those records can only be recovered when the user proves their
+// password: we re-derive the legacy key, detect records still encrypted under
+// it, and rotate them onto the new seed-derived key via the existing
+// onTokenRefresh re-encryption machinery.
+
+type LegacyKeyProbe = (
+  legacyKey: CryptoKey,
+  legacySearchKey: CryptoKey
+) => Promise<boolean>;
+
+let legacyKeyProbeCallback: LegacyKeyProbe | null = null;
+
+/**
+ * Registers a callback (implemented in offline-db.ts, which owns the Dexie
+ * instance and the Supabase table access) that reports whether any encrypted
+ * records are still keyed by the pre-seed userId-derived key. Kept behind a
+ * registration hook so encryption.ts never imports the Dexie module directly
+ * (avoids a circular dependency).
+ */
+export function registerLegacyKeyProbe(probe: LegacyKeyProbe): void {
+  legacyKeyProbeCallback = probe;
+}
+
+export interface KeyUnlockResult {
+  ok: boolean;
+  migratedLegacy: boolean;
+  error?: string;
+}
+
+/**
+ * Unlocks the encryption keys for the current session using the user's
+ * password (issue #1056).
+ *
+ * Called by the app-level unlock dialog whenever a session exists but no
+ * master seed is persisted (see `handleSessionChange`). Steps:
+ * 1. Validates the password via Supabase re-auth — a wrong password must never
+ *    silently derive a wrong seed, which would strand the user's data.
+ * 2. Re-derives the pre-seed legacy keypair from the (public) user id and
+ *    probes for records still encrypted under it.
+ * 3. Persists the seed and activates the new seed-derived keys.
+ * 4. If legacy records exist, rotates them onto the new key (decrypt with the
+ *    legacy key, re-encrypt with the new key — local IndexedDB + server rows).
+ *
+ * @returns `{ ok, migratedLegacy }` — when `ok` is false, `error` holds a
+ *          user-facing message.
+ */
+export async function unlockEncryptionWithPassword(
+  password: string,
+  email?: string
+): Promise<KeyUnlockResult> {
+  if (unlockInProgress) {
+    return { ok: false, migratedLegacy: false, error: "An unlock is already in progress." };
+  }
+  // Set synchronously so the auth events fired by the re-auth call below (and
+  // any concurrent call) cannot re-enter or clobber this flow.
+  unlockInProgress = true;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id;
+    const userEmail = (email || user?.email || "").toLowerCase().trim();
+
+    if (!userId || !userEmail) {
+      return {
+        ok: false,
+        migratedLegacy: false,
+        error: "No active session with a recoverable email was found.",
+      };
+    }
+
+    // Keys already available (seed present + active keys) — nothing to unlock.
+    if (localStorage.getItem(SEED_KEY_PREFIX + userId) && getKey() && getSearchKey()) {
+      return { ok: true, migratedLegacy: false };
+    }
+
+    // 1. Validate the password. Same re-auth pattern as the Settings page.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: userEmail,
+      password,
+    });
+    if (signInError) {
+      // Accounts with two-factor authentication cannot complete the extra
+      // challenge from this dialog; point them to the normal sign-in flow.
+      if (signInError.code === "mfa_required" || /mfa|two.factor/i.test(signInError.message ?? "")) {
+        return {
+          ok: false,
+          migratedLegacy: false,
+          error:
+            "Two-factor authentication is enabled on this account. Sign out and sign in again to unlock your data.",
+        };
+      }
+      return { ok: false, migratedLegacy: false, error: signInError.message };
+    }
+
+    // 2. Legacy (pre-seed) keypair — deterministic from the user id + salt.
+    const legacyKey = await deriveKeyFromToken(userId, userId);
+    const legacySearchKey = await deriveSearchKeyFromToken(userId, userId);
+    const hasLegacyData = legacyKeyProbeCallback
+      ? await legacyKeyProbeCallback(legacyKey, legacySearchKey)
+      : false;
+
+    // 3. Persist the seed and activate the new seed-derived keys.
+    await setupKeysFromPassword(password, userEmail, userId);
+
+    // 4. Migrate any pre-seed records onto the new seed-derived key.
+    if (hasLegacyData) {
+      const newKey = getKey();
+      const newSearchKey = getSearchKey();
+      if (newKey && newSearchKey) {
+        await triggerKeyRotation(legacyKey, newKey, legacySearchKey, newSearchKey);
+        return { ok: true, migratedLegacy: true };
+      }
+    }
+
+    return { ok: true, migratedLegacy: false };
+  } catch (err) {
+    console.error("Failed to unlock encryption keys:", err);
+    return {
+      ok: false,
+      migratedLegacy: false,
+      error: "Failed to unlock your data. Please try again.",
+    };
+  } finally {
+    unlockInProgress = false;
+  }
+}
+
 async function handleSessionChange(session: Session) {
   const userId = session.user?.id;
   if (!userId) return;
+
+  // A different user took over the session (e.g. account switch without a full
+  // sign-out): the active keys belong to the previous user and must not be
+  // reused for this one.
+  if (lastKnownUserId && lastKnownUserId !== userId) {
+    clearPersistedKeyMaterial(lastKnownUserId);
+    setKeys(null, null);
+    lastToken = null;
+  }
+
+  lastKnownUserId = userId;
 
   const token = session.access_token;
   if (!token) return;
@@ -499,24 +679,40 @@ async function handleSessionChange(session: Session) {
     console.error("Failed to sync encryption salt from profiles:", saltErr);
   }
 
-  // Derive persistent master key from stored seed (or stable userId fallback)
+  // Derive the persistent master key from the stored seed.
   //
   // `storedSeed` is the value persisted by `setupKeysFromPassword` (see the
   // "Persisted Master Seed" note above) — reading it here is what lets the
   // app re-derive the same encryption/search keys after a refresh without
   // re-prompting for the password.
   //
-  // Note on the fallback: if no seed has been persisted for this user yet
-  // (`storedSeed` is null/undefined), `masterSeed` falls back to the raw
-  // `userId`. This keeps the app functional (e.g. first load before
-  // `setupKeysFromPassword` has run, or for accounts created before this
-  // seed mechanism existed) but derives a *weaker*, non-secret-based key,
-  // since `userId` is not a secret. This fallback is intentionally left as
-  // -is in this PR — flagging it here for anyone evaluating persistence
-  // hardening, since removing or changing it changes what key existing
-  // encrypted data was written under.
+  // Issue #1056: when no seed is persisted the app must NOT fall back to
+  // deriving keys from the public `userId` (the old behavior). Anyone who
+  // knows the user id plus the per-user salt (both public — the salt is
+  // synced to the profile and auth metadata) could re-derive the key and
+  // decrypt records written under it. Instead the keys stay locked until the
+  // user re-enters their password (see `unlockEncryptionWithPassword`), which
+  // re-derives and persists the seed. Pre-seed records encrypted under the
+  // legacy userId-derived key are migrated onto the new key during unlock.
   const storedSeed = localStorage.getItem(SEED_KEY_PREFIX + userId);
-  const masterSeed = storedSeed || userId;
+
+  if (!storedSeed) {
+    // While `unlockEncryptionWithPassword` runs, the re-auth call it makes
+    // fires auth events that reach this handler — do not clobber the keys
+    // that flow is about to set.
+    if (unlockInProgress) return;
+    // Normal sign-in derives and persists the seed immediately after signing
+    // in, so this handler may resume after the keys are already active;
+    // leave them in place.
+    if (getKey() && getSearchKey()) return;
+
+    setKeys(null, null);
+    lastToken = null;
+    setEncryptionLocked(true);
+    return;
+  }
+
+  const masterSeed = storedSeed;
 
   if (masterSeed === lastToken && getKey()) return;
 
@@ -543,23 +739,40 @@ async function handleSessionChange(session: Session) {
   }
 }
 
+function clearPersistedKeyMaterial(userId: string) {
+  clearUserSalt(userId);
+  localStorage.removeItem(SEED_KEY_PREFIX + userId);
+}
+
 async function handleSessionClear() {
   // Clear user-specific data on logout.
   //
-  // This removes the locally cached salt and master seed so that no key
-  // material can be re-derived from this browser/device without the user
-  // authenticating again. Note the salt is recoverable on next login (it's
-  // also stored in the user's Supabase profile, see the sync logic in
-  // `handleSessionChange` above); the seed is not persisted anywhere except
-  // the current device, so it is re-derived from the password on next login.
+  // Prefer lastKnownUserId: by the time onAuthStateChange fires with
+  // session === null, supabase.auth.getUser() no longer returns the user,
+  // so gating the wipe on getUser() left seed/salt in localStorage.
   const { data: { user } } = await supabase.auth.getUser();
-  if (user?.id) {
-    clearUserSalt(user.id);
-    localStorage.removeItem(SEED_KEY_PREFIX + user.id);
+  const userId = lastKnownUserId || user?.id || null;
+
+  if (userId) {
+    clearPersistedKeyMaterial(userId);
+  } else {
+    // Belt-and-suspenders: wipe any leftover seed/salt keys if we lost the id.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith(SEED_KEY_PREFIX) || key.startsWith(SALT_KEY_PREFIX))
+      ) {
+        localStorage.removeItem(key);
+      }
+    }
   }
 
+  lastKnownUserId = null;
   setKeys(null, null);
   lastToken = null;
+  // No session → no lock prompt needed.
+  setEncryptionLocked(false);
   if (onLogoutCallback) {
     await onLogoutCallback();
   }
@@ -669,38 +882,48 @@ function looksEncrypted(value: string): boolean {
 }
 
 // ─── P2P Emergency Mesh Signatures ──────────────────────────────────────────
-export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
-  const storedPrivate = localStorage.getItem("symptom_scribe_p2p_private_key");
-  const storedPublic = localStorage.getItem("symptom_scribe_p2p_public_key");
+//
+// The ECDSA P-256 private key used to sign emergency mesh alerts is generated
+// as *non-extractable* (`extractable: false`), so it can never be exported
+// (e.g. as a JWK) by a compromised script, extension, or injected library.
+// Persistence is delegated to IndexedDB via `registerP2PKeyStorage` (see
+// offline-db.ts): IndexedDB's structured-clone algorithm can store
+// non-extractable CryptoKey objects, so the key survives reloads without ever
+// existing as portable key material outside the browser. Only the public key
+// remains extractable, and only its JWK is ever shared (broadcast with
+// alerts so peers can verify the signature).
+//
+// This replaces the previous implementation (issue #1085) which stored the
+// private key as a plaintext, extractable JWK in localStorage under
+// `symptom_scribe_p2p_private_key` — any XSS/extension with localStorage
+// access could exfiltrate it and forge emergency alerts.
 
-  if (storedPrivate && storedPublic) {
-    try {
-      const privateJwk = JSON.parse(storedPrivate);
-      const publicJwk = JSON.parse(storedPublic);
+type P2PKeyPair = { privateKey: CryptoKey; publicKey: CryptoKey };
 
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        privateJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign"]
-      );
+type P2PKeyStorage = {
+  load: () => Promise<P2PKeyPair | null>;
+  save: (privateKey: CryptoKey, publicKey: CryptoKey) => Promise<void>;
+};
 
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        publicJwk,
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["verify"]
-      );
+let p2pKeyStorage: P2PKeyStorage | null = null;
+let cachedP2PKeys: P2PKeyPair | null = null;
 
-      return { privateKey, publicKey };
-    } catch (err) {
-      console.warn("Failed to load stored P2P keys, generating new ones:", err);
-    }
-  }
+/**
+ * Registers the IndexedDB-backed persistence for the P2P signing keypair.
+ * Called by offline-db.ts during module initialization; kept behind a
+ * registration hook so encryption.ts never imports the Dexie module directly
+ * (avoiding a circular dependency).
+ */
+export function registerP2PKeyStorage(storage: P2PKeyStorage): void {
+  p2pKeyStorage = storage;
+}
 
-  // Generate new ECDSA P-256 keypair
+// Generates an ECDSA P-256 keypair whose *private* half is non-extractable.
+// `crypto.subtle.generateKey` applies one extractability flag to the whole
+// pair, so the private JWK is exported in memory only and immediately
+// re-imported with `extractable: false`. The public half stays extractable so
+// its JWK can be attached to broadcast alerts for signature verification.
+async function generateNonExtractableP2PKeyPair(): Promise<P2PKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     {
       name: "ECDSA",
@@ -711,15 +934,54 @@ export async function getP2PSigningKeys(): Promise<{ privateKey: CryptoKey; publ
   );
 
   const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  const privateKey = await crypto.subtle.importKey(
+    "jwk",
+    privateJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
 
-  localStorage.setItem("symptom_scribe_p2p_private_key", JSON.stringify(privateJwk));
-  localStorage.setItem("symptom_scribe_p2p_public_key", JSON.stringify(publicJwk));
+  return { privateKey, publicKey: keyPair.publicKey };
+}
 
-  return {
-    privateKey: keyPair.privateKey,
-    publicKey: keyPair.publicKey,
-  };
+export async function getP2PSigningKeys(): Promise<P2PKeyPair> {
+  // Remove any plaintext JWK copies left behind by the pre-#1085
+  // implementation. Nothing reads them anymore, and the private key must
+  // never live in localStorage.
+  localStorage.removeItem("symptom_scribe_p2p_private_key");
+  localStorage.removeItem("symptom_scribe_p2p_public_key");
+
+  // 1. Prefer the IndexedDB-persisted keypair (survives reloads; other tabs
+  //    of the same origin share it). If IndexedDB access fails (e.g. private
+  //    browsing / disabled storage), fall back to cache or a fresh pair so an
+  //    emergency alert can still be signed.
+  if (p2pKeyStorage) {
+    try {
+      const stored = await p2pKeyStorage.load();
+      if (stored) {
+        cachedP2PKeys = stored;
+        return stored;
+      }
+    } catch (err) {
+      console.warn("Failed to load P2P signing keys from IndexedDB; using in-memory keys:", err);
+    }
+  }
+
+  // 2. Fall back to the in-memory cache (used when no store is registered).
+  if (cachedP2PKeys) return cachedP2PKeys;
+
+  // 3. Generate a fresh non-extractable pair and persist it.
+  const keys = await generateNonExtractableP2PKeyPair();
+  cachedP2PKeys = keys;
+  if (p2pKeyStorage) {
+    try {
+      await p2pKeyStorage.save(keys.privateKey, keys.publicKey);
+    } catch (err) {
+      console.warn("Failed to persist P2P signing keys to IndexedDB:", err);
+    }
+  }
+  return keys;
 }
 
 export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {
@@ -754,13 +1016,15 @@ export async function verifyPayload(
     const data = encoder.encode(payload);
     const signatureBytes = hexToUint8Array(signatureHex);
 
+    // `signatureBytes` is a Uint8Array decoded from the hex signature string
+    // produced by signPayload(); the cast only reconciles the TS typing.
     return await crypto.subtle.verify(
       {
         name: "ECDSA",
         hash: { name: "SHA-256" },
       },
       publicKey,
-      signatureBytes,
+      signatureBytes as BufferSource,
       data
     );
   } catch (err) {

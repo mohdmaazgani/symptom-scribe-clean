@@ -6,6 +6,8 @@ import {
   decryptText,
   whenEncryptionReady,
   registerEncryptionHooks,
+  registerLegacyKeyProbe,
+  registerP2PKeyStorage,
   getSearchKey,
   generateSearchTokens,
 } from "./encryption";
@@ -38,6 +40,7 @@ export interface OfflineSymptom {
   pending_delete: number;
   ai_analysis?: string;
   search_tokens?: string[] | null;
+  images?: string[] | null;
 }
 
 export interface MeshAlert {
@@ -54,10 +57,27 @@ export interface MeshAlert {
   pending_sync: number;
 }
 
+/**
+ * Persisted P2P emergency-signing keypair (issue #1085).
+ *
+ * The private key is generated as *non-extractable*, so it can never be
+ * exported (e.g. as a JWK) and exfiltrated by a script with localStorage
+ * access. IndexedDB's structured-clone algorithm can still persist such
+ * CryptoKey objects, which is how the key survives reloads without ever
+ * leaving the browser as key material.
+ */
+export interface P2PKeyRecord {
+  id: string;
+  privateKey: CryptoKey;
+  publicKey: CryptoKey;
+  createdAt: string;
+}
+
 class OfflineDatabase extends Dexie {
   healthMetrics!: Table<OfflineMetric>;
   symptomHistory!: Table<OfflineSymptom>;
   pendingEmergencyMesh!: Table<MeshAlert>;
+  p2pKeys!: Table<P2PKeyRecord>;
 
   constructor() {
     super("SymptomScribeOfflineDB");
@@ -69,6 +89,12 @@ class OfflineDatabase extends Dexie {
       healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
       symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
       pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+    });
+    this.version(3).stores({
+      healthMetrics: "id, user_id, metric_type, recorded_at, pending_sync, pending_delete",
+      symptomHistory: "id, user_id, severity_level, created_at, pending_sync, pending_update, pending_delete",
+      pendingEmergencyMesh: "id, sender_id, timestamp, pending_sync",
+      p2pKeys: "id",
     });
   }
 }
@@ -299,33 +325,56 @@ registerEncryptionHooks({
     try {
       await db.healthMetrics.clear();
       await db.symptomHistory.clear();
+      await db.pendingEmergencyMesh.clear();
     } catch (err) {
       console.error("Error clearing database on logout:", err);
     }
   },
   onTokenRefresh: async (oldKey, newKey, oldSearchKey, newSearchKey) => {
-    try {
-      const metrics = await db.healthMetrics.toArray();
-      for (const record of metrics) {
+    // Local IndexedDB records. Each record is decrypted with the old key and
+    // re-encrypted with the new key. Records that do not decrypt with the old
+    // key (e.g. written under a key this device never had) are skipped with a
+    // warning instead of failing the whole migration — a rotation must never
+    // destroy local data.
+    let reEncrypted = 0;
+    let skipped = 0;
+
+    const metrics = await db.healthMetrics.toArray();
+    for (const record of metrics) {
+      try {
         const decrypted = await decryptMetric(record, oldKey);
         const encrypted = await encryptMetric(decrypted, newKey, newSearchKey);
         await db.healthMetrics.put(encrypted);
+        reEncrypted++;
+      } catch (err) {
+        skipped++;
+        console.warn(
+          `Skipping health_metrics record ${record.id} (cannot decrypt with old key):`,
+          err
+        );
       }
+    }
 
-      const symptoms = await db.symptomHistory.toArray();
-      for (const record of symptoms) {
+    const symptoms = await db.symptomHistory.toArray();
+    for (const record of symptoms) {
+      try {
         const decrypted = await decryptSymptom(record, oldKey);
         const encrypted = await encryptSymptom(decrypted, newKey, newSearchKey);
         await db.symptomHistory.put(encrypted);
+        reEncrypted++;
+      } catch (err) {
+        skipped++;
+        console.warn(
+          `Skipping symptom_history record ${record.id} (cannot decrypt with old key):`,
+          err
+        );
       }
-    } catch (err) {
-      console.error("Error migrating offline database on token rotation, clearing tables:", err);
-      try {
-        await db.healthMetrics.clear();
-        await db.symptomHistory.clear();
-      } catch (clearErr) {
-        console.error("Failed to clear database after migration failure:", clearErr);
-      }
+    }
+
+    if (skipped > 0) {
+      console.warn(
+        `Local re-encryption finished: ${reEncrypted} re-encrypted, ${skipped} skipped.`
+      );
     }
 
     // Also re-encrypt server-side rows so the Supabase copies stay decryptable
@@ -335,6 +384,132 @@ registerEncryptionHooks({
     } catch (err) {
       console.error("Failed to re-encrypt server-side data after key rotation:", err);
     }
+  },
+});
+
+// ─── Legacy (pre-seed) key probe (issue #1056) ───────────────────────────────
+// During an unlock (see encryption.ts `unlockEncryptionWithPassword`) the app
+// re-derives the pre-seed userId-based key and asks whether any records are
+// still encrypted under it. If so, they are migrated onto the new seed-derived
+// key so accounts created before the seed mechanism do not lose access.
+registerLegacyKeyProbe(async (legacyKey) => {
+  // Only records carrying an `enc:` payload can attest to a key. Plaintext
+  // records (pre-encryption era) decrypt "successfully" under any key, which
+  // would false-positive the probe and trigger a pointless rotation.
+  const hasEncryptedContent = (record: OfflineMetric | OfflineSymptom): boolean => {
+    if ("value" in record) {
+      return (
+        (typeof record.value === "string" && record.value.startsWith("enc:json:")) ||
+        (record.notes ?? "").startsWith("enc:str:")
+      );
+    }
+    return (
+      (record.symptoms ?? "").startsWith("enc:str:") ||
+      (record.ai_analysis ?? "").startsWith("enc:str:") ||
+      (record.possible_causes?.[0] ?? "").startsWith("enc:json:") ||
+      (record.recommendations?.[0] ?? "").startsWith("enc:json:")
+    );
+  };
+
+  // Returns true as soon as any encrypted record decrypts with the legacy key;
+  // records that fail AES-GCM authentication (written under a different key)
+  // are skipped silently.
+  const decryptsWithLegacyKey = async <T extends OfflineMetric | OfflineSymptom>(
+    records: T[],
+    decrypt: (record: T) => Promise<unknown>
+  ): Promise<boolean> => {
+    for (const record of records) {
+      if (!hasEncryptedContent(record)) continue;
+      try {
+        await decrypt(record);
+        return true;
+      } catch {
+        // Wrong key (or unreadable) — try the next record.
+      }
+    }
+    return false;
+  };
+
+  // 1. Local IndexedDB records.
+  try {
+    const metrics = await db.healthMetrics.toArray();
+    if (await decryptsWithLegacyKey(metrics, (r) => decryptMetric(r, legacyKey))) {
+      return true;
+    }
+  } catch (err) {
+    console.warn("Failed to probe local health metrics for legacy key:", err);
+  }
+  try {
+    const symptoms = await db.symptomHistory.toArray();
+    if (await decryptsWithLegacyKey(symptoms, (r) => decryptSymptom(r, legacyKey))) {
+      return true;
+    }
+  } catch (err) {
+    console.warn("Failed to probe local symptom history for legacy key:", err);
+  }
+
+  // 2. Server-side rows.
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: metricRows } = await supabase
+        .from("health_metrics")
+        .select("value, notes")
+        .eq("user_id", user.id);
+      if (
+        metricRows &&
+        (await decryptsWithLegacyKey(metricRows as OfflineMetric[], (r) =>
+          decryptMetric(r, legacyKey)
+        ))
+      ) {
+        return true;
+      }
+
+      const { data: symptomRows } = await supabase
+        .from("symptom_history")
+        .select("symptoms, ai_analysis, possible_causes, recommendations")
+        .eq("user_id", user.id);
+      if (
+        symptomRows &&
+        (await decryptsWithLegacyKey(symptomRows as OfflineSymptom[], (r) =>
+          decryptSymptom(r, legacyKey)
+        ))
+      ) {
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to probe server records for legacy key:", err);
+  }
+
+  return false;
+});
+
+// ─── P2P signing-key persistence (issue #1085) ───────────────────────────────
+// The P2P emergency-signing keypair is generated as non-extractable (the
+// private half can never be exported) and persisted in IndexedDB via
+// structured clone — mirroring how the rest of the app treats key material.
+// A compromised script with localStorage access can no longer read the
+// signing key as a plaintext JWK.
+const P2P_KEY_STORE_ID = "p2p-signing-key";
+
+registerP2PKeyStorage({
+  load: async () => {
+    const record = await db.p2pKeys.get(P2P_KEY_STORE_ID);
+    if (record?.privateKey && record?.publicKey) {
+      return { privateKey: record.privateKey, publicKey: record.publicKey };
+    }
+    return null;
+  },
+  save: async (privateKey, publicKey) => {
+    await db.p2pKeys.put({
+      id: P2P_KEY_STORE_ID,
+      privateKey,
+      publicKey,
+      createdAt: new Date().toISOString(),
+    });
   },
 });
 
@@ -409,7 +584,7 @@ export const syncOfflineData = async (): Promise<boolean> => {
       .toArray();
 
     for (const record of pendingSymptomInserts) {
-      const { pending_sync, pending_delete, pending_update, ...supabaseData } = record;
+      const { pending_sync, pending_delete, pending_update, images, ...supabaseData } = record;
       const { error } = await supabase
         .from("symptom_history")
         .insert(supabaseData as unknown as TablesInsert<"symptom_history">);
