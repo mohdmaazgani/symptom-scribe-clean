@@ -194,7 +194,8 @@
       "reminders": "रिमाइंडर",
       "brainGames": "ब्रेन गेम्स",
       "healthFacts": "स्वास्थ्य तथ्य",
-      "settings": "सेटिंग्स"
+      "settings": "सेटिंग्स",
+      "triggerAnalyzer": "लक्षण ट्रिगर विश्लेषक"
     },
     "themeOptions": {
       "light": "लाइट",
