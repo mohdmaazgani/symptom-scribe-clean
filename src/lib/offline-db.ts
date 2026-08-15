@@ -39,6 +39,7 @@ export interface OfflineSymptom {
   pending_update: number;
   pending_delete: number;
   ai_analysis?: string;
+  images?: string[] | null;
   search_tokens?: string[] | null;
   images?: string[] | null;
 }

@@ -152,6 +152,7 @@ export type Database = {
           created_at: string | null
           follow_up_date: string | null
           id: string
+          images: string[] | null
           possible_causes: string[] | null
           recommendations: string[] | null
           resolved: boolean | null
@@ -167,6 +168,7 @@ export type Database = {
           created_at?: string | null
           follow_up_date?: string | null
           id?: string
+          images?: string[] | null
           possible_causes?: string[] | null
           recommendations?: string[] | null
           resolved?: boolean | null
@@ -182,6 +184,7 @@ export type Database = {
           created_at?: string | null
           follow_up_date?: string | null
           id?: string
+          images?: string[] | null
           possible_causes?: string[] | null
           recommendations?: string[] | null
           resolved?: boolean | null
