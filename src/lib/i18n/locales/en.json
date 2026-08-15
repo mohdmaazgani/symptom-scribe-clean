@@ -194,7 +194,8 @@
       "reminders": "Reminders",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings"
+      "settings": "Settings",
+      "digestiveTracker": "Digestive Tracker"
     },
     "themeOptions": {
       "light": "Light",
