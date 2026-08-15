@@ -45,6 +45,7 @@ const BlogPostPage = lazy(() => import("@/pages/Blog/BlogPostPage.tsx"));
 const ResetPassword = lazy(() => import("./pages/User/ResetPassword.tsx"));
 const GamificationPage = lazy(() => import("@/pages/Gamification"));
 const Reminders = lazy(() => import("./pages/Reminders/index.tsx"));
+const BloodPressureDiary = lazy(() => import("./pages/Health/BloodPressure.tsx"));
 
 // Loading spinner fallback component
 const LoadingScreen = () => (
@@ -166,6 +167,16 @@ const App = () => {
                   <ProtectedRoute>
                     <Layout>
                       <Metrics />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/blood-pressure"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BloodPressureDiary />
                     </Layout>
                   </ProtectedRoute>
                 }
