@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- Create atomic rate limiting function
--- Uses INSERT ... ON CONFLICT to avoid TOCTOU race conditions
 CREATE OR REPLACE FUNCTION public.check_rate_limit(
   client_ip TEXT,
   max_requests INT,
@@ -17,26 +16,39 @@ CREATE OR REPLACE FUNCTION public.check_rate_limit(
 )
 RETURNS BOOLEAN AS $$
 DECLARE
-  new_count INT;
+  current_count INT;
+  current_start TIMESTAMPTZ;
   now_time TIMESTAMPTZ := NOW();
-  window_start TIMESTAMPTZ := date_trunc('second', now_time);
 BEGIN
-  -- Atomic insert-or-increment: no race window between read and write
-  INSERT INTO public.rate_limits (ip, request_count, window_start)
-  VALUES (client_ip, 1, window_start)
-  ON CONFLICT (ip) DO UPDATE SET
-    request_count = CASE
-      WHEN public.rate_limits.window_start < now_time - (window_size_seconds || ' seconds')::INTERVAL
-      THEN 1
-      ELSE public.rate_limits.request_count + 1
-    END,
-    window_start = CASE
-      WHEN public.rate_limits.window_start < now_time - (window_size_seconds || ' seconds')::INTERVAL
-      THEN window_start
-      ELSE public.rate_limits.window_start
-    END
-  RETURNING request_count INTO new_count;
+  -- Select the existing rate limit record
+  SELECT request_count, window_start INTO current_count, current_start
+  FROM public.rate_limits
+  WHERE ip = client_ip;
 
-  RETURN new_count <= max_requests;
+  -- If no record, insert a new one and return true
+  IF NOT FOUND THEN
+    INSERT INTO public.rate_limits (ip, request_count, window_start)
+    VALUES (client_ip, 1, now_time);
+    RETURN TRUE;
+  END IF;
+
+  -- If window has expired, reset it
+  IF current_start < now_time - (window_size_seconds || ' seconds')::INTERVAL THEN
+    UPDATE public.rate_limits
+    SET request_count = 1, window_start = now_time
+    WHERE ip = client_ip;
+    RETURN TRUE;
+  END IF;
+
+  -- If count is already at or above max_requests, return false
+  IF current_count >= max_requests THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Increment the count
+  UPDATE public.rate_limits
+  SET request_count = current_count + 1
+  WHERE ip = client_ip;
+  RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
