@@ -21,6 +21,7 @@ import Layout from "./components/layout/Layout.tsx";
 import ScrollToTop from "@/components/navigation/ScrollToTop.tsx";
 
 // Lazy-loaded pages
+const SkinHealth = lazy(() => import("@/pages/SkinHealth"));
 const DigestiveTracker = lazy(() => import("@/pages/DigestiveTracker"));
 const Index = lazy(() => import("./pages/Home/Index.tsx"));
 const Auth = lazy(() => import("./pages/Auth/index.tsx"));
