@@ -1,6 +1,26 @@
 import { useUserBadges } from "@/hooks/useGamification";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award } from "lucide-react";
+import { motion } from "framer-motion";
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.3, ease: "easeOut" },
+  },
+};
 
 // BadgeDisplay intentionally takes no props: it fetches the current user's
 // badges itself via useUserBadges(), so it can be rendered standalone (e.g.
@@ -30,11 +50,18 @@ export default function BadgeDisplay() {
   }
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+    <motion.div
+      className="grid grid-cols-3 sm:grid-cols-4 gap-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {userBadges.map((ub) => (
-        <div
+        <motion.div
           key={ub.id}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+          variants={itemVariants}
+          whileHover={{ y: -4, boxShadow: "0 8px 24px -4px rgba(0,0,0,0.15)" }}
+          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm"
           title={ub.badges.description}
         >
           <span className="text-3xl">{ub.badges.icon}</span>
@@ -50,8 +77,8 @@ export default function BadgeDisplay() {
               month: "short",
             })}
           </p>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
