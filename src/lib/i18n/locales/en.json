@@ -194,8 +194,7 @@
       "reminders": "Reminders",
       "brainGames": "Brain Games",
       "healthFacts": "Health Facts",
-      "settings": "Settings",
-      "triggerAnalyzer": "Symptom Trigger Analyzer"
+      "settings": "Settings"
     },
     "themeOptions": {
       "light": "Light",
