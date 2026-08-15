@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const menuItems = [
+  { title: "sidebar.items.postureChecker", url: "/posture-checker", icon: Activity },
   { title: "sidebar.items.digestiveTracker", url: "/digestive-tracker", icon: Activity },
   { titleKey: "sidebar.items.dashboard", url: "/dashboard", icon: LayoutDashboard },
   { titleKey: "sidebar.items.aiHealthAssistant", url: "/ai-health-assistant", icon: Bot },
