@@ -35,7 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showInfo, showWarning } from "@/lib/toast-helpers";
-import { shuffleArray, secureRandomIndex, secureRandom } from "@/lib/utils";
+import { shuffleArray } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -266,7 +266,7 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
   };
 
   const startGame = () => {
-    const first = [secureRandomIndex(4)];
+    const first = [Math.floor(Math.random() * 4)];
     setSequence(first);
     playSequence(first);
   };
@@ -285,7 +285,7 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
         setStatus("showing");
         timers.current.push(
           window.setTimeout(() => {
-            const next = [...sequence, secureRandomIndex(4)];
+            const next = [...sequence, Math.floor(Math.random() * 4)];
             setSequence(next);
             playSequence(next);
           }, 800),
@@ -371,10 +371,10 @@ const StroopTestGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
 
   const nextRound = () => {
-    const w = STROOP_COLORS[Math.floor(secureRandom() * STROOP_COLORS.length)];
-    let ik = STROOP_COLORS[Math.floor(secureRandom() * STROOP_COLORS.length)];
-    if (secureRandom() < 0.75) {
-      while (ik.name === w.name) ik = STROOP_COLORS[Math.floor(secureRandom() * STROOP_COLORS.length)];
+    const w = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+    let ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
+    if (Math.random() < 0.75) {
+      while (ik.name === w.name) ik = STROOP_COLORS[Math.floor(Math.random() * STROOP_COLORS.length)];
     }
     setWord(w);
     setInk(ik);
@@ -486,26 +486,26 @@ const MentalMathGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
 
   const makeProblem = () => {
     const ops = ["+", "−", "×"] as const;
-    const op = ops[Math.floor(secureRandom() * ops.length)];
+    const op = ops[Math.floor(Math.random() * ops.length)];
     let a = 0;
     let b = 0;
     let ans = 0;
     if (op === "×") {
-      a = 2 + secureRandomIndex(11);
-      b = 2 + secureRandomIndex(11);
+      a = 2 + Math.floor(Math.random() * 11);
+      b = 2 + Math.floor(Math.random() * 11);
       ans = a * b;
     } else if (op === "+") {
-      a = 5 + secureRandomIndex(45);
-      b = 5 + secureRandomIndex(45);
+      a = 5 + Math.floor(Math.random() * 45);
+      b = 5 + Math.floor(Math.random() * 45);
       ans = a + b;
     } else {
-      a = 10 + secureRandomIndex(40);
-      b = 1 + secureRandomIndex(a);
+      a = 10 + Math.floor(Math.random() * 40);
+      b = 1 + Math.floor(Math.random() * a);
       ans = a - b;
     }
     const opts = new Set<number>([ans]);
     while (opts.size < 4) {
-      const delta = secureRandomIndex(9) - 4 || 5;
+      const delta = Math.floor(Math.random() * 9) - 4 || 5;
       const cand = ans + delta;
       if (cand >= 0) opts.add(cand);
     }
@@ -627,7 +627,7 @@ const ReactionGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
   const begin = () => {
     setPhase("waiting");
     setLastMs(null);
-    const delay = 1200 + secureRandom() * 2500;
+    const delay = 1200 + Math.random() * 2500;
     timeoutRef.current = window.setTimeout(() => {
       startRef.current = performance.now();
       setPhase("now");
@@ -745,7 +745,7 @@ const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
 
   const startGame = () => {
     const first = Array.from({ length: COLOR_SEQ_START_LENGTH }, () =>
-      Math.floor(secureRandom() * COLOR_TILES.length),
+      Math.floor(Math.random() * COLOR_TILES.length),
     );
     setRound(1);
     setSequence(first);
@@ -775,7 +775,7 @@ const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
       setStatus("showing");
       timers.current.push(
         window.setTimeout(() => {
-          const next = [...sequence, Math.floor(secureRandom() * COLOR_TILES.length)];
+          const next = [...sequence, Math.floor(Math.random() * COLOR_TILES.length)];
           setRound((r) => r + 1);
           setSequence(next);
           flashSequence(next);
@@ -1185,7 +1185,7 @@ const BrainGames = () => {
 
   const generateTrendQuestion = (): TrendQuestion => {
     const metricTypes = ["steps", "heart_rate", "sleep", "water"] as const;
-    const metricType = metricTypes[Math.floor(secureRandom() * metricTypes.length)];
+    const metricType = metricTypes[Math.floor(Math.random() * metricTypes.length)];
 
     const patterns = [
       {
@@ -1226,21 +1226,21 @@ const BrainGames = () => {
       },
     ];
 
-    const pattern = patterns[Math.floor(secureRandom() * patterns.length)];
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
 
     let startValue = 0;
     switch (metricType) {
       case "steps":
-        startValue = secureRandomIndex(3000) + 4000;
+        startValue = Math.floor(Math.random() * 3000) + 4000;
         break;
       case "heart_rate":
-        startValue = secureRandomIndex(30) + 60;
+        startValue = Math.floor(Math.random() * 30) + 60;
         break;
       case "sleep":
-        startValue = secureRandomIndex(3) + 5;
+        startValue = Math.floor(Math.random() * 3) + 5;
         break;
       case "water":
-        startValue = secureRandomIndex(4) + 4;
+        startValue = Math.floor(Math.random() * 4) + 4;
         break;
     }
 
@@ -1264,16 +1264,16 @@ const BrainGames = () => {
     while (options.length < 4) {
       let offset = 0;
       if (pattern.name.includes("increasing")) {
-        offset = secureRandomIndex(15) + 5;
+        offset = Math.floor(Math.random() * 15) + 5;
         const wrongOption = correctAnswer - offset;
         if (!options.includes(wrongOption) && wrongOption > 0) options.push(wrongOption);
       } else if (pattern.name.includes("decreasing")) {
-        offset = secureRandomIndex(15) + 5;
+        offset = Math.floor(Math.random() * 15) + 5;
         const wrongOption = correctAnswer + offset;
         if (!options.includes(wrongOption)) options.push(wrongOption);
       } else {
-        offset = secureRandomIndex(20) + 10;
-        const wrongOption = correctAnswer + (secureRandom() > 0.5 ? offset : -offset);
+        offset = Math.floor(Math.random() * 20) + 10;
+        const wrongOption = correctAnswer + (Math.random() > 0.5 ? offset : -offset);
         if (!options.includes(wrongOption) && wrongOption > 0) options.push(wrongOption);
       }
     }
@@ -1496,7 +1496,7 @@ const BrainGames = () => {
 
   const startMemoryGame = () => {
     const cards = [...Array(8)].map((_, i) => i % 4);
-    setMemoryCards(cards.sort(() => secureRandom() - 0.5));
+    setMemoryCards(cards.sort(() => Math.random() - 0.5));
     setFlippedCards([]);
     setMatchedCards([]);
     setActiveGame("memory");
@@ -1546,8 +1546,8 @@ const BrainGames = () => {
 
     if (!empty.length) return grid;
 
-    const [r, c] = empty[Math.floor(secureRandom() * empty.length)];
-    grid[r][c] = secureRandom() < 0.9 ? 2 : 4;
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
     return grid;
   };
 
@@ -1702,7 +1702,7 @@ const BrainGames = () => {
       if (score >= 3) availableOperators.push("-");
       if (score >= 6) availableOperators.push("*");
 
-      const operator = availableOperators[Math.floor(secureRandom() * availableOperators.length)];
+      const operator = availableOperators[Math.floor(Math.random() * availableOperators.length)];
 
       let range = 20;
       if (score >= 10) range = 150;
@@ -1713,19 +1713,19 @@ const BrainGames = () => {
       let num2 = 0;
 
       if (operator === "+") {
-        num1 = secureRandomIndex(range) + 5;
-        num2 = secureRandomIndex(range) + 5;
+        num1 = Math.floor(Math.random() * range) + 5;
+        num2 = Math.floor(Math.random() * range) + 5;
       } else if (operator === "-") {
-        const n1 = secureRandomIndex(range) + 10;
-        const n2 = secureRandomIndex(range) + 5;
+        const n1 = Math.floor(Math.random() * range) + 10;
+        const n2 = Math.floor(Math.random() * range) + 5;
         num1 = Math.max(n1, n2);
         num2 = Math.min(n1, n2);
       } else if (operator === "*") {
         let maxFactor = 9;
         if (score >= 10) maxFactor = 15;
         else if (score >= 8) maxFactor = 12;
-        num1 = Math.floor(secureRandom() * (maxFactor - 2)) + 2;
-        num2 = secureRandomIndex(9) + 2;
+        num1 = Math.floor(Math.random() * (maxFactor - 2)) + 2;
+        num2 = Math.floor(Math.random() * 9) + 2;
       }
 
       setMathQuestion({ num1, num2, operator, answer: "" });
