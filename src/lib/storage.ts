@@ -88,17 +88,6 @@ export const getSafeSessionStorage = (key: string, fallback: string): string => 
   }
 };
 
-// Explicit sessionStorage getItem wrapper that wraps the native API call in a
-// try-catch. This prevents crashes in Safari private browsing mode where
-// sessionStorage can throw QuotaExceededError or NS_ERROR_DOM_QUOTA_REACHED.
-export function getSessionItem(key: string): string | null {
-  try {
-    return sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
 export const setSafeSessionStorage = (key: string, value: string): void => {
   try {
     sessionStorage.setItem(key, value);
