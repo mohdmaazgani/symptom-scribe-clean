@@ -24,7 +24,7 @@ import { showSuccess, showError, showInfo, showLoading, showWarning } from "@/li
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { invalidateCache } from "@/lib/cached-queries";
-import { whenKeysReady, encryptChatMessages, decryptChatMessages } from "@/lib/encryption";
+import { whenKeysReady } from "@/lib/encryption";
 import { encryptSymptom, db, type OfflineSymptom } from "@/lib/offline-db";
 import {
   computeRiskScore,
@@ -135,20 +135,7 @@ const ChatInterface = () => {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-
-      const { encryptionKey } = await whenKeysReady();
-      const decryptedSessions = await Promise.all(
-        (data || []).map(async (session) => {
-          try {
-            const messages = await decryptChatMessages(session.messages, encryptionKey);
-            return { ...session, messages: messages as Json };
-          } catch (err) {
-            console.warn("Failed to decrypt chat session messages:", session.id, err);
-            return { ...session, messages: [] as unknown as Json };
-          }
-        })
-      );
-      setSessions(decryptedSessions);
+      setSessions(data || []);
     } catch (err) {
       console.error("Error fetching chat sessions:", err);
     } finally {
@@ -244,14 +231,12 @@ const ChatInterface = () => {
       if (!currentSessionId) {
         const title =
           userMessage.content.substring(0, 40) + (userMessage.content.length > 40 ? "..." : "");
-        const { encryptionKey } = await whenKeysReady();
-        const encryptedMessages = await encryptChatMessages(newMessages, encryptionKey);
         const { data: newSession, error: createError } = await supabase
           .from("chat_sessions")
           .insert({
             user_id: user.id,
             title,
-            messages: encryptedMessages as unknown as Json,
+            messages: newMessages as unknown as Json,
           })
           .select()
           .single();
@@ -259,17 +244,12 @@ const ChatInterface = () => {
         if (createError) throw createError;
         currentSessionId = newSession.id;
         setActiveSessionId(currentSessionId);
-        setSessions((prev) => [
-          { ...newSession, messages: newMessages as unknown as Json } as unknown as ChatSession,
-          ...prev,
-        ]);
+        setSessions((prev) => [newSession as unknown as ChatSession, ...prev]);
       } else {
-        const { encryptionKey } = await whenKeysReady();
-        const encryptedMessages = await encryptChatMessages(newMessages, encryptionKey);
         const { error: updateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: encryptedMessages as unknown as Json,
+            messages: newMessages as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
@@ -344,12 +324,10 @@ const ChatInterface = () => {
           { role: "assistant" as const, content: assistantContent },
         ];
 
-        const { encryptionKey: finalKey } = await whenKeysReady();
-        const encryptedFinal = await encryptChatMessages(finalMessages, finalKey);
         const { error: finalUpdateError } = await supabase
           .from("chat_sessions")
           .update({
-            messages: encryptedFinal as unknown as Json,
+            messages: finalMessages as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentSessionId);
