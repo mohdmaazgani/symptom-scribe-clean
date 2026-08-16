@@ -200,24 +200,8 @@ const ChatInterface = () => {
     streamAbortRef.current = abortController;
 
     let assistantContent = "";
-    let assistantMessageCreated = false;
-
-    const removeCurrentAssistant = () => {
-      if (!assistantMessageCreated) return;
-
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-
-        if (last?.role === "assistant") {
-          return prev.slice(0, -1);
-        }
-
-        return prev;
-      });
-    };
 
     const upsertAssistant = (chunk: string) => {
-      assistantMessageCreated = true;
       assistantContent += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
@@ -455,7 +439,6 @@ const ChatInterface = () => {
         }
       }
     } catch (error) {
-      removeCurrentAssistant();
       if (error instanceof DOMException && error.name === "AbortError") {
         dismissLoading();
         return;
