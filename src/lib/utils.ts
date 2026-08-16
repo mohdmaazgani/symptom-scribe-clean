@@ -16,6 +16,15 @@ export const secureRandomIndex = (limit: number): number => {
   return array[0] % limit;
 };
 /**
+ * Generates a cryptographically secure random float in the range [0, 1).
+ * Uses window.crypto.getRandomValues() for cryptographic quality randomness.
+ */
+export const secureRandom = (): number => {
+  const array = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(array);
+  return array[0] / (0xffffffff + 1);
+};
+/**
  * Shuffles an array using the Fisher-Yates (Knuth) algorithm with cryptographically secure random indices.
  * This is used for security-sensitive shuffling such as passwords and any other shuffle operations.
  * 
