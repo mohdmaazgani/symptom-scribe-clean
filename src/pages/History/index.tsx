@@ -19,7 +19,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { showSuccess, showError, showInfo } from "@/lib/toast-helpers";
+import { showSuccess, showError } from "@/lib/toast-helpers";
 import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offline-db";
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
@@ -325,32 +325,12 @@ const History = () => {
   const deleteAllEntries = async () => {
     try {
       if (navigator.onLine) {
-        // Use the authenticated user's id rather than the first visible
-        // record. `history[0]?.user_id` is "" when the filtered/search list
-        // is empty, which made the server delete match zero rows while the
-        // local cache was still wiped and a success toast shown — the records
-        // reappeared on the next fetch.
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-          showError("Authentication Error", "You must be signed in to delete your history.");
-          return;
-        }
-
-        const { data: deletedRows, error } = await supabase
+        const { error } = await supabase
           .from("symptom_history")
           .delete()
-          .eq("user_id", user.id)
-          .select("id");
+          .eq("user_id", history[0]?.user_id || "");
 
         if (error) throw error;
-
-        if (!deletedRows || deletedRows.length === 0) {
-          showInfo("Nothing to delete", "No symptom history found to delete.");
-          return;
-        }
-
         await invalidateCache("symptom_history");
         await db.symptomHistory.clear();
       } else {
