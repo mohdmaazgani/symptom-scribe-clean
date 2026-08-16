@@ -9,6 +9,7 @@ import {
   deriveKeyFromToken,
   deriveSearchKeyFromToken,
   rotateKeysToNewPassword,
+  EncryptionKeysClearedError,
   initializeEncryption,
   subscribeEncryptionLock,
   unlockEncryptionWithPassword,
@@ -76,6 +77,13 @@ describe("Encryption Key Persistence", () => {
     expect(keys.searchKey).toBe(key);
     expect(getKey()).toBe(key);
     expect(getSearchKey()).toBe(key);
+  });
+
+  it("rejects whenKeysReady waiters when keys are cleared", async () => {
+    setKeys(null, null);
+    const pending = whenKeysReady();
+    setKeys(null, null);
+    await expect(pending).rejects.toBeInstanceOf(EncryptionKeysClearedError);
   });
 
   it("re-derives keys from a new password and reports a successful rotation", async () => {
