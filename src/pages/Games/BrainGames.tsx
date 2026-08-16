@@ -325,7 +325,7 @@ const SimonSaysGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
         <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
           {message}
         </p>
-        <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
           {SIMON_PADS.map((pad, i) => (
             <button
               key={pad.name}
@@ -579,7 +579,7 @@ const MentalMathGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
             >
               {problem.text}
             </div>
-            <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {options.map((opt) => (
                 <Button
                   key={opt}
@@ -802,7 +802,7 @@ const ColorSequenceGame = ({ onExit, onXp, onCelebrate }: MiniGameProps) => {
         <p aria-live="polite" className="text-center text-muted-foreground min-h-[1.5rem]">
           {message}
         </p>
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-sm sm:max-w-md">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-sm">
           {COLOR_TILES.map((tile, i) => (
             <button
               key={tile.name}
@@ -1897,7 +1897,7 @@ const BrainGames = () => {
         )}
 
         <div
-          className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4 w-full max-w-sm sm:max-w-md mx-auto"
+          className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm mx-auto"
           onTouchStart={handle2048TouchStart}
           onTouchEnd={handle2048TouchEnd}
           role="group"
@@ -2639,7 +2639,7 @@ const BrainGames = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 sm:p-8 md:p-12">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 lg:gap-6 w-full max-w-3xl lg:max-w-4xl mx-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto">
                       {memoryCards.map((card, index) => {
                         const isFlipped = flippedCards.includes(index) || matchedCards.includes(index);
                         return (
