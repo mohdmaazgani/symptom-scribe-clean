@@ -57,48 +57,6 @@ Before committing:
 - Use environment variables for all secrets
 - Run `git status` to verify no secret files are staged
 
-## Row-Level Security (RLS) - Critical Security Boundary
-
-**Issue #795**: The Supabase anon key is public. RLS policies are the ONLY security mechanism preventing unauthorized cross-user data access.
-
-All user-data tables have RLS enabled with strict `auth.uid()` checks:
-
-### Protected Tables
-- **symptom_history**: Users can only access their own symptom records
-- **health_metrics**: Users can only access their own health metrics
-- **chat_sessions**: Users can only access their own chat sessions
-- **profiles**: Public read (for peer discovery), user-restricted write
-
-### RLS Policy Pattern
-```sql
--- Example: Users can only view their own data
-CREATE POLICY "users_can_only_access_own_data"
-  ON symptom_history
-  FOR SELECT
-  TO authenticated
-  USING (auth.uid() = user_id);
-```
-
-### Verification
-To verify RLS is enabled on all tables:
-```sql
-SELECT schemaname, tablename, rowsecurity
-FROM pg_tables
-WHERE schemaname = 'public'
-ORDER BY tablename;
-```
-
-All user-data tables should show `rowsecurity = true`.
-
-### Attack Scenarios Prevented
-1. **Cross-user data access**: Without RLS, anon key could query all users' symptoms
-2. **Data exposure**: Health metrics, chat history isolated by user_id
-3. **Session hijacking**: Chat sessions strictly user-scoped
-
-**Never disable RLS on these tables.** If you must modify RLS policies, update the migration and test thoroughly before deployment.
-
 ## Incident History
 
 Initial commit (93fbbcf) contained exposed Supabase credentials in the .env file. These credentials have been invalidated. The .env file was removed from tracking in commit b6bfb80. Developers should be aware that cloning from commit 93fbbcf exposes the old (now invalidated) credentials from git history.
-
-Issue #795 discovered that RLS policies were not enforced, allowing potential cross-user data access with the exposed anon key. This was fixed by enabling RLS on all user-data tables with strict `auth.uid()` policies.
