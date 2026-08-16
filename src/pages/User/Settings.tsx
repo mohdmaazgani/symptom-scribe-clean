@@ -148,26 +148,14 @@ const Settings = () => {
         return;
       }
 
-      // Verify password. signInWithPassword replaces the active session with a
-      // fresh password-only AAL1 session, so capture the current (AAL2)
-      // session first and restore it whenever the deletion does not go through
-      // — otherwise MFA users would be left signed in under the weaker session.
+      // Verify password
       const user = (await supabase.auth.getUser()).data.user;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentSession = sessionData.session;
-
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user?.email || "",
         password: deletePassword,
       });
 
       if (signInError) {
-        if (currentSession) {
-          await supabase.auth.setSession({
-            access_token: currentSession.access_token,
-            refresh_token: currentSession.refresh_token,
-          });
-        }
         showError(
           t("settings.toasts.invalidPasswordTitle"),
           t("settings.toasts.passwordIncorrect")
@@ -180,14 +168,6 @@ const Settings = () => {
       const { error: deleteFuncError } = await supabase.functions.invoke("delete-user-account");
 
       if (deleteFuncError) {
-        // Restore the original session so the failed attempt does not
-        // downgrade the user to a password-only (AAL1) session.
-        if (currentSession) {
-          await supabase.auth.setSession({
-            access_token: currentSession.access_token,
-            refresh_token: currentSession.refresh_token,
-          });
-        }
         showError(t("settings.toasts.deletionFailedTitle"), deleteFuncError.message);
       } else {
         // Log out locally (clear session)
