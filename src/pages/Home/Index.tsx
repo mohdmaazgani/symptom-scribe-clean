@@ -11,7 +11,7 @@ import { ArrowRight, Brain, Clock, TrendingUp, Users, Star, CheckCircle2, Heart,
 import type { Session } from "@supabase/supabase-js";
 import { AnimatedThemeToggler } from "@/components/theme/components/AnimatedThemeToggler";
 import { BackToTop } from "@/components/navigation/BackToTop";
-import { 
+import {
   Github,
   ExternalLink,
   Sparkles,
@@ -162,14 +162,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
 
-      <header 
+      <header
         className={`sticky top-0 left-0 w-full px-6 py-0 z-50 bg-background border-b border-border ${
           isScrolled
             ? "bg-background border-b border-border "
             : "bg-background"
         }`}
       >
-            
+
         <div className="container mx-auto -mb-[84px]">
           <div className="flex relative overflow-hidden items-center justify-between rounded-2xl border border-border/100 bg-background px-4 py-3 shadow-md">
           <div
@@ -192,7 +192,7 @@ const Index = () => {
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
               {t("nav.features")}
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
               ${
                 activeSection === "features"
                   ? "w-full"
@@ -200,13 +200,13 @@ const Index = () => {
               }`} />
             </button>
 
-            <button onClick={()=>scrollToSection("how-it-works")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+            <button onClick={()=>scrollToSection("how-it-works")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
              ${
             activeSection === "how-it-works"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}>
               {t("nav.howItWorks")}
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                ${
                 activeSection === "how-it-works"
                   ? "w-full"
@@ -231,14 +231,14 @@ const Index = () => {
               />
             </button>
 
-            <button onClick={()=>scrollToSection("reviews")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+            <button onClick={()=>scrollToSection("reviews")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
              ${
             activeSection === "reviews"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
             >
               {t("nav.reviews")}
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                  ${
                 activeSection === "reviews"
                   ? "w-full"
@@ -247,14 +247,14 @@ const Index = () => {
                 />
             </button>
 
-            <button onClick={()=>scrollToSection("faq")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300 
+            <button onClick={()=>scrollToSection("faq")} className={`group relative text-sm font-medium text-muted-foreground transition-colors duration-300
                ${
             activeSection === "faq"
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"}`}
               >
               {t("nav.faq")}
-              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300 
+              <span className={`absolute left-0 -bottom-1 h-0.5 w-0 bg-primary transition-all duration-300
                ${
                 activeSection === "faq"
                   ? "w-full"
@@ -330,7 +330,7 @@ const Index = () => {
 
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -364,7 +364,7 @@ const Index = () => {
         </AnimatePresence>
       </header>
       <Hero />
-      
+
       {/* Features Section */}
       <section id="features" className="container mx-auto py-14 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
@@ -487,7 +487,7 @@ const Index = () => {
 
               <div className="group relative bg-card/90 backdrop-blur-xl rounded-3xl border border-border/60 shadow-lg px-4 pt-16 pb-10 min-h-[360px] text-center transition-all duration-500 hover:-translate-y-2 hover:scale-[1.015] hover:border-primary/40 hover:shadow-xl hover:shadow-primary/20 hover:ring-1 hover:ring-primary/20 hover:shadow-[0_25px_70px_rgba(34,211,238,.25)]">
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
-                    
+
             <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-xl border-4 border-background shadow-2xl ring-2 ring-primary/30">
               {step.num}
             </div>
@@ -527,7 +527,7 @@ const Index = () => {
 
       {/* Benefits Section */}
       <section id="why-choose" className="container mx-auto py-20 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -613,7 +613,7 @@ const Index = () => {
 
       {/* FAQ Section */}
        <section id="faq" className="container mx-auto py-20 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -638,7 +638,7 @@ const Index = () => {
 
       {/* Final CTA Section */}
       <section className="bg-muted py-20 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-50px" }}
@@ -675,9 +675,9 @@ const Index = () => {
     {t("home.footer.tagline")}
   </p>
   {/* GitHub Link */}
-  <a 
-    href="https://github.com/mohdmaazgani/symptom-scribe-clean.git" 
-    target="_blank" 
+  <a
+    href="https://github.com/mohdmaazgani/symptom-scribe-clean.git"
+    target="_blank"
     rel="noopener noreferrer"
     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-accent transition-all duration-300 text-sm w-fit"
   >
@@ -686,7 +686,7 @@ const Index = () => {
     <ExternalLink className="w-3 h-3" />
   </a>
 </div>
-      
+
       {/* Platform Column */}
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
@@ -700,7 +700,7 @@ const Index = () => {
           <li><Link to="/brain-games" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><Brain className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.brainTraining")}</span></Link></li>
         </ul>
       </div>
-      
+
       {/* Resources Column */}
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
@@ -729,7 +729,7 @@ const Index = () => {
           <li><Link to="/blog" className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all duration-300 ease-out w-full"><FileText className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:rotate-6" /><span className="transition-transform duration-300 group-hover:translate-x-1"> {t("home.footer.blog")}</span></Link></li>
         </ul>
       </div>
-      
+
       {/* Legal Column */}
       <div>
         <h4 className="font-semibold mb-4 text-foreground flex items-center gap-2">
@@ -744,11 +744,11 @@ const Index = () => {
         </ul>
       </div>
     </div>
-    
+
     {/* Bottom Bar - Centered */}
     <div className="border-t border-border pt-6 mt-4">
       <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <p className="text-muted-foreground">{t("home.footer.copyright")}</p>
+        <p className="text-muted-foreground">{t('home.footer.copyright', { year: new Date().getFullYear() })}</p>
         <div className="flex gap-6">
           <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors text-xs">
             {t("home.footer.privacy")}
@@ -764,7 +764,7 @@ const Index = () => {
           </Link>
         </div>
       </div>
-      
+
       {/* Medical Disclaimer - Subtle */}
       <div className="text-center mt-6 pt-4 border-t border-border/50">
         <p className="text-sm text-muted-foreground/60 flex items-center justify-center gap-2 flex-wrap">
