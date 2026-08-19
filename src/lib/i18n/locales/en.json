@@ -165,7 +165,7 @@
       "termsOfService": "Terms of Service",
       "medicalDisclaimer": "Medical Disclaimer",
       "contactSupport": "Contact Support",
-      "copyright": "© 2026 Symptom Scribe. All rights reserved.",
+      "copyright": "© {{year}} Symptom Scribe. All rights reserved.",
       "privacy": "Privacy",
       "terms": "Terms",
       "disclaimer": "Disclaimer",
