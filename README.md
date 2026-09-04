@@ -176,7 +176,14 @@ npx supabase link --project-ref <your-project-ref>
 
 # Push the schema, triggers, and functions to the linked project
 npx supabase db push
+
+# Sync the Auth Site URL / Redirect URLs from supabase/config.toml to the
+# linked project (fixes email verification links pointing at localhost)
+npx supabase config push
 ```
+
+> [!NOTE]
+> `supabase config push` syncs the `[auth]` block in `supabase/config.toml` (Site URL and additional redirect URLs) to your hosted project. If you skip this step, or if the dashboard's **Authentication → URL Configuration → Site URL** still points at `http://localhost:3000`, verification/reset emails will redirect users to a dead localhost page instead of your deployed app.
 
 ## 5. Install Dependencies
 
@@ -222,6 +229,10 @@ supabase link --project-ref <your-project-ref>
 
 # Push the database migrations to build tables, triggers, and functions
 supabase db push
+
+# Sync the Auth Site URL / Redirect URLs so verification emails link back
+# to your deployed app instead of localhost
+supabase config push
 
 # Set your AI API key (obtain a free Gemini key from Google AI Studio)
 supabase secrets set GEMINI_API_KEY=<your-gemini-key>
@@ -655,6 +666,7 @@ Common issues include:
 
 * Missing environment variables
 * Supabase authentication failures
+* Email verification/reset links redirecting to `localhost` instead of the deployed app — run `supabase config push` (see [step 4](#4-link-supabase--apply-migrations)) or check **Authentication → URL Configuration → Site URL** in the Supabase Dashboard
 * Dependency installation errors
 * Port conflicts
 * Build failures

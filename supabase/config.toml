@@ -1,4 +1,15 @@
 project_id = "tmbnawwkqchswhsuetsl"
 
+# Auth URL configuration is declared here so it can be synced to the hosted
+# project with `supabase config push`, keeping the dashboard's Site URL /
+# Redirect URLs in sync with the deployed frontend. Without this, email
+# verification, password reset, and OAuth links fall back to whatever Site
+# URL happens to be set in the dashboard (often the local dev default of
+# http://localhost:3000), sending users to a dead localhost page instead of
+# the deployed app.
+[auth]
+site_url = "https://symptom-scribe-clean.netlify.app"
+additional_redirect_urls = ["http://localhost:8080/**"]
+
 [functions.symptom-analyzer]
 verify_jwt = false
