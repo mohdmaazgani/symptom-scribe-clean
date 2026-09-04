@@ -334,6 +334,38 @@ class MeshNetworkManager {
     return fullAlert;
   }
 
+  /**
+   * Registers this device's P2P signing public key as belonging to the
+   * caller's account, together with their (already client-decrypted)
+   * emergency contact info. broadcast-emergency resolves the SMS
+   * destination from this server-side record rather than trusting a
+   * client-supplied contact_phone (issue #1154).
+   *
+   * Must be called while online and authenticated -- an offline device that
+   * later has an alert relayed by a nearby peer needs this record to
+   * already exist from a prior online session, since it can't register at
+   * relay time itself.
+   */
+  public async registerEmergencyContact(
+    contactName: string | null,
+    contactPhone: string
+  ): Promise<void> {
+    if (!contactPhone || !this.isOnline()) return;
+
+    try {
+      const keys = await getP2PSigningKeys();
+      const publicKeyJwk = await crypto.subtle.exportKey("jwk", keys.publicKey);
+
+      const { error } = await supabase.functions.invoke("register-emergency-contact", {
+        body: { publicKeyJwk, contact_name: contactName, contact_phone: contactPhone },
+      });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to register emergency contact for mesh alerts:", err);
+    }
+  }
+
   private async relayAlert(alert: MeshAlert) {
     try {
       console.log(`Mesh Gateway: Relaying alert ${alert.id} to cloud...`);

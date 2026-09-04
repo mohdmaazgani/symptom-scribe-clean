@@ -14,6 +14,7 @@ import {
   encryptProfileArray,
   decryptProfileArray,
 } from "@/lib/encryption";
+import { meshNetwork } from "@/lib/mesh-network";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,14 @@ if (!profile.blood_type) {
       }
 
       console.log("Save successful:", result);
-      
+
+      if (profile.emergency_contact_phone) {
+        void meshNetwork.registerEmergencyContact(
+          profile.emergency_contact_name || null,
+          profile.emergency_contact_phone
+        );
+      }
+
       // Show success message
       if (profile.full_name) {
         showSuccess("Profile Updated!", `Great! Your health profile is now complete, ${profile.full_name}`);

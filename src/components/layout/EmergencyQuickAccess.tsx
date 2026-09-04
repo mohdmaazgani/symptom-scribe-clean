@@ -73,6 +73,9 @@ const EmergencyQuickAccess = () => {
             emergency_contact_name: decryptedName,
             emergency_contact_phone: decryptedPhone,
           });
+          if (decryptedPhone) {
+            void meshNetwork.registerEmergencyContact(decryptedName || null, decryptedPhone);
+          }
         }
       } catch (err) {
         console.warn("Error loading profile:", err);

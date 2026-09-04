@@ -311,6 +311,9 @@ const Emergency = () => {
             emergency_contact_name: decryptedEmergencyName,
             emergency_contact_phone: decryptedEmergencyPhone,
           });
+          if (decryptedEmergencyPhone) {
+            void meshNetwork.registerEmergencyContact(decryptedEmergencyName || null, decryptedEmergencyPhone);
+          }
         }
 
       } catch (err) {

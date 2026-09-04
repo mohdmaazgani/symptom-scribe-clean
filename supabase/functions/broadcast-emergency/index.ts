@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { rateLimit } from "../_shared/rateLimit.ts";
+import { ecJwkThumbprint } from "../_shared/jwkThumbprint.ts";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -200,10 +201,57 @@ serve(async (req) => {
       );
     }
 
-    // FIX: use the values already destructured from the request body instead of
-    // the undefined bodyContactPhone / bodyContactName / bodySenderName / profile identifiers
-    const rawContactPhone = contact_phone ?? null;
-    const rawContactName = contact_name ?? null;
+    // The ECDSA check above only proves the payload wasn't tampered with
+    // relative to the public key submitted in *this* request -- it says
+    // nothing about whether that key belongs to a trusted, previously
+    // registered identity. Resolve the actual SMS destination from
+    // mesh_signing_keys (populated by register-emergency-contact while the
+    // owning account was authenticated) instead of trusting the
+    // client-supplied contact_phone/contact_name, which lets any caller
+    // direct the alert at an arbitrary number (issue #1154). This also
+    // covers the offline mesh-relay case, since trust here travels with the
+    // signed packet's key rather than the relaying caller's own JWT.
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    let thumbprint: string;
+    try {
+      thumbprint = await ecJwkThumbprint(publicKeyJwk);
+    } catch (err) {
+      console.error("Failed to compute signing key thumbprint:", err);
+      return new Response(
+        JSON.stringify({ error: "Invalid ECDSA P-256 public key" }),
+        { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: trustedContact, error: trustedContactError } = await supabaseAdmin
+      .from("mesh_signing_keys")
+      .select("contact_name, contact_phone")
+      .eq("public_key_thumbprint", thumbprint)
+      .maybeSingle();
+
+    if (trustedContactError) {
+      console.error("Failed to look up trusted signing key:", trustedContactError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify emergency alert sender" }),
+        { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!trustedContact) {
+      return new Response(
+        JSON.stringify({
+          error: "Unrecognized signing key. Register this device's emergency contact before sending alerts.",
+        }),
+        { status: 403, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+      );
+    }
+
+    const rawContactPhone = trustedContact.contact_phone;
+    const rawContactName = trustedContact.contact_name;
     const rawSenderName = sender_name || "A user";
 
     if (!rawContactPhone) {
@@ -216,20 +264,15 @@ serve(async (req) => {
     // Validate phone number format (E.164 compliance)
     const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
     if (!PHONE_REGEX.test(rawContactPhone)) {
-      console.error(`Invalid phone number: ${rawContactPhone}`);
-      const isEncrypted = rawContactPhone.startsWith("enc:str:");
+      console.error(`Invalid phone number on registered signing key: ${rawContactPhone}`);
       return new Response(
-        JSON.stringify({
-          error: isEncrypted
-            ? "The emergency contact phone number is encrypted client-side and cannot be read by the server. Please ensure it is decrypted before triggering."
-            : "Invalid emergency contact phone number format. Phone numbers must be in international format (e.g. +1234567890)."
-        }),
+        JSON.stringify({ error: "The registered emergency contact phone number is invalid." }),
         { status: 400, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
       );
     }
 
     const contactPhone = rawContactPhone;
-    const contactName = (rawContactName && !rawContactName.startsWith("enc:str:")) ? rawContactName : "Emergency Contact";
+    const contactName = rawContactName || "Emergency Contact";
     const senderName = (rawSenderName && !rawSenderName.startsWith("enc:str:")) ? rawSenderName : "A user";
 
     // Check Twilio Secrets
