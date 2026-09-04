@@ -24,6 +24,7 @@ import { db, syncOfflineData, encryptSymptom, decryptSymptom } from "@/lib/offli
 import { whenKeysReady, generateSearchTokens } from "@/lib/encryption";
 import { getCachedData, invalidateCache } from "@/lib/cached-queries";
 import { stripMarkdownFormatting } from "@/lib/symptom-consultation";
+import { buildHistoryCsv } from "./csvExport";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -349,52 +350,7 @@ const History = () => {
   };
 
   const exportCSV = () => {
-    const headers = [
-      "Date",
-      "Symptoms",
-      "Severity",
-      "Risk Score",
-      "Possible Causes",
-      "Recommendations",
-      "Resolved",
-    ];
-    const rows = history.map((entry) => {
-      const date = new Date(entry.created_at);
-      const formattedDate = isNaN(date.getTime())
-        ? ""
-        : date.toLocaleDateString("en-GB"); // consistent short format to avoid long locale-specific strings showing as ######## in Excel
-
-      const cleanText = (text: string) => {
-        if (!text) return "";
-        return stripMarkdownFormatting(text).replace(/\*/g, "");
-      };
-
-      const symptomsClean = cleanText(entry.symptoms);
-      const severity = entry.severity_level || "";
-      const riskScore = entry.risk_score !== undefined && entry.risk_score !== null ? entry.risk_score : "";
-
-      const possibleCausesClean = entry.possible_causes
-        ? entry.possible_causes.map((cause) => cleanText(cause)).join("; ")
-        : "";
-
-      const recommendationsClean = entry.recommendations
-        ? entry.recommendations.map((rec) => cleanText(rec)).join("; ")
-        : "";
-
-      const resolved = entry.resolved ? "Yes" : "No";
-
-      return [
-        formattedDate,
-        `"${symptomsClean.replace(/"/g, '""')}"`,
-        severity,
-        riskScore,
-        `"${possibleCausesClean.replace(/"/g, '""')}"`,
-        `"${recommendationsClean.replace(/"/g, '""')}"`,
-        resolved,
-      ];
-    });
-
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const csv = buildHistoryCsv(history);
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" }); // UTF-8 BOM for Excel compatibility
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -528,7 +484,8 @@ const History = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete all symptom history?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently remove all {history.length} consultation records. This action cannot be undone.
+                    This will permanently remove all {history.length} consultation records. This
+                    action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
