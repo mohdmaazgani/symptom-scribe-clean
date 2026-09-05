@@ -30,6 +30,9 @@ jobs:
       - name: TypeScript type-check
         run: npx tsc --noEmit
 
+      - name: Check Edge Functions import shared rate limiter
+        run: npm run check:rate-limits
+
       - name: Vite production build
         run: npm run build
         env:
