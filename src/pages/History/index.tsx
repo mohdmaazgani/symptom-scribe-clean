@@ -92,6 +92,8 @@ const History = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -479,8 +481,33 @@ const History = () => {
     }
   };
 
-  const filteredHistory = history;
-  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all";
+  const getLocalDateString = (isoString: string) => {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const dateError = fromDate !== "" && toDate !== "" && fromDate > toDate;
+
+  const filteredHistory = history.filter((entry) => {
+    if (dateError) return false;
+
+    const entryDate = getLocalDateString(entry.created_at);
+    if (!entryDate) return true; // fallback if date is invalid somehow
+
+    if (fromDate && entryDate < fromDate) {
+      return false;
+    }
+    if (toDate && entryDate > toDate) {
+      return false;
+    }
+    return true;
+  });
+
+  const isFiltering = searchQuery.trim() !== "" || severityFilter !== "all" || fromDate !== "" || toDate !== "";
 
   return (
     <div className="space-y-6">
@@ -559,35 +586,70 @@ const History = () => {
 
       {viewMode === "calendar" ? (
         <SymptomCalendarView
-          history={history}
+          history={filteredHistory}
           onToggleResolved={toggleResolved}
           onDeleteEntry={deleteEntry}
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                id="symptom-search-input"
-                type="text"
-                placeholder="Search symptoms... (Ctrl+K to focus)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+          <div className="flex flex-col flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  id="symptom-search-input"
+                  type="text"
+                  placeholder="Search symptoms... (Ctrl+K to focus)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value)}
+                className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">All Severities</option>
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
             </div>
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">All Severities</option>
-              <option value="low">Low</option>
-              <option value="moderate">Moderate</option>
-              <option value="high">High</option>
-            </select>
+
+            <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                <label htmlFor="from-date" className="text-sm text-muted-foreground whitespace-nowrap">
+                  From:
+                </label>
+                <input
+                  id="from-date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                <label htmlFor="to-date" className="text-sm text-muted-foreground whitespace-nowrap">
+                  To:
+                </label>
+                <input
+                  id="to-date"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
           </div>
+
+          {dateError && (
+            <div className="text-sm font-medium text-destructive">
+              "From date" cannot be later than "To date".
+            </div>
+          )}
 
           {isFiltering && (
             <div className="flex justify-end">
@@ -597,6 +659,8 @@ const History = () => {
                 onClick={() => {
                   setSearchQuery("");
                   setSeverityFilter("all");
+                  setFromDate("");
+                  setToDate("");
                 }}
                 className="gap-2"
               >
