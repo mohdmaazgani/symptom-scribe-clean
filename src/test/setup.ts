@@ -22,3 +22,46 @@ class ResizeObserverMock {
 }
 
 global.ResizeObserver = ResizeObserverMock;
+
+// Mock window.matchMedia for responsive components (e.g. useIsMobile)
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+// Mock localStorage if missing or if running under Node 22+ where global localStorage lacks Storage methods in jsdom
+if (!globalThis.localStorage || typeof globalThis.localStorage.getItem !== "function") {
+  const store: Record<string, string> = {};
+  const mockStorage = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = String(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      for (const k of Object.keys(store)) delete store[k];
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+    get length() {
+      return Object.keys(store).length;
+    },
+  };
+  Object.defineProperty(globalThis, "localStorage", { value: mockStorage, writable: true, configurable: true });
+  if (typeof window !== "undefined") {
+    Object.defineProperty(window, "localStorage", { value: mockStorage, writable: true, configurable: true });
+  }
+}
+

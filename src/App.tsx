@@ -261,6 +261,16 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/digestive-tracker"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DigestiveTracker />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/privacy"

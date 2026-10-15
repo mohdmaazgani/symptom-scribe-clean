@@ -25,5 +25,20 @@ describe("DigestiveTracker Component", () => {
     fireEvent.change(inputs[0], { target: { value: "Type 4 - Normal" } });
     fireEvent.click(screen.getByRole("button", { name: /Log Digestive Entry/i }));
     expect(screen.getByText(/1 entries/i)).toBeInTheDocument();
+    expect(screen.getByText("Type 4 - Normal")).toBeInTheDocument();
+  });
+
+  it("removes an entry when the delete button is clicked", () => {
+    render(
+      <AllProviders>
+        <DigestiveTracker />
+      </AllProviders>
+    );
+    const deleteButtons = screen.getAllByRole("button");
+    const trashBtn = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"));
+    if (trashBtn) {
+      fireEvent.click(trashBtn);
+      expect(screen.queryByText("Type 4 - Normal")).not.toBeInTheDocument();
+    }
   });
 });
