@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { getTypedStorage, setTypedStorage } from "@/lib/storage";
 
 // ─── Lightweight current-user helper (no custom useAuth hook needed) ─────────
 // Mirrors the pattern already used in Auth.tsx (supabase.auth.* calls directly)
@@ -13,10 +14,15 @@ function useCurrentUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setUser(data?.session?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -223,41 +229,111 @@ export function useUserBadges() {
 
 // ─── Mood ─────────────────────────────────────────────────────────────────────
 
+const MOOD_LOGS_STORAGE_KEY_PREFIX = "symptom_scribe_mood_logs";
+
+export const getMoodStorageKey = (userId?: string | null): string =>
+  userId ? `${MOOD_LOGS_STORAGE_KEY_PREFIX}_${userId}` : `${MOOD_LOGS_STORAGE_KEY_PREFIX}_local`;
+
 export function useMoodLogs() {
   const { user } = useCurrentUser();
+  const storageKey = getMoodStorageKey(user?.id);
+
   return useQuery({
     queryKey: ["mood_logs", user?.id],
-    enabled: !!user,
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const { data, error } = await supabase
-        .from("mood_logs")
-        .select("*")
-        .eq("user_id", user!.id)
-        .gte("logged_at", thirtyDaysAgo.toISOString().split("T")[0])
-        .order("logged_at", { ascending: true });
-      if (error) throw error;
-      return data as MoodLog[];
+      const localLogs = getTypedStorage<MoodLog[]>(storageKey, []);
+
+      // If no authenticated user, return local cached entries
+      if (!user?.id) {
+        return localLogs;
+      }
+
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const { data, error } = await supabase
+          .from("mood_logs")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("logged_at", thirtyDaysAgo.toISOString().split("T")[0])
+          .order("logged_at", { ascending: true });
+
+        if (error) {
+          console.warn("[Mood] Remote fetch error, falling back to local storage:", error.message);
+          return localLogs;
+        }
+
+        const remoteLogs = (data ?? []) as MoodLog[];
+
+        // Merge remote logs with local logs (remote logs taking precedence for synced days)
+        const logMap = new Map<string, MoodLog>();
+        localLogs.forEach((l) => logMap.set(l.logged_at, l));
+        remoteLogs.forEach((l) => logMap.set(l.logged_at, l));
+
+        const mergedLogs = Array.from(logMap.values()).sort((a, b) =>
+          a.logged_at.localeCompare(b.logged_at)
+        );
+
+        setTypedStorage(storageKey, mergedLogs);
+        return mergedLogs;
+      } catch (err) {
+        console.warn("[Mood] Network exception during fetch, falling back to local storage:", err);
+        return localLogs;
+      }
     },
+    initialData: () => getTypedStorage<MoodLog[]>(storageKey, []),
   });
 }
 
 export function useLogMood() {
   const { user } = useCurrentUser();
   const qc = useQueryClient();
+  const storageKey = getMoodStorageKey(user?.id);
+
   return useMutation({
     mutationFn: async ({ mood, note }: { mood: MoodType; note?: string }) => {
-      const { error } = await supabase.from("mood_logs").upsert(
-        {
-          user_id: user!.id,
-          mood,
-          note: note ?? null,
-          logged_at: new Date().toISOString().split("T")[0],
-        },
-        { onConflict: "user_id,logged_at" }
-      );
-      if (error) throw error;
+      const today = new Date().toISOString().split("T")[0];
+      const localLogs = getTypedStorage<MoodLog[]>(storageKey, []);
+      const existingIndex = localLogs.findIndex((l) => l.logged_at === today);
+
+      const entry: MoodLog = {
+        id: existingIndex >= 0 ? localLogs[existingIndex].id : crypto.randomUUID(),
+        mood,
+        note: note ?? null,
+        logged_at: today,
+      };
+
+      // 1. Immediately persist to localStorage for offline-first resilience
+      let updatedLogs: MoodLog[];
+      if (existingIndex >= 0) {
+        updatedLogs = [...localLogs];
+        updatedLogs[existingIndex] = entry;
+      } else {
+        updatedLogs = [...localLogs, entry];
+      }
+      setTypedStorage(storageKey, updatedLogs);
+
+      // 2. If authenticated, sync with Supabase in the background
+      if (user?.id) {
+        try {
+          const { error } = await supabase.from("mood_logs").upsert(
+            {
+              user_id: user.id,
+              mood,
+              note: note ?? null,
+              logged_at: today,
+            },
+            { onConflict: "user_id,logged_at" }
+          );
+          if (error) {
+            console.warn("[Mood] Supabase upsert error, saved locally:", error.message);
+          }
+        } catch (err) {
+          console.warn("[Mood] Network error during upsert, saved locally:", err);
+        }
+      }
+
+      return entry;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mood_logs"] });
